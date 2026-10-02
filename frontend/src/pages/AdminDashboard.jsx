@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 import "./AdminPrint.css";
+import { API_URL } from "../config/api";
 
-const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = API_URL;
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({});

@@ -3,8 +3,9 @@ import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AdminLogin.css";
+import { API_URL } from "../config/api";
 
-const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = API_URL;
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("");

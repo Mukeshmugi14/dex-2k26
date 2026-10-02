@@ -3,8 +3,9 @@ import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import "./AdminPaymentSettings.css";
+import { API_URL } from "../config/api";
 
-const apiUrl = import.meta.env.VITE_API_URL || "";
+const apiUrl = API_URL;
 
 const emptySettings = {
   registrationAmount: 300,

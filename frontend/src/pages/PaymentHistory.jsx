@@ -2,8 +2,9 @@ import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./PaymentHistory.css";
+import { API_URL } from "../config/api";
 
-const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const apiUrl = API_URL;
 const getPaymentCategory = (payment) => payment?.status === "Successful" ? "success" : payment?.status === "Failed" ? "failed" : "pending";
 const formatDate = (value) => value ? new Date(value).toLocaleString() : "—";
 const getPaymentRecords = (data) => Array.isArray(data) ? data : Array.isArray(data?.payments) ? data.payments : Array.isArray(data?.data) ? data.data : [];

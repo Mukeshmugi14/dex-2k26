@@ -3,8 +3,9 @@ import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./PaymentPage.css";
+import { API_URL } from "../config/api";
 
-const apiUrl = import.meta.env.VITE_API_URL;
+const apiUrl = API_URL;
 
 const buildUpiPaymentUri = (settings) => {
   const registrationAmount = Number(settings?.registrationAmount);
