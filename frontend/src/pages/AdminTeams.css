@@ -1,0 +1,90 @@
+.admin-teams{min-height:100vh;padding:30px;background:#07101d;color:#fff;font-family:Arial,sans-serif}
+.admin-teams *,.admin-teams *::before,.admin-teams *::after{box-sizing:border-box}
+
+/* Header */
+.admin-teams-header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.admin-teams-header p{margin:0;color:#55caff;font:11px monospace;letter-spacing:.12em}
+.admin-teams-header h1{margin:7px 0;font-size:30px}
+.admin-teams-header span{color:#aebfd1;font-size:14px}
+.admin-teams-header nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.admin-teams-header nav a,.admin-teams-header nav button{padding:9px 11px;border:0;border-radius:5px;background:transparent;color:#b9cce0;text-decoration:none;font-size:12px;cursor:pointer}
+.admin-teams-header nav a:hover,.admin-teams-header nav a[aria-current="page"]{background:#ffffff10;color:#fff}
+.admin-teams-header nav button{background:#ff7432;color:#07101a;font-weight:700}
+
+/* Messages and toolbar */
+.admin-teams-message{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 0;padding:11px 13px;border:1px solid #2fbf7166;border-radius:6px;background:#0e1a2b;color:#bdf2d6;font-size:13px}
+.admin-teams-message button{display:grid;place-items:center;padding:4px;border:0;background:transparent;color:#bdf2d6;cursor:pointer}
+.admin-teams-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:22px 0 16px;padding:14px;border:1px solid #ffffff15;border-radius:8px;background:#0e1a2b}
+.admin-teams-toolbar input{width:min(420px,100%);height:40px;padding:0 12px;border:1px solid #55caff44;border-radius:5px;background:#07111f;color:#fff;font:13px Arial,sans-serif}
+.admin-teams-toolbar span{color:#aebfd1;font-size:12px;white-space:nowrap}
+.admin-teams-state{margin:0;padding:24px;border:1px solid #ffffff15;border-radius:8px;background:#0e1a2b;color:#cad8e6}
+.admin-teams-state.error{display:flex;justify-content:space-between;align-items:center;gap:16px;color:#ffb188}
+.admin-teams-state.error p{margin:0}
+.admin-teams-state.error button{padding:10px 16px;border:0;border-radius:6px;background:#ff7432;color:#07101a;font-weight:800;cursor:pointer}
+
+/* Team cards */
+.team-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.team-card{display:flex;flex-direction:column;gap:16px;padding:20px;border:1px solid #ffffff15;border-radius:10px;background:#0e1a2b}
+.team-card-logo,.team-logo-frame{display:grid;place-items:center;width:96px;aspect-ratio:1;margin:0 auto;padding:6px;border:1px solid #55caff33;border-radius:8px;background:#07111f;overflow:hidden}
+.team-card-logo img,.team-logo-frame img{width:100%;height:100%;object-fit:contain}
+.team-card-logo span,.team-logo-frame span{color:#5f7488;font:10px monospace;letter-spacing:.1em}
+.team-card dl{display:grid;gap:12px;margin:0}
+.team-card dt{color:#55caff;font:10px monospace;letter-spacing:.12em;text-transform:uppercase}
+.team-card dd{margin:4px 0 0;color:#e8f0f8;font-size:14px;line-height:1.4}
+.team-card dd.break{overflow-wrap:anywhere}
+.team-card-name dd{font-size:19px;font-weight:800;overflow-wrap:anywhere}
+.team-card ol{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.team-card ol b{color:#ff9a6b;font-weight:700}
+.team-card footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:auto;padding-top:14px;border-top:1px solid #ffffff15}
+.team-card footer span{color:#aebfd1;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+.team-card footer span b{color:#fff}
+.team-card footer button{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:0;border-radius:6px;background:#ff7432;color:#07101a;font-size:13px;font-weight:800;cursor:pointer}
+.team-card footer button:hover{background:#ff8a52}
+
+/* Edit modal */
+.edit-team-overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:#02060dcc;overflow-y:auto}
+.edit-team-modal{display:flex;flex-direction:column;width:min(640px,100%);max-height:calc(100vh - 40px);border:1px solid #55caff44;border-radius:12px;background:#0b1424;color:#fff;box-shadow:0 30px 80px #000a;font-family:Arial,sans-serif}
+.edit-team-modal *,.edit-team-modal *::before,.edit-team-modal *::after{box-sizing:border-box}
+.edit-team-modal>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 22px;border-bottom:1px solid #ffffff15}
+.edit-team-modal>header span{color:#55caff;font:11px monospace;letter-spacing:.12em}
+.edit-team-modal h2{margin:5px 0 0;font-size:22px}
+.edit-team-close{display:grid;place-items:center;width:34px;height:34px;border:1px solid #ffffff22;border-radius:6px;background:transparent;color:#cad8e6;cursor:pointer}
+.edit-team-body{display:grid;gap:20px;padding:20px 22px;overflow-y:auto}
+.edit-team-label,.edit-team-field>span{color:#cad8e6;font-size:12px;font-weight:700}
+.edit-team-logo{display:grid;gap:10px}
+.edit-team-logo-row{display:flex;align-items:center;gap:16px}
+.edit-team-logo-row .team-logo-frame{flex-shrink:0;margin:0}
+.edit-team-logo-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+.edit-team-logo-actions small{flex-basis:100%;color:#91a4b9;font-size:12px;overflow-wrap:anywhere}
+.edit-team-modal button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 15px;border:0;border-radius:6px;background:#ff7432;color:#07101a;font-size:13px;font-weight:800;cursor:pointer}
+.edit-team-modal button.ghost{border:1px solid #55caff44;background:transparent;color:#cad8e6}
+.edit-team-modal button:disabled{opacity:.6;cursor:not-allowed}
+.edit-team-modal .edit-team-close{flex-shrink:0;min-height:0;padding:0;border:1px solid #ffffff22;background:transparent;color:#cad8e6}
+.edit-team-modal .edit-team-close:hover{border-color:#55caff88;color:#fff}
+.edit-team-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.edit-team-field{display:grid;align-content:start;gap:7px;min-width:0}
+.edit-team-modal input{width:100%;height:42px;padding:0 12px;border:1px solid #55caff44;border-radius:6px;background:#07111f;color:#fff;font:15px Arial,sans-serif}
+.edit-team-modal input:focus{outline:2px solid #55caff88;outline-offset:1px}
+.edit-team-field.has-error input,.edit-team-member.has-error input{border-color:#ff8a8a}
+.edit-team-field small,.edit-team-member small,.edit-team-modal small.error{color:#ff9c9c;font-size:12px}
+.edit-team-members{display:grid;gap:10px}
+.edit-team-member{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;column-gap:10px;row-gap:4px}
+.edit-team-member b{color:#ff9a6b;font:13px monospace}
+.edit-team-member small{grid-column:2}
+.edit-team-modal>footer{display:grid;gap:10px;padding:16px 22px;border-top:1px solid #ffffff15}
+.edit-team-modal>footer>div{display:flex;justify-content:flex-end;gap:10px}
+.edit-team-form-error{margin:0;color:#ff9c9c;font-size:13px}
+
+@media(max-width:700px){
+  .admin-teams{padding:16px}
+  .admin-teams-header{flex-direction:column;gap:14px}
+  .admin-teams-header nav{justify-content:flex-start}
+  .admin-teams-toolbar{flex-direction:column;align-items:stretch}
+  .admin-teams-toolbar input{width:100%}
+  .team-card-grid{grid-template-columns:1fr}
+  .edit-team-overlay{padding:0;place-items:end stretch}
+  .edit-team-modal{width:100%;max-height:100dvh;border-radius:12px 12px 0 0}
+  .edit-team-grid{grid-template-columns:1fr}
+  .edit-team-logo-row{flex-direction:column;align-items:flex-start}
+  .edit-team-modal>footer>div{display:grid;grid-template-columns:1fr 1fr}
+}

@@ -9,6 +9,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPaymentSettings from "./pages/AdminPaymentSettings";
 import PaymentHistory from "./pages/PaymentHistory";
+import AdminTeams from "./pages/AdminTeams";
 import "./styles/dexathon.css";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         <Route element={<AdminProtectedRoute />}>
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/payment-history" element={<PaymentHistory />} />
+          <Route path="/admin/teams" element={<AdminTeams />} />
           <Route path="/admin/payment-settings" element={<AdminPaymentSettings />} />
         </Route>
       </Routes>

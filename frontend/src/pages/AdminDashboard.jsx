@@ -39,7 +39,7 @@ export default function AdminDashboard() {
   const logout = () => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); };
 
   return <main className="admin-dashboard">
-    <header><h1>DEXATHON 2026 Admin</h1><nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/payment-settings">Payment Settings</Link><button onClick={logout}>Logout</button></nav><button onClick={() => window.print()}>Print A4</button></header>
+    <header><h1>DEXATHON 2026 Admin</h1><nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/teams">Teams</Link><Link to="/admin/payment-settings">Payment Settings</Link><button onClick={logout}>Logout</button></nav><button onClick={() => window.print()}>Print A4</button></header>
     {error && <p className="admin-error">{error}</p>}
     <section className="admin-stats">{Object.entries(stats).map(([key, value]) => <div key={key}><small>{key.replace(/([A-Z])/g, " $1")}</small><b>{key === "totalAmount" ? `₹${value}` : value}</b></div>)}</section>
     <section className="admin-filter-bar">

@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import Registration from "../models/Registration.js";
 import { sendPaymentConfirmationEmail } from "../services/emailService.js";
@@ -36,6 +37,45 @@ export const getRegistrations = async (request, response) => {
 
 export const getPayments = async (_request, response) => response.json(await Registration.find({}, "teamId teamName college leader payment createdAt").sort({ createdAt: -1 }));
 export const getFaculty = async (_request, response) => response.json(await Registration.find({ "mentor.name": { $ne: "" } }, "mentor college teamName createdAt"));
+
+const MAX_LOGO_LENGTH = 1_500_000;
+const cleanText = (value) => (typeof value === "string" ? value.trim() : "");
+
+// Edits the team details of an existing registration in place; IDs and payment data are never touched.
+export const updateRegistration = async (request, response) => {
+  if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ success: false, message: "Registration not found." });
+  const registration = await Registration.findById(request.params.id);
+  if (!registration) return response.status(404).json({ success: false, message: "Registration not found." });
+
+  const { teamName, leader = {}, members, logo } = request.body;
+  const errors = {};
+  const nextTeamName = cleanText(teamName);
+  const nextLeader = { name: cleanText(leader.name), email: cleanText(leader.email).toLowerCase(), phone: cleanText(leader.phone) };
+  if (!nextTeamName) errors.teamName = "Team name is required.";
+  if (!nextLeader.name) errors.leaderName = "Team head name is required.";
+  if (!/^\S+@\S+\.\S+$/.test(nextLeader.email)) errors.leaderEmail = "Enter a valid email address.";
+  if (!nextLeader.phone) errors.leaderPhone = "Phone number is required.";
+  if (!Array.isArray(members) || members.length !== registration.members.length) {
+    errors.members = "Member list does not match this team.";
+  } else {
+    members.forEach((member, index) => { if (!cleanText(member?.name)) errors[`member-${index}`] = "Member name is required."; });
+  }
+  if (logo !== undefined && logo !== null && logo !== "") {
+    if (typeof logo !== "string" || !/^data:image\/(png|jpeg);base64,/.test(logo)) errors.logo = "Logo must be a PNG or JPG image.";
+    else if (logo.length > MAX_LOGO_LENGTH) errors.logo = "Logo image is too large.";
+  }
+  if (Object.keys(errors).length) return response.status(400).json({ success: false, message: "Please correct the highlighted fields.", errors });
+
+  registration.teamName = nextTeamName;
+  registration.leader.name = nextLeader.name;
+  registration.leader.email = nextLeader.email;
+  registration.leader.phone = nextLeader.phone;
+  members.forEach((member, index) => { registration.members[index].name = cleanText(member.name); });
+  if (logo) registration.teamLogo = logo;
+  await registration.save();
+
+  return response.json({ success: true, message: "Team details updated successfully.", registration });
+};
 
 const updateConfirmationEmailStatus = async (registration) => {
   try {

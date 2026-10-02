@@ -98,6 +98,7 @@ export default function AdminPaymentSettings() {
         <b>DEXATHON ADMIN</b>
         <Link to="/admin/dashboard">Dashboard</Link>
         <Link to="/admin/payment-history">Payment History</Link>
+        <Link to="/admin/teams">Teams</Link>
         <Link to="/admin/payment-settings">Payment Settings</Link>
         <button type="button" onClick={logout}>Logout</button>
       </aside>
