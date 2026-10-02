@@ -5761,3 +5761,191 @@ a {
   font-size: 12px;
   color: var(--muted);
 }
+
+/* =========================================================
+   RESPONSIVE REFINEMENTS (home page)
+   Loaded last so these rules override the earlier layers.
+   ========================================================= */
+
+/* Challenge cards: keep the footer at the bottom without letting long text run under it */
+.challenge-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.challenge-card-footer {
+  position: static;
+  margin-top: auto;
+}
+
+.challenge-card-content {
+  padding-bottom: 22px;
+}
+
+/* Mobile navigation panel */
+.dex-mobile-panel {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .dex-mobile-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 12px 16px 16px;
+    background: #050a10;
+    border-top: 1px solid #12324a;
+  }
+
+  .dex-mobile-panel a {
+    min-height: 42px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #1a3346;
+    color: #c9d6e2;
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+
+  .dex-mobile-panel a svg {
+    flex-shrink: 0;
+    color: #2de2e6;
+  }
+
+  .dex-mobile-panel .dex-mobile-register {
+    grid-column: 1 / -1;
+    justify-content: center;
+    border: 0;
+    background: #ff6418;
+    color: #080b10;
+    font-weight: 900;
+  }
+
+  .dex-mobile-panel .dex-mobile-register svg {
+    color: inherit;
+  }
+
+  /* Hero visual: drop the desktop min-height that left a large empty gap above the photo */
+  .hero-visual {
+    min-height: 0;
+  }
+
+  /* Challenge cards: stacked, so size them to their content */
+  .challenge-card {
+    min-height: 0;
+  }
+
+  .challenge-card-content {
+    max-width: none;
+  }
+}
+
+@media (max-width: 620px) {
+  /* Status bar: tidy 2x2 grid instead of a clipped scrolling strip */
+  .dex-hud {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 14px;
+    padding: 10px 16px;
+    overflow: visible;
+  }
+
+  .dex-hud .hud-module,
+  .dex-hud .hud-location {
+    min-width: 0;
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  /* Hero visual: remove the empty space and stack the floating cards under the photo */
+  .hero-visual {
+    min-height: 0;
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .campus-frame {
+    width: 100%;
+    aspect-ratio: 1.3;
+  }
+
+  .campus-side-status {
+    display: none;
+  }
+
+  .campus-caption div {
+    flex-wrap: wrap;
+    line-height: 1.4;
+  }
+
+  .mission-card-float,
+  .hero-eligibility {
+    position: static;
+    width: 100%;
+    min-height: 60px;
+  }
+
+  /* Journey map: keep the artwork readable as a swipeable panorama instead of cropping it */
+  .trainer-journey-visual {
+    aspect-ratio: auto;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .trainer-journey-visual::-webkit-scrollbar {
+    display: none;
+  }
+
+  .trainer-journey-image {
+    position: static;
+    width: auto;
+    max-width: none;
+    height: 280px;
+    object-fit: contain;
+  }
+
+  .trainer-journey-scan {
+    display: none;
+  }
+
+  .trainer-journey-section::after {
+    content: "SWIPE TO EXPLORE \2192";
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    z-index: 3;
+    padding: 5px 9px;
+    background: rgba(3, 21, 34, 0.85);
+    border: 1px solid rgba(45, 226, 230, 0.35);
+    color: #2de2e6;
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  /* Schedule: icon beside the text, with the time above both */
+  .schedule-item {
+    grid-template-columns: 44px minmax(0, 1fr);
+    column-gap: 14px;
+    align-items: start;
+  }
+
+  .schedule-time {
+    grid-column: 1 / -1;
+  }
+
+  .schedule-content {
+    min-width: 0;
+  }
+}

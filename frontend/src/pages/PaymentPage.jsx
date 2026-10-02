@@ -1,9 +1,10 @@
 import axios from "axios";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./PaymentPage.css";
 import { API_URL } from "../config/api";
+import { PAYMENT_SETTINGS_KEY, readSessionJson, REGISTRATION_KEY } from "../config/session";
 
 const apiUrl = API_URL;
 
@@ -16,22 +17,30 @@ const buildUpiPaymentUri = (settings) => {
 
 export default function PaymentPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const registrationId = sessionStorage.getItem("dexathon_registration_id");
-  const [record, setRecord] = useState(null);
-  const [settings, setSettings] = useState(null);
+  // Render immediately from the registration handed over by the Register page and the cached payment settings.
+  const [registration, setRegistration] = useState(() => {
+    const handedOver = location.state?.registration || readSessionJson(REGISTRATION_KEY);
+    return handedOver?._id && handedOver._id === registrationId ? handedOver : null;
+  });
+  const [settings, setSettings] = useState(() => readSessionJson(PAYMENT_SETTINGS_KEY));
   const [transactionId, setTransactionId] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const record = useMemo(() => (registration && settings
+    ? { ...registration, payment: { ...registration.payment, amount: settings.registrationAmount ?? registration.payment.amount } }
+    : null), [registration, settings]);
 
   useEffect(() => {
     if (!registrationId) { navigate("/register", { replace: true }); return; }
-    Promise.all([axios.get(`${apiUrl}/registrations/${registrationId}`), axios.get(`${apiUrl}/payment-settings`)])
-      .then(([registration, paymentSettings]) => {
-        const currentSettings = paymentSettings.data;
-        setRecord({ ...registration.data, payment: { ...registration.data.payment, amount: currentSettings?.registrationAmount ?? registration.data.payment.amount } });
-        setSettings(currentSettings);
-      })
-      .catch(() => setMessage("Unable to load payment details. Please try again."));
+    const showError = () => setMessage("Unable to load payment details. Please try again.");
+    axios.get(`${apiUrl}/payment-settings`)
+      .then((response) => { setSettings(response.data); sessionStorage.setItem(PAYMENT_SETTINGS_KEY, JSON.stringify(response.data)); })
+      .catch(showError);
+    if (!registration) axios.get(`${apiUrl}/registrations/${registrationId}`).then((response) => setRegistration(response.data)).catch(showError);
+    // Only refetch when the registration changes, not when it is filled in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate, registrationId]);
 
   const paymentLink = useMemo(() => buildUpiPaymentUri(settings), [settings]);

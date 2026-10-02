@@ -10,7 +10,9 @@ import {
   ShieldCheck,
   Sparkles,
   Trophy,
+  X,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 const navItems = [
@@ -26,7 +28,18 @@ const navItems = [
   { label: "CONTACT", icon: Mail },
 ];
 
+const toHref = (label) => `#${label.toLowerCase().replaceAll(" ", "-")}`;
+
 export default function MainNavigation() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const closeOnEscape = (event) => { if (event.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
+
   return (
     <header className="dex-nav">
 
@@ -41,7 +54,7 @@ export default function MainNavigation() {
         <nav className="dex-nav-links">
           {navItems.map(({ label, icon: Icon }) => (
             <a
-              href={`#${label.toLowerCase().replaceAll(" ", "-")}`}
+              href={toHref(label)}
               key={label}
             >
               <Icon size={11} />
@@ -57,11 +70,33 @@ export default function MainNavigation() {
           </Link>
         </div>
 
-        <button className="dex-mobile-menu">
-          <Menu size={22} />
+        <button
+          type="button"
+          className="dex-mobile-menu"
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-expanded={menuOpen}
+          aria-controls="dex-mobile-panel"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
 
       </div>
+
+      {menuOpen && (
+        <nav id="dex-mobile-panel" className="dex-mobile-panel" aria-label="Mobile navigation">
+          {navItems.map(({ label, icon: Icon }) => (
+            <a href={toHref(label)} key={label} onClick={() => setMenuOpen(false)}>
+              <Icon size={14} />
+              <span>{label}</span>
+            </a>
+          ))}
+          <Link className="dex-mobile-register" to="/register" onClick={() => setMenuOpen(false)}>
+            REGISTER NOW
+            <ChevronRight size={17} />
+          </Link>
+        </nav>
+      )}
 
     </header>
   );
