@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { confirmPayment, getDashboard, getFaculty, getPayments, getRegistrations, login, resendPaymentConfirmationEmail, updateRegistration } from "../controllers/adminController.js";
+import { confirmPayment, getColleges, getDashboard, getFaculty, getPaymentEmailStatus, getPayments, getRegistrations, login, resendPaymentConfirmationEmail, updateRegistration } from "../controllers/adminController.js";
 import { getEvaluationSettings, listSubmissions, retrySelectionEmail, saveEvaluation, streamSubmissionPdf, updateEvaluationSettings } from "../controllers/evaluationController.js";
 import { updatePaymentSettings } from "../controllers/paymentSettingsController.js";
 import { bulkDeleteTeams, bulkUpdateTeams, deleteTeam } from "../controllers/teamManagementController.js";
@@ -20,6 +20,8 @@ router.get("/payments", getPayments);
 router.get("/payment-history", getPayments);
 router.put("/payments/:id/confirm", confirmPayment);
 router.post("/payments/:id/resend-email", resendPaymentConfirmationEmail);
+router.get("/payments/:id/email-status", getPaymentEmailStatus);
+router.get("/colleges", getColleges);
 router.get("/faculty", getFaculty);
 router.put("/payment-settings", updatePaymentSettings);
 router.get("/pdf-submissions", listSubmissions);

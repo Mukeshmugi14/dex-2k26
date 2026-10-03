@@ -1,9 +1,14 @@
 import axios from "axios";
 import { ImageUp, Pencil, RotateCcw, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
 import { API_URL } from "../config/api";
+import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
+
+const PAGE_SIZE = 20;
+// Logos are served as cacheable images (not embedded in the list JSON); the version busts the cache after edits.
+const logoUrl = (team) => `${API_URL}/registrations/${team._id}/logo?v=${new Date(team.updatedAt || 0).getTime()}`;
 import { resizeLogo } from "../utils/resizeLogo";
 
 const isEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
@@ -92,7 +97,7 @@ function EditTeamModal({ team, headers, onClose, onSaved }) {
     }
   };
 
-  const currentLogo = logo?.src || team.teamLogo;
+  const currentLogo = logo?.src || (team.hasLogo ? logoUrl(team) : null);
 
   return <div className="edit-team-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) onClose(); }}>
     <form className="edit-team-modal" role="dialog" aria-modal="true" aria-labelledby="edit-team-title" onSubmit={save} noValidate>
@@ -257,6 +262,10 @@ export default function AdminTeams() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
+  const [page, setPage] = useState(1);
+  const [paging, setPaging] = useState({ page: 1, pages: 1, total: 0 });
+  const [colleges, setColleges] = useState([]);
   const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState("");
   const [collegeFilter, setCollegeFilter] = useState("all");
@@ -269,30 +278,34 @@ export default function AdminTeams() {
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const logout = () => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); };
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); }, [navigate]);
 
-  const loadTeams = () => {
+  // One page of teams at a time, searched and filtered by the server (logos load lazily per card).
+  const loadTeams = useCallback(() => {
     setLoading(true);
     setLoadError("");
-    axios.get(`${API_URL}/admin/registrations`, { headers })
-      .then((response) => setTeams(response.data))
+    axios.get(`${API_URL}/admin/registrations`, { headers, params: { page, limit: PAGE_SIZE, search: debouncedSearch, college: collegeFilter } })
+      .then((response) => {
+        if (!response.data.items.length && response.data.total && page > 1) { setPage(response.data.pages); return; }
+        setTeams(response.data.items);
+        setPaging({ page: response.data.page, pages: response.data.pages, total: response.data.total });
+      })
       .catch((error) => {
         if (error.response?.status === 401) { logout(); return; }
         setLoadError(error.response?.data?.message || "Unable to load teams.");
       })
       .finally(() => setLoading(false));
-  };
+  }, [headers, page, debouncedSearch, collegeFilter, logout]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(loadTeams, []);
+  useEffect(() => { loadTeams(); }, [loadTeams]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, collegeFilter]);
+  // Selection is limited to what is on screen: changing page or filters clears it, so nothing unseen is edited or deleted.
+  useEffect(() => { setSelected(new Set()); }, [page, debouncedSearch, collegeFilter]);
+  useEffect(() => {
+    axios.get(`${API_URL}/admin/colleges`, { headers }).then((response) => setColleges(response.data.colleges)).catch(() => {});
+  }, [headers]);
 
-  const colleges = useMemo(() => [...new Set(teams.map((team) => team.college || team.collegeName).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [teams]);
-
-  const visibleTeams = useMemo(() => {
-    const term = search.trim().toLowerCase();
-    return teams.filter((team) => (collegeFilter === "all" || (team.college || team.collegeName) === collegeFilter)
-      && (!term || [team.teamName, team.teamId, team.leader?.name, team.leader?.email, team.college].some((value) => value?.toLowerCase().includes(term))));
-  }, [teams, search, collegeFilter]);
+  const visibleTeams = teams;
 
   // Selection only ever covers teams that still exist; "Select All" covers the teams currently visible.
   const selectedTeams = useMemo(() => teams.filter((team) => selected.has(team._id)), [teams, selected]);
@@ -327,6 +340,7 @@ export default function AdminTeams() {
     setTeams((current) => current.map((team) => byId.get(team._id) || team));
     setBulkEditing(false);
     setMessage(successMessage);
+    axios.get(`${API_URL}/admin/colleges`, { headers }).then((response) => setColleges(response.data.colleges)).catch(() => {});
   };
 
   const confirmDelete = async () => {
@@ -342,6 +356,7 @@ export default function AdminTeams() {
       setSelected((current) => new Set([...current].filter((id) => !removed.has(id))));
       setDeleteTargets(null);
       setMessage(response.data.message || "Team deleted successfully.");
+      loadTeams(); // pull the next teams onto this page and refresh the total
     } catch (error) {
       if (error.response?.status === 401) { logout(); return; }
       setDeleteError(error.response?.data?.message || "Unable to delete. Please try again.");
@@ -376,16 +391,16 @@ export default function AdminTeams() {
           <option value="all">All colleges</option>
           {colleges.map((name) => <option key={name} value={name}>{name}</option>)}
         </select>
-        <span>{visibleTeams.length} of {teams.length} teams</span>
+        <span>{paging.total} team{paging.total === 1 ? "" : "s"}</span>
       </div>
     </section>
 
-    {loading ? <p className="admin-teams-state">Loading teams...</p>
+    {loading && !teams.length ? <AdminSkeleton rows={4} variant="cards" />
       : loadError ? <div className="admin-teams-state error"><p>{loadError}</p><button type="button" onClick={loadTeams}>Retry</button></div>
-        : !visibleTeams.length ? <p className="admin-teams-state">{teams.length ? "No teams match your search." : "No teams have registered yet."}</p>
+        : !visibleTeams.length ? <p className="admin-teams-state">{debouncedSearch || collegeFilter !== "all" ? "No teams match your search." : "No teams have registered yet."}</p>
           : <section className="team-card-grid">{visibleTeams.map((team) => <article className={`team-card ${selected.has(team._id) ? "is-selected" : ""}`} key={team._id}>
             <label className="tm-card-check"><input type="checkbox" checked={selected.has(team._id)} onChange={() => toggleOne(team._id)} aria-label={`Select ${team.teamName}`} /><span>{selected.has(team._id) ? "Selected" : "Select"}</span></label>
-            <div className="team-card-logo">{team.teamLogo ? <img src={team.teamLogo} alt={`${team.teamName} logo`} /> : <span>NO LOGO</span>}</div>
+            <div className="team-card-logo">{team.hasLogo ? <img src={logoUrl(team)} alt={`${team.teamName} logo`} loading="lazy" decoding="async" width="84" height="84" /> : <span>NO LOGO</span>}</div>
             <dl>
               <div className="team-card-name"><dt>Team Name</dt><dd>{team.teamName}</dd></div>
               <div><dt>Team Head</dt><dd>{team.leader?.name}</dd></div>
@@ -401,6 +416,8 @@ export default function AdminTeams() {
               </div>
             </footer>
           </article>)}</section>}
+
+    <AdminPagination page={paging.page} pages={paging.pages} total={paging.total} limit={PAGE_SIZE} onChange={setPage} label="teams" />
 
     {editing ? <EditTeamModal team={editing} headers={headers} onClose={() => setEditing(null)} onSaved={handleSaved} /> : null}
     {bulkEditing ? <BulkEditModal teams={selectedTeams} colleges={colleges} headers={headers} onClose={() => setBulkEditing(false)} onSaved={handleBulkSaved} /> : null}

@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import { API_URL } from "../config/api";
+import { AdminPagination, AdminSkeleton, usePagedList } from "../components/AdminListParts";
 
 const STATUSES = ["Pending", "Submitted", "Under Review", "Selected", "Not Selected"];
 const RESULTS = ["Pending", "Selected", "Not Selected"];
@@ -210,6 +211,7 @@ export default function AdminPdfSubmissions() {
     return teams.filter((team) => (filter === "All" || team.pdfSubmission.status === filter)
       && (!term || [team.teamName, team.leader?.name, team.leader?.email, team.teamId].some((value) => value?.toLowerCase().includes(term))));
   }, [teams, filter, search]);
+  const paged = usePagedList(visibleTeams, 24, `${filter}|${search}`);
 
   const retryEmail = async (team) => {
     setRetrying(team._id);
@@ -256,10 +258,10 @@ export default function AdminPdfSubmissions() {
       </div>
     </section>
 
-    {loading ? <p className="admin-teams-state">Loading PDF submissions...</p>
+    {loading ? <AdminSkeleton rows={4} variant="cards" />
       : loadError ? <div className="admin-teams-state error"><p>{loadError}</p><button type="button" onClick={load}>Retry</button></div>
         : !visibleTeams.length ? <p className="admin-teams-state">{teams.length ? "No teams match this filter." : "No confirmed teams yet. Teams appear here once their payment is confirmed."}</p>
-          : <section className="team-card-grid pdf-card-grid">{visibleTeams.map((team) => {
+          : <section className="team-card-grid pdf-card-grid">{paged.pageItems.map((team) => {
             const status = team.pdfSubmission.status;
             const hasPdf = team.pdfSubmission.hasPdf;
             return <article className="team-card pdf-card" key={team._id}>
@@ -289,6 +291,7 @@ export default function AdminPdfSubmissions() {
               </footer>
             </article>;
           })}</section>}
+    {!loading && !loadError ? <AdminPagination page={paged.page} pages={paged.pages} total={paged.total} limit={paged.limit} onChange={paged.setPage} label="teams" /> : null}
 
     {evaluating ? <EvaluateModal team={evaluating} settings={settings} headers={headers} openPdf={openPdf} onClose={() => setEvaluating(null)} onSaved={handleSaved} /> : null}
   </main>;

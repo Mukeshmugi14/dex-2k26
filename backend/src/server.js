@@ -21,6 +21,8 @@ const allowedOrigins = [process.env.CLIENT_URL, process.env.FRONTEND_URL]
 app.use(cors({
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.includes(origin)),
   credentials: true,
+  // Let browsers cache the CORS preflight (OPTIONS) so authorised admin requests don't each cost an extra round trip.
+  maxAge: 7200,
 }));
 app.use(express.json({ limit: "4mb" }));
 app.use("/uploads", express.static("uploads"));

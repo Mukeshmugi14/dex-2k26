@@ -32,7 +32,7 @@ export const teamLogin = async (request, response) => {
 
 const loadOwnTeam = async (request) => {
   if (!mongoose.isValidObjectId(request.teamRegistrationId)) return null;
-  const team = await Registration.findById(request.teamRegistrationId);
+  const team = await Registration.findById(request.teamRegistrationId).select("-teamLogo");
   return team?.payment?.confirmedAt ? team : null;
 };
 

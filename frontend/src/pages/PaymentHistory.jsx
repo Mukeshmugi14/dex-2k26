@@ -1,97 +1,162 @@
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./PaymentHistory.css";
 import { API_URL } from "../config/api";
+import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
 const apiUrl = API_URL;
+const PAGE_SIZE = 20;
+const EMAIL_POLL_MS = 2000;
+const EMAIL_POLL_LIMIT = 30;
+const FILTERS = [["all", "All"], ["success", "Successful"], ["pending", "Pending"], ["failed", "Failed"], ["confirmed", "Confirmed"], ["not-confirmed", "Not Confirmed"]];
 const getPaymentCategory = (payment) => payment?.status === "Successful" ? "success" : payment?.status === "Failed" ? "failed" : "pending";
 const formatDate = (value) => value ? new Date(value).toLocaleString() : "—";
-const getPaymentRecords = (data) => Array.isArray(data) ? data : Array.isArray(data?.payments) ? data.payments : Array.isArray(data?.data) ? data.data : [];
+
+function EmailState({ payment }) {
+  const status = payment?.confirmationEmailStatus;
+  if (status === "Sending") return <span className="payment-email sending">Email: Sending…</span>;
+  if (status === "Sent") return <span className="payment-email sent">✓ Email sent</span>;
+  if (status === "Failed") return <span className="payment-email failed">⚠ Email could not be sent</span>;
+  return <span className="payment-email">Email: Not sent</span>;
+}
+
+// Memoized row: confirming or resending one payment only re-renders that row.
+const PaymentRow = memo(function PaymentRow({ row, busy, onConfirm, onResend }) {
+  const category = getPaymentCategory(row.payment);
+  const confirmed = Boolean(row.payment?.confirmedAt);
+  const sending = row.payment?.confirmationEmailStatus === "Sending";
+  return <tr>
+    <td>{confirmed ? <span className="confirmed-mark">✓ Confirmed</span>
+      : busy ? <span className="confirming-mark">Confirming...</span>
+        : <label className="confirm-checkbox"><input type="checkbox" checked={false} onChange={() => onConfirm(row)} disabled={!row.payment?.transactionId || category === "failed"} />Confirm Payment</label>}</td>
+    <td><b>{row.teamName}</b><small>{row.teamId}</small></td>
+    <td>{row.leader?.name || "—"}</td>
+    <td>{row.college}</td>
+    <td>₹{row.payment?.amount}</td>
+    <td>{row.payment?.transactionId || "—"}</td>
+    <td>
+      <span className={`payment-status ${category}`}>{category === "success" ? "SUCCESS" : category === "failed" ? "FAILED" : "PENDING"}</span>
+      {confirmed ? <small>Confirmed {formatDate(row.payment.confirmedAt)}<br />By {row.payment.confirmedBy}<br /><EmailState payment={row.payment} /></small> : null}
+      {confirmed ? <button type="button" className="resend-email" disabled={sending || busy} onClick={() => onResend(row)}>{sending ? "Sending…" : "Resend Email"}</button> : null}
+    </td>
+    <td>{formatDate(row.payment?.paidAt || row.payment?.confirmedAt || row.createdAt)}</td>
+  </tr>;
+});
 
 export default function PaymentHistory() {
   const [payments, setPayments] = useState([]);
+  const [summary, setSummary] = useState({ total: 0, successful: 0, pending: 0, failed: 0, amount: 0 });
+  const [paging, setPaging] = useState({ page: 1, pages: 1, total: 0 });
+  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
   const [confirmTarget, setConfirmTarget] = useState(null);
-  const [message, setMessage] = useState("");
+  const [busyId, setBusyId] = useState(null);
+  const [message, setMessage] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem("dexathon_admin_token");
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const headers = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
+  const pollers = useRef(new Map());
 
-  const loadPayments = async () => {
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); }, [navigate]);
+
+  const loadPayments = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
-      const response = await axios.get(`${apiUrl}/admin/payment-history`, { headers });
-      const records = getPaymentRecords(response.data);
-      if (!Array.isArray(records)) throw new Error("The payment history response was invalid.");
-      setPayments(records);
+      const response = await axios.get(`${apiUrl}/admin/payment-history`, { headers, params: { page, limit: PAGE_SIZE, status: statusFilter, search: debouncedSearch } });
+      setPayments(response.data.items);
+      setSummary(response.data.summary);
+      setPaging({ page: response.data.page, pages: response.data.pages, total: response.data.total });
     } catch (error) {
-      setPayments([]);
+      if (error.response?.status === 401) { logout(); return; }
       setLoadError(error.response?.data?.message || "Unable to load payment history.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [headers, page, statusFilter, debouncedSearch, logout]);
 
-  useEffect(() => { loadPayments(); }, []);
+  useEffect(() => { loadPayments(); }, [loadPayments]);
+  useEffect(() => { setPage(1); }, [statusFilter, debouncedSearch]);
+  useEffect(() => { const timers = pollers.current; return () => timers.forEach((timer) => clearTimeout(timer)); }, []);
 
-  const summary = useMemo(() => {
-    const successful = payments.filter((row) => getPaymentCategory(row.payment) === "success");
-    return {
-      total: payments.length,
-      successful: successful.length,
-      pending: payments.filter((row) => getPaymentCategory(row.payment) === "pending").length,
-      failed: payments.filter((row) => getPaymentCategory(row.payment) === "failed").length,
-      amount: successful.reduce((total, row) => total + (Number(row.payment?.amount) || 0), 0),
-    };
-  }, [payments]);
+  const replacePayment = useCallback((updated) => setPayments((current) => current.map((row) => (row._id === updated._id ? { ...row, ...updated, payment: { ...row.payment, ...updated.payment } } : row))), []);
 
-  const visiblePayments = useMemo(() => payments.filter((row) => {
-    const category = getPaymentCategory(row.payment);
-    const term = search.trim().toLowerCase();
-    const matchesSearch = !term || [row.teamName, row.teamId, row.leader?.name, row.college, row.payment?.transactionId].some((value) => value?.toLowerCase().includes(term));
-    return (statusFilter === "all" || category === statusFilter) && matchesSearch;
-  }), [payments, search, statusFilter]);
+  // While one row's email is "Sending", check only that row until it is Sent or Failed.
+  const watchEmail = useCallback((id, attempt = 0) => {
+    clearTimeout(pollers.current.get(id));
+    if (attempt >= EMAIL_POLL_LIMIT) return;
+    pollers.current.set(id, setTimeout(async () => {
+      try {
+        const { data } = await axios.get(`${apiUrl}/admin/payments/${id}/email-status`, { headers });
+        replacePayment({ _id: id, payment: data });
+        if (data.confirmationEmailStatus === "Sending") watchEmail(id, attempt + 1);
+        else pollers.current.delete(id);
+      } catch {
+        watchEmail(id, attempt + 1);
+      }
+    }, EMAIL_POLL_MS));
+  }, [headers, replacePayment]);
 
-  const replacePayment = (registration) => setPayments((current) => current.map((row) => row._id === registration._id ? registration : row));
   const confirmPayment = async () => {
-    if (!confirmTarget) return;
-    setSaving(true);
+    if (!confirmTarget || busyId) return;
+    const target = confirmTarget;
+    setBusyId(target._id);
+    setMessage(null);
     try {
-      const response = await axios.put(`${apiUrl}/admin/payments/${confirmTarget._id}/confirm`, {}, { headers });
+      const response = await axios.put(`${apiUrl}/admin/payments/${target._id}/confirm`, {}, { headers });
       replacePayment(response.data.registration);
-      setMessage(response.data.message);
+      if (!response.data.alreadyConfirmed && target.payment?.status !== "Successful") {
+        const wasFailed = target.payment?.status === "Failed";
+        setSummary((current) => ({ ...current, successful: current.successful + 1, pending: wasFailed ? current.pending : current.pending - 1, failed: wasFailed ? current.failed - 1 : current.failed, amount: current.amount + (Number(target.payment?.amount) || 0) }));
+      }
+      setMessage({ ok: true, text: response.data.alreadyConfirmed ? "Payment was already confirmed." : "Payment confirmed successfully." });
       setConfirmTarget(null);
+      if (response.data.registration?.payment?.confirmationEmailStatus === "Sending") watchEmail(target._id);
     } catch (error) {
-      setMessage(error.response?.data?.message || "Unable to confirm payment.");
+      if (error.response?.status === 401) { logout(); return; }
+      setMessage({ ok: false, text: error.response?.data?.message || "Unable to complete the action. Please try again." });
     } finally {
-      setSaving(false);
+      setBusyId(null);
     }
   };
-  const resendEmail = async (row) => {
+
+  const resendEmail = useCallback(async (row) => {
+    setMessage(null);
+    replacePayment({ _id: row._id, payment: { confirmationEmailStatus: "Sending" } });
     try {
       const response = await axios.post(`${apiUrl}/admin/payments/${row._id}/resend-email`, {}, { headers });
       replacePayment(response.data.registration);
-      setMessage(response.data.message);
+      setMessage({ ok: true, text: `${row.teamName}: sending the confirmation email…` });
+      watchEmail(row._id);
     } catch (error) {
-      setMessage(error.response?.data?.message || "Unable to resend confirmation email.");
+      if (error.response?.status === 401) { logout(); return; }
+      if (error.response?.data?.registration) replacePayment(error.response.data.registration);
+      else replacePayment({ _id: row._id, payment: { confirmationEmailStatus: row.payment?.confirmationEmailStatus } });
+      setMessage({ ok: false, text: error.response?.data?.message || "Unable to resend the confirmation email. Please try again." });
     }
-  };
-  const logout = () => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); };
+  }, [headers, replacePayment, watchEmail, logout]);
 
-  if (loadError) return <main className="payment-history"><section className="payment-history-error"><h1>Unable to load payment history.</h1><p>{loadError}</p><button type="button" onClick={loadPayments}>Retry</button></section></main>;
+  const openConfirm = useCallback((row) => setConfirmTarget(row), []);
+
+  const nav = <nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/teams">Teams</Link><Link to="/admin/pdf-submissions">PDF Submissions</Link><Link to="/admin/rounds">Round Status</Link><Link to="/admin/round-selection">Round Selection</Link><Link to="/admin/payment-settings">Payment Settings</Link><button type="button" onClick={logout}>Logout</button></nav>;
+
+  if (loadError && !payments.length && !loading) return <main className="payment-history"><section className="payment-history-error"><h1>Unable to load payment history.</h1><p>{loadError}</p><button type="button" onClick={loadPayments}>Retry</button></section></main>;
 
   return <main className="payment-history">
-    <header><div><p>DEXATHON 2026 ADMIN</p><h1>Payment History</h1><span>Track and verify all registration payments.</span></div><nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/teams">Teams</Link><Link to="/admin/pdf-submissions">PDF Submissions</Link><Link to="/admin/rounds">Round Status</Link><Link to="/admin/round-selection">Round Selection</Link><Link to="/admin/payment-settings">Payment Settings</Link><button type="button" onClick={logout}>Logout</button></nav></header>
-    {message ? <p className="payment-history-message">{message}</p> : null}
+    <header><div><p>DEXATHON 2026 ADMIN</p><h1>Payment History</h1><span>Track and verify all registration payments.</span></div>{nav}</header>
+    {message ? <p className={`payment-history-message ${message.ok ? "" : "is-error"}`} role="status">{message.text}</p> : null}
     <section className="payment-summary">{[["Total Payments", summary.total], ["Successful", summary.successful], ["Pending", summary.pending], ["Failed", summary.failed], ["Total Amount Received", `₹${summary.amount}`]].map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong></article>)}</section>
-    <section className="payment-history-filters"><div className="payment-history-status">{[["all", "All"], ["success", "Successful"], ["pending", "Pending"], ["failed", "Failed"]].map(([value, label]) => <button type="button" key={value} className={statusFilter === value ? "active" : ""} onClick={() => setStatusFilter(value)}>{label}</button>)}</div><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by Team / Transaction ID" /></section>
-    {loading ? <p className="payment-history-loading">Loading payment history...</p> : <div className="payment-history-table"><table><thead><tr><th>Select</th><th>Team</th><th>Team Head</th><th>College</th><th>Amount</th><th>Transaction ID</th><th>Status</th><th>Date</th></tr></thead><tbody>{visiblePayments.map((row) => { const category = getPaymentCategory(row.payment); const confirmed = Boolean(row.payment?.confirmedAt); return <tr key={row._id}><td>{confirmed ? <span className="confirmed-mark">Payment Confirmed</span> : <label className="confirm-checkbox"><input type="checkbox" checked={false} onChange={() => setConfirmTarget(row)} disabled={!row.payment?.transactionId || category === "failed"} />Confirm Payment</label>}</td><td><b>{row.teamName}</b><small>{row.teamId}</small></td><td>{row.leader?.name || "—"}</td><td>{row.college}</td><td>₹{row.payment?.amount}</td><td>{row.payment?.transactionId || "—"}</td><td><span className={`payment-status ${category}`}>{category === "success" ? "SUCCESS" : category === "failed" ? "FAILED" : "PENDING"}</span>{confirmed ? <small>Confirmed {formatDate(row.payment.confirmedAt)}<br />By {row.payment.confirmedBy}<br />Email: {row.payment.confirmationEmailStatus}</small> : null}{confirmed ? <button type="button" className="resend-email" onClick={() => resendEmail(row)}>Resend Email</button> : null}</td><td>{formatDate(row.payment?.paidAt || row.payment?.confirmedAt || row.createdAt)}</td></tr>; })}</tbody></table>{!visiblePayments.length ? <p className="payment-history-empty">{payments.length ? "No payment records match the selected filters." : "No payment records found."}</p> : null}</div>}
-    {confirmTarget ? <div className="confirmation-overlay" role="dialog" aria-modal="true"><section><h2>Confirm Payment</h2><p>Are you sure you want to confirm this payment?</p><dl><div><dt>Team</dt><dd>{confirmTarget.teamName}</dd></div><div><dt>Amount</dt><dd>₹{confirmTarget.payment?.amount}</dd></div><div><dt>Transaction ID</dt><dd>{confirmTarget.payment?.transactionId}</dd></div></dl><footer><button type="button" onClick={() => setConfirmTarget(null)} disabled={saving}>Cancel</button><button type="button" onClick={confirmPayment} disabled={saving}>{saving ? "Confirming..." : "Confirm Payment"}</button></footer></section></div> : null}
+    <section className="payment-history-filters"><div className="payment-history-status">{FILTERS.map(([value, label]) => <button type="button" key={value} className={statusFilter === value ? "active" : ""} onClick={() => setStatusFilter(value)}>{label}</button>)}</div><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by Team / Transaction ID" /></section>
+    {loadError ? <p className="payment-history-message is-error">{loadError} <button type="button" className="resend-email" onClick={loadPayments}>Retry</button></p> : null}
+    {loading && !payments.length ? <AdminSkeleton rows={6} /> : <div className={`payment-history-table ${loading ? "is-refreshing" : ""}`}><table><thead><tr><th>Select</th><th>Team</th><th>Team Head</th><th>College</th><th>Amount</th><th>Transaction ID</th><th>Status</th><th>Date</th></tr></thead><tbody>
+      {payments.map((row) => <PaymentRow key={row._id} row={row} busy={busyId === row._id} onConfirm={openConfirm} onResend={resendEmail} />)}
+    </tbody></table>{!payments.length ? <p className="payment-history-empty">{summary.total ? "No payment records match the selected filters." : "No payment records found."}</p> : null}</div>}
+    <AdminPagination page={paging.page} pages={paging.pages} total={paging.total} limit={PAGE_SIZE} onChange={setPage} label="payments" />
+    {confirmTarget ? <div className="confirmation-overlay" role="dialog" aria-modal="true"><section><h2>Confirm Payment</h2><p>Are you sure you want to confirm this payment?</p><dl><div><dt>Team</dt><dd>{confirmTarget.teamName}</dd></div><div><dt>Amount</dt><dd>₹{confirmTarget.payment?.amount}</dd></div><div><dt>Transaction ID</dt><dd>{confirmTarget.payment?.transactionId}</dd></div></dl><footer><button type="button" onClick={() => setConfirmTarget(null)} disabled={Boolean(busyId)}>Cancel</button><button type="button" onClick={confirmPayment} disabled={Boolean(busyId)}>{busyId ? "Confirming..." : "Confirm Payment"}</button></footer></section></div> : null}
   </main>;
 }

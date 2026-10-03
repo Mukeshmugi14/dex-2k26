@@ -6,6 +6,7 @@ import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import "./AdminRounds.css";
 import { API_URL } from "../config/api";
+import { AdminPagination, AdminSkeleton, usePagedList } from "../components/AdminListParts";
 
 const ROUND_KEYS = ["round1", "round2", "round3"];
 const LABELS = { PENDING: "Pending", COMPLETED: "Completed", LIVE: "Live", SELECTED: "Selected", NOT_SELECTED: "Not Selected", UPCOMING: "Upcoming" };
@@ -124,6 +125,7 @@ export default function AdminRounds() {
     return teams.filter((team) => (filter === "All" || team.current.status === filter)
       && (!term || [team.teamName, team.leader?.name, team.leader?.email, team.teamId].some((value) => value?.toLowerCase().includes(term))));
   }, [teams, filter, search]);
+  const paged = usePagedList(visibleTeams, 24, `${filter}|${search}`);
 
   const onUpdated = (updated, successMessage) => {
     setTeams((current) => current.map((team) => (team._id === updated._id ? updated : team)));
@@ -145,9 +147,10 @@ export default function AdminRounds() {
       <div className="pdf-toolbar-row"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search team name / team head / email" aria-label="Search teams" /></div>
     </section>
 
-    {loading ? <p className="admin-teams-state">Loading round status...</p>
+    {loading ? <AdminSkeleton rows={4} variant="cards" />
       : loadError ? <div className="admin-teams-state error"><p>{loadError}</p><button type="button" onClick={load}>Retry</button></div>
         : !visibleTeams.length ? <p className="admin-teams-state">{teams.length ? "No teams match this filter." : "No confirmed teams yet."}</p>
-          : <section className="team-card-grid pdf-card-grid">{visibleTeams.map((team) => <RoundCard key={team._id} team={team} allowed={allowed} headers={headers} onUpdated={onUpdated} onUnauthorized={logout} />)}</section>}
+          : <section className="team-card-grid pdf-card-grid">{paged.pageItems.map((team) => <RoundCard key={team._id} team={team} allowed={allowed} headers={headers} onUpdated={onUpdated} onUnauthorized={logout} />)}</section>}
+    {!loading && !loadError ? <AdminPagination page={paged.page} pages={paged.pages} total={paged.total} limit={paged.limit} onChange={paged.setPage} label="teams" /> : null}
   </main>;
 }

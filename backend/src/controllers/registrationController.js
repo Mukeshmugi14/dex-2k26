@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Registration from "../models/Registration.js";
 import PaymentSettings from "../models/PaymentSettings.js";
 
@@ -30,7 +31,22 @@ export const createRegistration = async (request, response) => {
 };
 
 export const getRegistration = async (request, response) => {
-  const registration = await Registration.findById(request.params.id);
+  // The payment / thank-you pages never show the logo, so don't send it (it can be over 1 MB).
+  const registration = await Registration.findById(request.params.id).select("-teamLogo");
   if (!registration) return response.status(404).json({ message: "Registration not found." });
   return response.json(registration);
+};
+
+// Team logo as a real, cacheable image so admin lists can lazy-load it instead of embedding base64 in JSON.
+export const getRegistrationLogo = async (request, response) => {
+  if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).end();
+  const team = await Registration.findById(request.params.id, "teamLogo updatedAt").lean();
+  const match = typeof team?.teamLogo === "string" ? /^data:(image\/(?:png|jpeg));base64,(.+)$/s.exec(team.teamLogo) : null;
+  if (!match) return response.status(404).end();
+  const etag = `"${new Date(team.updatedAt || 0).getTime()}-${team.teamLogo.length}"`;
+  response.setHeader("ETag", etag);
+  response.setHeader("Cache-Control", "public, max-age=86400");
+  if (request.headers["if-none-match"] === etag) return response.status(304).end();
+  response.setHeader("Content-Type", match[1]);
+  return response.send(Buffer.from(match[2], "base64"));
 };

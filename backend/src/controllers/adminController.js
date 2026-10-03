@@ -15,31 +15,122 @@ export const login = async (request, response) => {
   return response.json({ success: true, token: jwt.sign({ id: admin.id, username: admin.username }, process.env.JWT_SECRET, { expiresIn: "8h" }), admin: { username: admin.username } });
 };
 
+// ---------- Admin lists: computed in MongoDB, paginated, and never carrying the (large) team logos ----------
+
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const searchFilter = (search, fields) => {
+  const term = typeof search === "string" ? search.trim().slice(0, 100) : "";
+  if (!term) return {};
+  const pattern = new RegExp(escapeRegex(term), "i");
+  return { $or: fields.map((field) => ({ [field]: pattern })) };
+};
+const pageParams = (query, defaultLimit = 20) => {
+  const limit = Math.min(Math.max(Number.parseInt(query.limit, 10) || defaultLimit, 1), 100);
+  const page = Math.max(Number.parseInt(query.page, 10) || 1, 1);
+  return { page, limit, skip: (page - 1) * limit };
+};
+const SECRET_FIELDS = { "pdfSubmission.tokenHash": 0, "pdfSubmission.legacyTokenHash": 0, "pdfSubmission.linkSalt": 0 };
+const paymentCategory = {
+  success: { "payment.status": "Successful" },
+  failed: { "payment.status": "Failed" },
+  pending: { "payment.status": { $nin: ["Successful", "Failed"] } },
+  confirmed: { "payment.confirmedAt": { $ne: null } },
+  "not-confirmed": { "payment.confirmedAt": null },
+};
+
 export const getDashboard = async (_request, response) => {
-  const registrations = await Registration.find();
-  const successful = registrations.filter(({ payment }) => payment.status === "Successful" && payment.confirmedAt);
+  const [stats = {}] = await Registration.aggregate([
+    { $group: {
+      _id: null,
+      total: { $sum: 1 },
+      participants: { $sum: { $size: { $ifNull: ["$members", []] } } },
+      faculty: { $sum: { $cond: [{ $gt: [{ $strLenCP: { $ifNull: ["$mentor.name", ""] } }, 0] }, 1, 0] } },
+      successful: { $sum: { $cond: [{ $and: [{ $eq: ["$payment.status", "Successful"] }, { $ne: [{ $ifNull: ["$payment.confirmedAt", null] }, null] }] }, 1, 0] } },
+      amount: { $sum: { $cond: [{ $and: [{ $eq: ["$payment.status", "Successful"] }, { $ne: [{ $ifNull: ["$payment.confirmedAt", null] }, null] }] }, { $ifNull: ["$payment.amount", 0] }, 0] } },
+      pending: { $sum: { $cond: [{ $in: ["$payment.status", ["Successful", "Failed"]] }, 0, 1] } },
+      failed: { $sum: { $cond: [{ $eq: ["$payment.status", "Failed"] }, 1, 0] } },
+    } },
+  ]);
   return response.json({
-    totalRegistrations: registrations.length,
-    totalTeams: registrations.length,
-    totalParticipants: registrations.reduce((total, item) => total + item.members.length, 0),
-    totalFacultyRegistrations: registrations.filter((item) => item.mentor?.name).length,
-    totalAmount: successful.reduce((total, item) => total + item.payment.amount, 0),
-    successfulPayments: successful.length,
-    pendingPayments: registrations.filter(({ payment }) => payment.status !== "Successful" && payment.status !== "Failed").length,
-    failedPayments: registrations.filter(({ payment }) => payment.status === "Failed").length,
+    totalRegistrations: stats.total || 0,
+    totalTeams: stats.total || 0,
+    totalParticipants: stats.participants || 0,
+    totalFacultyRegistrations: stats.faculty || 0,
+    totalAmount: stats.amount || 0,
+    successfulPayments: stats.successful || 0,
+    pendingPayments: stats.pending || 0,
+    failedPayments: stats.failed || 0,
   });
 };
 
+// Paginated team/registration list. Logos are replaced by a hasLogo flag (served lazily by /api/registrations/:id/logo),
+// except for ?all=1&includeLogos=1 which the A4 print view uses.
 export const getRegistrations = async (request, response) => {
-  const search = request.query.search ? new RegExp(request.query.search, "i") : null;
-  const filter = search ? { $or: [{ teamName: search }, { teamId: search }, { registrationNumber: search }, { "leader.name": search }, { "leader.email": search }, { college: search }, { "payment.transactionId": search }] } : {};
-  return response.json(await Registration.find(filter).sort({ createdAt: -1 }));
+  const { query } = request;
+  const filters = [searchFilter(query.search, ["teamName", "teamId", "registrationNumber", "leader.name", "leader.email", "college", "payment.transactionId"])];
+  if (query.college === "sathyabama") filters.push({ college: /^sathyabama institute of science and technology$/i });
+  else if (query.college === "other") filters.push({ college: { $not: /^sathyabama institute of science and technology$/i } });
+  else if (query.college && query.college !== "all") filters.push({ college: String(query.college) });
+  if (paymentCategory[query.status]) filters.push(paymentCategory[query.status]);
+  const match = { $and: filters };
+
+  const all = query.all === "1";
+  const includeLogos = all && query.includeLogos === "1";
+  const { page, limit, skip } = all ? { page: 1, limit: 2000, skip: 0 } : pageParams(query);
+  const projection = includeLogos ? SECRET_FIELDS : { ...SECRET_FIELDS, teamLogo: 0 };
+
+  const [result] = await Registration.aggregate([
+    { $match: match },
+    { $sort: { createdAt: -1 } },
+    { $facet: {
+      items: [{ $skip: skip }, { $limit: limit }, { $addFields: { hasLogo: { $gt: [{ $strLenBytes: { $ifNull: ["$teamLogo", ""] } }, 0] } } }, { $project: projection }],
+      total: [{ $count: "n" }],
+    } },
+  ]);
+  const total = result.total[0]?.n || 0;
+  return response.json({ items: result.items, total, page, limit, pages: Math.max(Math.ceil(total / limit), 1) });
 };
 
-export const getPayments = async (_request, response) => response.json(await Registration.find({}, "teamId teamName college leader payment createdAt").sort({ createdAt: -1 }));
+export const getColleges = async (_request, response) => {
+  const colleges = (await Registration.distinct("college")).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  return response.json({ colleges });
+};
+
+const PAYMENT_FIELDS = { teamId: 1, teamName: 1, college: 1, "leader.name": 1, "leader.email": 1, payment: 1, createdAt: 1 };
+
+// Paginated, server-filtered payment history with whole-collection summary totals.
+export const getPayments = async (request, response) => {
+  const { query } = request;
+  const { page, limit, skip } = pageParams(query);
+  const filters = [searchFilter(query.search, ["teamName", "teamId", "leader.name", "college", "payment.transactionId"])];
+  if (paymentCategory[query.status]) filters.push(paymentCategory[query.status]);
+  const match = { $and: filters };
+
+  const [[summary = {}], items, total] = await Promise.all([
+    Registration.aggregate([{ $group: {
+      _id: null,
+      total: { $sum: 1 },
+      successful: { $sum: { $cond: [{ $eq: ["$payment.status", "Successful"] }, 1, 0] } },
+      failed: { $sum: { $cond: [{ $eq: ["$payment.status", "Failed"] }, 1, 0] } },
+      amount: { $sum: { $cond: [{ $eq: ["$payment.status", "Successful"] }, { $ifNull: ["$payment.amount", 0] }, 0] } },
+    } }]),
+    Registration.find(match, PAYMENT_FIELDS).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Registration.countDocuments(match),
+  ]);
+  return response.json({
+    items, total, page, limit, pages: Math.max(Math.ceil(total / limit), 1),
+    summary: { total: summary.total || 0, successful: summary.successful || 0, failed: summary.failed || 0, pending: (summary.total || 0) - (summary.successful || 0) - (summary.failed || 0), amount: summary.amount || 0 },
+  });
+};
 export const getFaculty = async (_request, response) => response.json(await Registration.find({ "mentor.name": { $ne: "" } }, "mentor college teamName createdAt"));
 
 const MAX_LOGO_LENGTH = 1_500_000;
+
+// List-shaped team record: the (large) logo is replaced by a hasLogo flag; it is fetched separately when shown.
+export const toListItem = (doc) => {
+  const { teamLogo, ...rest } = doc.toJSON ? doc.toJSON() : doc;
+  return { ...rest, hasLogo: Boolean(teamLogo) };
+};
 const SATHYABAMA = "sathyabama institute of science and technology";
 
 // College is stored in two fields plus a type; keep all three consistent.
@@ -86,69 +177,92 @@ export const updateRegistration = async (request, response) => {
   if (logo) registration.teamLogo = logo;
   await registration.save();
 
-  return response.json({ success: true, message: "Team details updated successfully.", registration });
+  return response.json({ success: true, message: "Team details updated successfully.", registration: toListItem(registration) });
 };
 
-const updateConfirmationEmailStatus = async (registration) => {
-  try {
-    console.log(`Starting payment confirmation email for ${registration._id} to ${registration.leader?.email || "missing recipient"}.`);
-    // Every confirmation email (including resends) carries the team's one permanent PDF submission link.
-    const submissionToken = await issueSubmissionToken(registration._id);
-    const sent = await sendPaymentConfirmationEmail(registration, { submissionUrl: buildSubmissionUrl(submissionToken) });
-    registration.payment.confirmationEmailStatus = sent ? "Sent" : "Failed";
-    if (sent) registration.payment.confirmationEmailSentAt = new Date();
-    await registration.save();
-    console.log(`Payment confirmation email ${sent ? "sent" : "not accepted"} for ${registration._id}.`);
-    return sent;
-  } catch (error) {
-    console.error("Confirmation Email Error:", error);
-    console.error("Error details:", {
-      registrationId: registration._id,
-      recipient: registration.leader?.email || null,
-      code: error.code || null,
-      responseCode: error.responseCode || null,
-      message: error.message,
-    });
-    registration.payment.confirmationEmailStatus = "Failed";
-    await registration.save();
-    return false;
-  }
+// ---------- Payment confirmation: fast database update, confirmation email in the background ----------
+
+const EMAIL_SENDING_TIMEOUT_MS = 2 * 60 * 1000;
+
+// Sends the confirmation email after the HTTP response has gone out, then records Sent/Failed on the payment.
+const sendConfirmationEmailInBackground = (registrationId) => {
+  setImmediate(async () => {
+    let sent = false;
+    let recipient = null;
+    try {
+      const registration = await Registration.findById(registrationId);
+      recipient = registration?.leader?.email || null;
+      console.log(`Starting payment confirmation email for ${registrationId} to ${recipient || "missing recipient"}.`);
+      // Every confirmation email (including resends) carries the team's one permanent PDF submission link.
+      const submissionToken = await issueSubmissionToken(registrationId);
+      sent = await sendPaymentConfirmationEmail(registration, { submissionUrl: buildSubmissionUrl(submissionToken) });
+      console.log(`Payment confirmation email ${sent ? "sent" : "not accepted"} for ${registrationId}.`);
+    } catch (error) {
+      console.error("Confirmation Email Error:", { registrationId: String(registrationId), recipient, code: error.code || null, responseCode: error.responseCode || null, message: error.message });
+    }
+    await Registration.updateOne({ _id: registrationId }, sent
+      ? { $set: { "payment.confirmationEmailStatus": "Sent", "payment.confirmationEmailSentAt": new Date() } }
+      : { $set: { "payment.confirmationEmailStatus": "Failed" } }).catch((error) => console.error("Unable to record confirmation email status:", error.message));
+  });
+};
+
+// A "Sending" status that never finished (e.g. the server restarted mid-send) is reported as Failed so it can be resent.
+const effectiveEmailStatus = (payment) => (payment?.confirmationEmailStatus === "Sending" && payment.confirmationEmailAttemptAt && Date.now() - new Date(payment.confirmationEmailAttemptAt).getTime() > EMAIL_SENDING_TIMEOUT_MS
+  ? "Failed" : payment?.confirmationEmailStatus || "Not Sent");
+
+const paymentRow = (doc) => {
+  const row = doc.toObject ? doc.toObject() : doc;
+  return { ...row, payment: { ...row.payment, confirmationEmailStatus: effectiveEmailStatus(row.payment) } };
 };
 
 export const confirmPayment = async (request, response) => {
-  const registration = await Registration.findById(request.params.id);
-  if (!registration) return response.status(404).json({ message: "Registration not found." });
-  if (registration.payment.confirmedAt) return response.json({ success: true, alreadyConfirmed: true, registration });
-  if (!registration.payment.transactionId) return response.status(400).json({ message: "A transaction ID is required before confirming payment." });
+  if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ message: "Registration not found." });
+  const now = new Date();
+  // One atomic update: only an unconfirmed payment with a transaction ID can be confirmed (also makes double clicks harmless).
+  const confirmed = await Registration.findOneAndUpdate(
+    { _id: request.params.id, "payment.confirmedAt": null, "payment.transactionId": { $nin: [null, ""] } },
+    { $set: { "payment.status": "Successful", "payment.confirmedAt": now, "payment.confirmedBy": request.admin.username, "payment.confirmationEmailStatus": "Sending", "payment.confirmationEmailAttemptAt": now } },
+    { new: true, projection: PAYMENT_FIELDS, lean: true },
+  );
 
-  registration.payment.status = "Successful";
-  registration.payment.confirmedAt = new Date();
-  registration.payment.confirmedBy = request.admin.username;
-  await registration.save();
+  if (!confirmed) {
+    const existing = await Registration.findById(request.params.id, PAYMENT_FIELDS).lean();
+    if (!existing) return response.status(404).json({ message: "Registration not found." });
+    if (existing.payment?.confirmedAt) return response.json({ success: true, alreadyConfirmed: true, paymentConfirmed: true, message: "Payment was already confirmed.", registration: paymentRow(existing) });
+    return response.status(400).json({ message: "A transaction ID is required before confirming payment." });
+  }
 
-  console.log(`Payment confirmed successfully for ${registration._id}.`);
-
-  const emailSent = await updateConfirmationEmailStatus(registration);
-  return response.json({
-    success: true,
-    paymentConfirmed: true,
-    emailSent,
-    message: emailSent ? "Payment confirmed and confirmation email sent." : "Payment confirmed, but confirmation email failed.",
-    registration,
-  });
+  console.log(`Payment confirmed successfully for ${confirmed._id}.`);
+  response.json({ success: true, paymentConfirmed: true, emailStatus: "Sending", message: "Payment confirmed successfully. Sending the confirmation email…", registration: paymentRow(confirmed) });
+  sendConfirmationEmailInBackground(confirmed._id);
 };
 
 export const resendPaymentConfirmationEmail = async (request, response) => {
-  const registration = await Registration.findById(request.params.id);
-  if (!registration) return response.status(404).json({ message: "Registration not found." });
-  if (!registration.payment.confirmedAt) return response.status(400).json({ message: "Confirm the payment before sending its confirmation email." });
+  if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ message: "Registration not found." });
+  const now = new Date();
+  const queued = await Registration.findOneAndUpdate(
+    {
+      _id: request.params.id,
+      "payment.confirmedAt": { $ne: null },
+      $or: [{ "payment.confirmationEmailStatus": { $ne: "Sending" } }, { "payment.confirmationEmailAttemptAt": { $lt: new Date(now.getTime() - EMAIL_SENDING_TIMEOUT_MS) } }],
+    },
+    { $set: { "payment.confirmationEmailStatus": "Sending", "payment.confirmationEmailAttemptAt": now } },
+    { new: true, projection: PAYMENT_FIELDS, lean: true },
+  );
+  if (!queued) {
+    const existing = await Registration.findById(request.params.id, PAYMENT_FIELDS).lean();
+    if (!existing) return response.status(404).json({ message: "Registration not found." });
+    if (!existing.payment?.confirmedAt) return response.status(400).json({ message: "Confirm the payment before sending its confirmation email." });
+    return response.status(409).json({ message: "The confirmation email is already being sent.", registration: paymentRow(existing) });
+  }
+  response.json({ success: true, paymentConfirmed: true, emailStatus: "Sending", message: "Sending the confirmation email…", registration: paymentRow(queued) });
+  sendConfirmationEmailInBackground(queued._id);
+};
 
-  const emailSent = await updateConfirmationEmailStatus(registration);
-  return response.json({
-    success: emailSent,
-    paymentConfirmed: true,
-    emailSent,
-    message: emailSent ? "Confirmation email sent." : "Confirmation email could not be sent.",
-    registration,
-  });
+// Lightweight poll target for one row's email status (used only while that row shows "Sending").
+export const getPaymentEmailStatus = async (request, response) => {
+  if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ message: "Registration not found." });
+  const row = await Registration.findById(request.params.id, { "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1 }).lean();
+  if (!row) return response.status(404).json({ message: "Registration not found." });
+  return response.json({ confirmationEmailStatus: effectiveEmailStatus(row.payment), confirmationEmailSentAt: row.payment?.confirmationEmailSentAt || null });
 };

@@ -8,13 +8,18 @@ import { getTeamLoginUrl, getTeamPortalPassword } from "./submissionService.js";
 // Team Head Portal login details included in team emails (the email address itself comes from each team record).
 const portalAccess = () => ({ loginUrl: getTeamLoginUrl(), password: getTeamPortalPassword() });
 
+// One pooled SMTP transport for the whole process: reuses the authenticated connection instead of
+// opening (and verifying) a new one for every email.
+let mailer = null;
 const createMailer = () => {
-  console.log("EMAIL_USER exists:", Boolean(process.env.EMAIL_USER));
-  console.log("EMAIL_PASSWORD exists:", Boolean(process.env.EMAIL_PASSWORD));
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
     throw new Error("Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD in the backend environment.");
   }
-  return nodemailer.createTransport({ service: "gmail", auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD } });
+  if (!mailer) {
+    console.log("EMAIL_USER exists:", true, "| EMAIL_PASSWORD exists:", true);
+    mailer = nodemailer.createTransport({ service: "gmail", pool: true, maxConnections: 3, auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD } });
+  }
+  return mailer;
 };
 
 const getRecipientEmail = (registration) => {
@@ -38,9 +43,6 @@ export const sendConfirmationEmail = async (registration) => {
 export const sendPaymentConfirmationEmail = async (registration, { submissionUrl } = {}) => {
   const mailer = createMailer();
   const recipientEmail = getRecipientEmail(registration);
-
-  await mailer.verify();
-
   const { html, text } = buildPaymentConfirmationEmail(registration, { submissionUrl, portal: portalAccess() });
   const result = await mailer.sendMail({
     from: process.env.EMAIL_USER,

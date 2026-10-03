@@ -6,6 +6,7 @@ import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import "./AdminRoundSelection.css";
 import { API_URL } from "../config/api";
+import { AdminPagination, AdminSkeleton, usePagedList } from "../components/AdminListParts";
 
 const ROUNDS = [1, 2, 3];
 const FINAL_ROUND = 3;
@@ -150,6 +151,7 @@ export default function AdminRoundSelection() {
     return teams.filter((team) => matchesFilters(team, roundFilter, statusFilter)
       && (!term || [team.teamName, team.leader?.name, team.leader?.email].some((value) => value?.toLowerCase().includes(term))));
   }, [teams, roundFilter, statusFilter, search]);
+  const paged = usePagedList(visibleTeams, 24, `${roundFilter}|${statusFilter}|${search}`);
 
   const confirmDecision = async () => {
     setBusy(true);
@@ -206,10 +208,11 @@ export default function AdminRoundSelection() {
       <div className="pdf-toolbar-row"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search Team Name / Team Head / Email" aria-label="Search teams" /><span className="rs-count">{visibleTeams.length} of {teams.length} teams</span></div>
     </section>
 
-    {loading ? <p className="admin-teams-state">Loading teams...</p>
+    {loading ? <AdminSkeleton rows={4} variant="cards" />
       : loadError ? <div className="admin-teams-state error"><p>{loadError}</p><button type="button" onClick={load}>Retry</button></div>
         : !visibleTeams.length ? <p className="admin-teams-state">{teams.length ? "No teams match these filters." : "No confirmed teams yet."}</p>
-          : <section className="team-card-grid pdf-card-grid">{visibleTeams.map((team) => <TeamCard key={team._id} team={team} retrying={retrying} onRetry={retry} onDecide={(t, round, decision) => { setMessage(null); setPending({ team: t, round, decision }); }} />)}</section>}
+          : <section className="team-card-grid pdf-card-grid">{paged.pageItems.map((team) => <TeamCard key={team._id} team={team} retrying={retrying} onRetry={retry} onDecide={(t, round, decision) => { setMessage(null); setPending({ team: t, round, decision }); }} />)}</section>}
+    {!loading && !loadError ? <AdminPagination page={paged.page} pages={paged.pages} total={paged.total} limit={paged.limit} onChange={paged.setPage} label="teams" /> : null}
 
     {pending ? <ConfirmDialog pending={pending} busy={busy} onCancel={() => setPending(null)} onConfirm={confirmDecision} /> : null}
   </main>;

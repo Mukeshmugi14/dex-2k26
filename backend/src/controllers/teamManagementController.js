@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import Registration from "../models/Registration.js";
 import { ALLOWED_ROUND_STATUSES, normalizeRounds, readRounds, ROUND_KEYS } from "../services/roundService.js";
 import { deletePdf } from "../services/submissionService.js";
-import { setCollege } from "./adminController.js";
+import { setCollege, toListItem } from "./adminController.js";
 import { sendRoundEmailOnce } from "./roundsController.js";
 
 const MAX_BULK = 500;
@@ -84,5 +84,5 @@ export const bulkUpdateTeams = async (request, response) => {
 
   const updated = await Registration.find({ _id: { $in: teams.map((team) => team._id) } });
   const emailText = request.body.notify === true ? ` ${emailed} round update email${emailed === 1 ? "" : "s"} sent${failed ? `, ${failed} failed (resend from Round Status)` : ""}.` : "";
-  return response.json({ success: true, message: `${teams.length} team${teams.length === 1 ? "" : "s"} updated successfully.${emailText}`, teams: updated });
+  return response.json({ success: true, message: `${teams.length} team${teams.length === 1 ? "" : "s"} updated successfully.${emailText}`, teams: updated.map(toListItem) });
 };
