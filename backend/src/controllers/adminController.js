@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import Registration from "../models/Registration.js";
 import { sendPaymentConfirmationEmail } from "../services/emailService.js";
+import { buildSubmissionUrl, issueSubmissionToken } from "../services/submissionService.js";
 
 export const login = async (request, response) => {
   const { username, password } = request.body;
@@ -39,6 +40,14 @@ export const getPayments = async (_request, response) => response.json(await Reg
 export const getFaculty = async (_request, response) => response.json(await Registration.find({ "mentor.name": { $ne: "" } }, "mentor college teamName createdAt"));
 
 const MAX_LOGO_LENGTH = 1_500_000;
+const SATHYABAMA = "sathyabama institute of science and technology";
+
+// College is stored in two fields plus a type; keep all three consistent.
+export const setCollege = (registration, college) => {
+  registration.college = college;
+  registration.collegeName = college;
+  registration.collegeType = college.toLowerCase() === SATHYABAMA ? "sathyabama" : "other";
+};
 const cleanText = (value) => (typeof value === "string" ? value.trim() : "");
 
 // Edits the team details of an existing registration in place; IDs and payment data are never touched.
@@ -60,6 +69,8 @@ export const updateRegistration = async (request, response) => {
   } else {
     members.forEach((member, index) => { if (!cleanText(member?.name)) errors[`member-${index}`] = "Member name is required."; });
   }
+  const nextCollege = request.body.college === undefined ? undefined : cleanText(request.body.college);
+  if (nextCollege !== undefined && !nextCollege) errors.college = "College is required.";
   if (logo !== undefined && logo !== null && logo !== "") {
     if (typeof logo !== "string" || !/^data:image\/(png|jpeg);base64,/.test(logo)) errors.logo = "Logo must be a PNG or JPG image.";
     else if (logo.length > MAX_LOGO_LENGTH) errors.logo = "Logo image is too large.";
@@ -71,6 +82,7 @@ export const updateRegistration = async (request, response) => {
   registration.leader.email = nextLeader.email;
   registration.leader.phone = nextLeader.phone;
   members.forEach((member, index) => { registration.members[index].name = cleanText(member.name); });
+  if (nextCollege !== undefined) setCollege(registration, nextCollege);
   if (logo) registration.teamLogo = logo;
   await registration.save();
 
@@ -80,7 +92,9 @@ export const updateRegistration = async (request, response) => {
 const updateConfirmationEmailStatus = async (registration) => {
   try {
     console.log(`Starting payment confirmation email for ${registration._id} to ${registration.leader?.email || "missing recipient"}.`);
-    const sent = await sendPaymentConfirmationEmail(registration);
+    // Every confirmation email (including resends) carries the team's one permanent PDF submission link.
+    const submissionToken = await issueSubmissionToken(registration._id);
+    const sent = await sendPaymentConfirmationEmail(registration, { submissionUrl: buildSubmissionUrl(submissionToken) });
     registration.payment.confirmationEmailStatus = sent ? "Sent" : "Failed";
     if (sent) registration.payment.confirmationEmailSentAt = new Date();
     await registration.save();

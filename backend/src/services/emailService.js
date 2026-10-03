@@ -1,5 +1,12 @@
 import nodemailer from "nodemailer";
 import { buildPaymentConfirmationEmail, POSTER_CID, POSTER_IMAGE_PATH } from "../templates/paymentConfirmationEmail.js";
+import { buildSelectionEmail } from "../templates/resultEmail.js";
+import { buildRoundResultEmail } from "../templates/roundResultEmail.js";
+import { buildRoundUpdateEmail } from "../templates/roundUpdateEmail.js";
+import { getTeamLoginUrl, getTeamPortalPassword } from "./submissionService.js";
+
+// Team Head Portal login details included in team emails (the email address itself comes from each team record).
+const portalAccess = () => ({ loginUrl: getTeamLoginUrl(), password: getTeamPortalPassword() });
 
 const createMailer = () => {
   console.log("EMAIL_USER exists:", Boolean(process.env.EMAIL_USER));
@@ -28,13 +35,13 @@ export const sendConfirmationEmail = async (registration) => {
   });
 };
 
-export const sendPaymentConfirmationEmail = async (registration) => {
+export const sendPaymentConfirmationEmail = async (registration, { submissionUrl } = {}) => {
   const mailer = createMailer();
   const recipientEmail = getRecipientEmail(registration);
 
   await mailer.verify();
 
-  const { html, text } = buildPaymentConfirmationEmail(registration);
+  const { html, text } = buildPaymentConfirmationEmail(registration, { submissionUrl, portal: portalAccess() });
   const result = await mailer.sendMail({
     from: process.env.EMAIL_USER,
     to: recipientEmail,
@@ -46,6 +53,42 @@ export const sendPaymentConfirmationEmail = async (registration) => {
   const accepted = result.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
   if (accepted) console.log("Confirmation email sent successfully", { messageId: result.messageId, response: result.response });
   else console.error("Confirmation Email Error: recipient not accepted by SMTP server", { accepted: result.accepted, rejected: result.rejected, response: result.response });
+  return accepted;
+};
+
+// Second-round selection email to the team head's registered email. Returns true only if the SMTP server accepted it.
+export const sendSelectionEmail = async (registration) => {
+  const mailer = createMailer();
+  const recipientEmail = getRecipientEmail(registration);
+  const { subject, html, text } = buildSelectionEmail(registration);
+  const sent = await mailer.sendMail({ from: process.env.EMAIL_USER, to: recipientEmail, subject, html, text });
+  const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
+  if (accepted) console.log("Second round selection email sent successfully", { messageId: sent.messageId });
+  else console.error("Second Round Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
+  return accepted;
+};
+
+// Round update email to the team head's registered email. Returns true only if the SMTP server accepted it.
+export const sendRoundUpdateEmail = async (registration, rounds) => {
+  const mailer = createMailer();
+  const recipientEmail = getRecipientEmail(registration);
+  const { subject, html, text } = buildRoundUpdateEmail(registration, rounds, portalAccess());
+  const sent = await mailer.sendMail({ from: process.env.EMAIL_USER, to: recipientEmail, subject, html, text });
+  const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
+  if (accepted) console.log("Round update email sent successfully", { messageId: sent.messageId });
+  else console.error("Round Update Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
+  return accepted;
+};
+
+// Round Selection result email (Selected / Rejected for a specific round) to the team head's registered email.
+export const sendRoundResultEmail = async (registration, round, decision) => {
+  const mailer = createMailer();
+  const recipientEmail = getRecipientEmail(registration);
+  const { subject, html, text } = buildRoundResultEmail(registration, round, decision, portalAccess());
+  const sent = await mailer.sendMail({ from: process.env.EMAIL_USER, to: recipientEmail, subject, html, text });
+  const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
+  if (accepted) console.log(`Round ${round} ${decision} email sent successfully`, { messageId: sent.messageId });
+  else console.error("Round Result Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
   return accepted;
 };
 

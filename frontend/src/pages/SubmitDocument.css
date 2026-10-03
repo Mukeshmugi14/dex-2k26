@@ -1,0 +1,59 @@
+.submit-doc{min-height:100vh;display:grid;place-items:center;padding:32px 16px;background:#050914;color:#f7fbff;font-family:Arial,sans-serif}
+.submit-doc *,.submit-doc *::before,.submit-doc *::after{box-sizing:border-box}
+.submit-doc-card{width:min(560px,100%);padding:32px;border:1px solid #55caff55;border-top:4px solid #ff7432;border-radius:14px;background:#0b1424;box-shadow:0 20px 60px #0007}
+.submit-doc-kicker{color:#55caff;font:11px monospace;letter-spacing:.14em}
+.submit-doc h1{margin:8px 0 22px;font-size:26px;line-height:1.2;text-transform:uppercase}
+.submit-doc-details{display:grid;gap:0;margin:0 0 20px}
+.submit-doc-details div{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-top:1px solid #ffffff18}
+.submit-doc-details dt{color:#aebfd1;font-size:13px;flex-shrink:0}
+.submit-doc-details dd{margin:0;color:#fff;font-size:14px;font-weight:700;text-align:right;overflow-wrap:anywhere}
+.submit-doc-current{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;padding:14px;border:1px solid #2fbf7155;border-radius:8px;background:#2fbf7114;color:#7aebb0}
+.submit-doc-current div{display:grid;gap:4px;min-width:0}
+.submit-doc-current b{color:#d9fbe8;font-size:14px;overflow-wrap:anywhere}
+.submit-doc-current span{color:#9fcfb6;font-size:12px}
+.submit-doc form{display:grid;gap:14px}
+.submit-doc-drop{position:relative;display:grid;justify-items:center;gap:6px;padding:26px 18px;border:1.5px dashed #55caff66;border-radius:10px;background:#07111f;text-align:center;cursor:pointer;color:#57ccff}
+.submit-doc-drop:hover,.submit-doc-drop:focus-within{border-color:#55caff;background:#0a1828}
+.submit-doc-drop.has-file{border-style:solid;border-color:#ff7432;color:#ff9a6b}
+.submit-doc-drop input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.submit-doc-drop strong{color:#fff;font-size:15px;overflow-wrap:anywhere}
+.submit-doc-drop span{color:#91a4b9;font-size:12px}
+.submit-doc-drop em{margin-top:8px;padding:8px 16px;border:1px solid #55caff66;border-radius:5px;color:#cfe9ff;font-size:12px;font-style:normal;font-weight:700}
+.submit-doc form button{width:100%;min-height:48px;border:0;border-radius:6px;background:#ff7432;color:#07101a;font-size:16px;font-weight:800;cursor:pointer}
+.submit-doc form button:disabled{opacity:.45;cursor:not-allowed;filter:grayscale(.6)}
+.submit-doc-progress{position:relative;height:30px;overflow:hidden;border:1px solid #55caff44;border-radius:6px;background:#07111f}
+.submit-doc-progress i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#1f4fe0,#55caff);transition:width .2s}
+.submit-doc-progress span{position:relative;display:grid;place-items:center;height:100%;color:#fff;font-size:12px;font-weight:700}
+.submit-doc-error{margin:0;color:#ff9c9c;font-size:13px;line-height:1.5}
+.submit-doc-success{margin:0 0 16px;padding:12px 14px;border:1px solid #2fbf7166;border-radius:8px;background:#2fbf711a;color:#bdf2d6;font-size:14px;line-height:1.5}
+.submit-doc-success b{display:block;color:#7aebb0}
+.submit-doc-locked{margin:0;padding:14px;border:1px solid #f2bb4a55;border-radius:8px;background:#f2bb4a14;color:#ffe2a3;font-size:14px}
+.submit-doc-note{margin:18px 0 0;color:#7f93a8;font-size:12px;text-align:center}
+@media(max-width:600px){
+  .submit-doc{padding:16px;place-items:start center}
+  .submit-doc-card{padding:22px 18px}
+  .submit-doc h1{font-size:21px}
+  .submit-doc-details div{flex-direction:column;gap:3px}
+  .submit-doc-details dd{text-align:left}
+}
+
+/* Single-submission layout */
+.submit-doc-muted{margin:0;color:#aebfd1}
+.submit-doc-label{color:#cad8e6;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.submit-doc-drop.has-error{border-color:#ff8a8a}
+.submit-doc-drop span{line-height:1.6}
+.submit-doc-drop em{margin:2px 0 4px}
+.submit-doc-chosen{display:grid;gap:0;margin:0;padding:4px 14px;border:1px solid #ff743255;border-radius:8px;background:#ff74320f}
+.submit-doc-chosen div{display:flex;justify-content:space-between;gap:12px;padding:8px 0}
+.submit-doc-chosen div+div{border-top:1px solid #ffffff12}
+.submit-doc-chosen dt{color:#aebfd1;font-size:13px}
+.submit-doc-chosen dd{margin:0;color:#fff;font-size:13px;font-weight:700;text-align:right;overflow-wrap:anywhere}
+.submit-doc-result{display:flex;align-items:flex-start;gap:14px;padding:18px;border-radius:10px}
+.submit-doc-result div{display:grid;gap:5px}
+.submit-doc-result b{font-size:17px}
+.submit-doc-result span{font-size:14px;line-height:1.5}
+.submit-doc-result.success{border:1px solid #2fbf7166;background:#2fbf711a;color:#7aebb0}
+.submit-doc-result.success span{color:#bdf2d6}
+.submit-doc-result.done{border:1px solid #55caff55;background:#55caff12;color:#8fdcff}
+.submit-doc-result.done span{color:#cfe9ff}
+.submit-doc-file-note{display:flex;align-items:center;gap:6px;margin:14px 0 0;color:#91a4b9;font-size:12px;overflow-wrap:anywhere}

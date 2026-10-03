@@ -6,16 +6,16 @@ export const POSTER_IMAGE_PATH = path.join(path.dirname(fileURLToPath(import.met
 
 const EVENT = { date: "Wednesday, 4 November 2026", venue: "Indoor Auditorium", campus: "Sathyabama Institute of Science and Technology", duration: "24 Hours" };
 
-const BLACK = "#0b0b0d";
-const ORANGE = "#ff5a1f";
-const BLUE = "#1f4fe0";
-const INK = "#16171b";
-const MUTED = "#6b6f7a";
-const LINE = "#e6e7eb";
-const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
-const MONO = "Consolas, 'SFMono-Regular', Menlo, 'Courier New', monospace";
+export const BLACK = "#0b0b0d";
+export const ORANGE = "#ff5a1f";
+export const BLUE = "#1f4fe0";
+export const INK = "#16171b";
+export const MUTED = "#6b6f7a";
+export const LINE = "#e6e7eb";
+export const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+export const MONO = "Consolas, 'SFMono-Regular', Menlo, 'Courier New', monospace";
 
-const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+export const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 
 const formatDate = (date) => (date ? new Date(date).toLocaleString("en-IN", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }) : "");
 
@@ -29,12 +29,67 @@ const getDetails = (registration) => ({
   confirmedAt: formatDate(registration.payment?.confirmedAt),
 });
 
-const label = (text, color = MUTED) => `<div style="font-family:${FONT};font-size:10px;line-height:14px;letter-spacing:2px;font-weight:700;color:${color};text-transform:uppercase;">${text}</div>`;
+export const label = (text, color = MUTED) => `<div style="font-family:${FONT};font-size:10px;line-height:14px;letter-spacing:2px;font-weight:700;color:${color};text-transform:uppercase;">${text}</div>`;
+
+// Shared by every DEXATHON email: brand footer and closing accent strip (pass an already-escaped email).
+export const renderFooter = (escapedEmail) => `  <!-- Footer -->
+  <tr><td class="px" bgcolor="${BLACK}" align="center" style="background:${BLACK};padding:34px 40px 30px;">
+    <div style="font-family:${FONT};font-size:20px;font-weight:900;letter-spacing:6px;color:#ffffff;">DE<span style="color:${ORANGE};">X</span>ATHON 2026</div>
+    <div style="font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:3px;color:#c4c6cc;padding-top:10px;">DISCOVER <span style="color:${ORANGE};">&bull;</span> EXPLORE <span style="color:${ORANGE};">&bull;</span> EXPERIMENT</div>
+    <table role="presentation" width="60" cellpadding="0" cellspacing="0" border="0" style="margin:20px auto;"><tr><td height="2" bgcolor="${BLUE}" style="background:${BLUE};font-size:0;line-height:0;">&nbsp;</td></tr></table>
+    <div style="font-family:${FONT};font-size:11px;letter-spacing:1px;color:#8a8d96;">Organized by</div>
+    <div style="font-family:${FONT};font-size:13px;line-height:20px;color:#e6e7eb;padding-top:4px;">Department of Computer Applications &amp; Computer Science</div>
+    <div style="font-family:${FONT};font-size:13px;line-height:20px;font-weight:700;color:#ffffff;">Sathyabama Institute of Science and Technology</div>
+    <div style="font-family:${FONT};font-size:11px;color:#6b6f7a;padding-top:20px;">&copy; 2026 DEXATHON &middot; Sent to ${escapedEmail}</div>
+  </td></tr>
+
+  <tr><td style="font-size:0;line-height:0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td width="30%" height="5" bgcolor="${BLUE}" style="background:${BLUE};font-size:0;line-height:0;">&nbsp;</td>
+      <td width="70%" height="5" bgcolor="${ORANGE}" style="background:${ORANGE};font-size:0;line-height:0;">&nbsp;</td>
+    </tr></table>
+  </td></tr>`;
+
+// Team Head Portal "Login Credentials" card, shared by the confirmation and round-update emails.
+// Pass raw (unescaped) values; this escapes them.
+export const renderPortalCredentials = ({ email, password, loginUrl }, { padding = "20px 40px 0" } = {}) => {
+  const e = { email: escapeHtml(email), password: escapeHtml(password), loginUrl: escapeHtml(loginUrl) };
+  const field = (title, value, mono = false) => `<tr><td style="padding:0 0 12px;">
+          <div style="font-family:${FONT};font-size:10px;line-height:14px;letter-spacing:2px;font-weight:700;color:#8fb4ff;text-transform:uppercase;padding-bottom:5px;">${title}</div>
+          <div style="background:#ffffff;padding:11px 14px;font-family:${mono ? MONO : FONT};font-size:${mono ? "16px" : "15px"};line-height:20px;font-weight:700;letter-spacing:${mono ? "1px" : "0"};color:${INK};word-break:break-all;">${value}</div>
+        </td></tr>`;
+  return `<tr><td class="px" style="padding:${padding};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0b1628" style="background:#0b1628;border-top:4px solid ${ORANGE};">
+      <tr><td style="padding:24px 26px 26px;">
+        <div style="font-family:${FONT};font-size:20px;line-height:26px;font-weight:900;letter-spacing:1px;color:#ffffff;">TEAM HEAD PORTAL</div>
+        <div style="font-family:${FONT};font-size:13px;line-height:20px;color:#b8c7dc;padding:6px 0 18px;">Your Team Head Portal access has been created. Use these details to view your team, PDF submission and round progress.</div>
+        <div style="font-family:${FONT};font-size:11px;line-height:14px;letter-spacing:2px;font-weight:800;color:${ORANGE};padding-bottom:12px;">LOGIN CREDENTIALS</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${field("Team Head Email", e.email)}
+          ${field("Password", e.password, true)}
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px;"><tr>
+          <td bgcolor="${ORANGE}" style="background:${ORANGE};"><a href="${e.loginUrl}" target="_blank" style="display:inline-block;padding:13px 26px;font-family:${FONT};font-size:13px;font-weight:800;letter-spacing:2px;color:#ffffff;text-decoration:none;">LOGIN TO TEAM PORTAL &rarr;</a></td>
+        </tr></table>
+        <div style="font-family:${FONT};font-size:12px;line-height:18px;color:#8fa4bd;padding-top:12px;word-break:break-all;">Login Portal: <a href="${e.loginUrl}" target="_blank" style="color:#8fb4ff;">${e.loginUrl}</a></div>
+      </td></tr>
+    </table>
+  </td></tr>`;
+};
+
+export const portalCredentialsText = ({ email, password, loginUrl }) => `TEAM HEAD PORTAL
+Your Team Head Portal access has been created.
+
+LOGIN CREDENTIALS
+Team Head Email: ${email}
+Password: ${password}
+Login Portal: ${loginUrl}`;
 
 const detailCell = (title, value, extra = "") => `<td class="stack" valign="top" style="padding:16px 0 0;${extra}">${label(title)}<div style="font-family:${FONT};font-size:15px;line-height:22px;font-weight:700;color:${INK};padding-top:3px;">${value}</div></td>`;
 
-export const buildPaymentConfirmationEmail = (registration) => {
-  const d = getDetails(registration);
+export const buildPaymentConfirmationEmail = (registration, { submissionUrl = "", portal = null } = {}) => {
+  const d = { ...getDetails(registration), submissionUrl };
+  const portalAccess = portal ? { email: d.leaderEmail, password: portal.password, loginUrl: portal.loginUrl } : null;
   const e = Object.fromEntries(Object.entries(d).map(([key, value]) => [key, escapeHtml(value)]));
 
   const html = `<!DOCTYPE html>
@@ -154,6 +209,24 @@ export const buildPaymentConfirmationEmail = (registration) => {
     </table>
   </td></tr>
 
+  ${e.submissionUrl ? `<!-- Second round submission -->
+  <tr><td class="px" style="padding:20px 40px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${LINE};border-top:4px solid ${BLUE};">
+      <tr><td style="padding:24px 26px 26px;">
+        ${label("DEXATHON 2026", BLUE)}
+        <div style="font-family:${FONT};font-size:20px;line-height:26px;font-weight:900;color:${INK};padding-top:4px;">SECOND ROUND SUBMISSION</div>
+        <div style="font-family:${FONT};font-size:14px;line-height:22px;color:#3d404a;padding-top:10px;">Your registration and payment have been successfully confirmed. Please submit your required PDF document using the link below.</div>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;"><tr>
+          <td bgcolor="${ORANGE}" style="background:${ORANGE};"><a href="${e.submissionUrl}" target="_blank" style="display:inline-block;padding:13px 26px;font-family:${FONT};font-size:13px;font-weight:800;letter-spacing:2px;color:#ffffff;text-decoration:none;">SUBMIT PDF &rarr;</a></td>
+        </tr></table>
+        <div style="padding-top:18px;">${label("Submission Link")}</div>
+        <div style="font-family:${MONO};font-size:12px;line-height:18px;color:${BLUE};padding-top:4px;word-break:break-all;"><a href="${e.submissionUrl}" target="_blank" style="color:${BLUE};text-decoration:underline;">${e.submissionUrl}</a></div>
+        <div style="font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};padding-top:14px;">This link is unique to your team &mdash; please do not share it. Upload your PDF before the submission deadline.</div>
+      </td></tr>
+    </table>
+  </td></tr>
+` : ""}
+  ${portalAccess ? `<!-- Team Head Portal credentials -->\n${renderPortalCredentials(portalAccess)}` : ""}
   <!-- Important -->
   <tr><td class="px" style="padding:20px 40px 40px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px dashed ${ORANGE};">
@@ -164,23 +237,7 @@ export const buildPaymentConfirmationEmail = (registration) => {
     </table>
   </td></tr>
 
-  <!-- Footer -->
-  <tr><td class="px" bgcolor="${BLACK}" align="center" style="background:${BLACK};padding:34px 40px 30px;">
-    <div style="font-family:${FONT};font-size:20px;font-weight:900;letter-spacing:6px;color:#ffffff;">DE<span style="color:${ORANGE};">X</span>ATHON 2026</div>
-    <div style="font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:3px;color:#c4c6cc;padding-top:10px;">DISCOVER <span style="color:${ORANGE};">&bull;</span> EXPLORE <span style="color:${ORANGE};">&bull;</span> EXPERIMENT</div>
-    <table role="presentation" width="60" cellpadding="0" cellspacing="0" border="0" style="margin:20px auto;"><tr><td height="2" bgcolor="${BLUE}" style="background:${BLUE};font-size:0;line-height:0;">&nbsp;</td></tr></table>
-    <div style="font-family:${FONT};font-size:11px;letter-spacing:1px;color:#8a8d96;">Organized by</div>
-    <div style="font-family:${FONT};font-size:13px;line-height:20px;color:#e6e7eb;padding-top:4px;">Department of Computer Applications &amp; Computer Science</div>
-    <div style="font-family:${FONT};font-size:13px;line-height:20px;font-weight:700;color:#ffffff;">Sathyabama Institute of Science and Technology</div>
-    <div style="font-family:${FONT};font-size:11px;color:#6b6f7a;padding-top:20px;">&copy; 2026 DEXATHON &middot; Sent to ${e.leaderEmail}</div>
-  </td></tr>
-
-  <tr><td style="font-size:0;line-height:0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td width="30%" height="5" bgcolor="${BLUE}" style="background:${BLUE};font-size:0;line-height:0;">&nbsp;</td>
-      <td width="70%" height="5" bgcolor="${ORANGE}" style="background:${ORANGE};font-size:0;line-height:0;">&nbsp;</td>
-    </tr></table>
-  </td></tr>
+${renderFooter(e.leaderEmail)}
 
 </table>
 </td></tr>
@@ -210,7 +267,17 @@ EVENT DETAILS
 Date: ${EVENT.date}
 Venue: ${EVENT.venue}, ${EVENT.campus}
 Duration: ${EVENT.duration}
+${d.submissionUrl ? `
+DEXATHON 2026 — SECOND ROUND SUBMISSION
+Your registration and payment have been successfully confirmed.
+Please submit your required PDF document using the link below:
 
+Submission Link:
+${d.submissionUrl}
+
+This link is unique to your team — please do not share it.
+Please upload your PDF before the submission deadline.
+` : ""}${portalAccess ? `\n${portalCredentialsText(portalAccess)}\n` : ""}
 Keep this email for your records.
 Please carry your registration details during the event.
 

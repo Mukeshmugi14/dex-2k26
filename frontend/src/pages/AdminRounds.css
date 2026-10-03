@@ -1,0 +1,24 @@
+/* Builds on AdminTeams.css + AdminPdfSubmissions.css */
+.round-card{gap:14px}
+.round-badge{display:inline-block;flex-shrink:0;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.round-badge-completed{background:#2fbf7140;color:#7aebb0}
+.round-badge-selected{background:#ff743233;color:#ffb088}
+.round-badge-live{background:#55caff26;color:#8fdcff}
+.round-badge-pending{background:#f2bb4a2b;color:#ffd77f}
+.round-badge-upcoming{background:#8a99ab2b;color:#c3cfdb}
+.round-badge-not-selected{background:#e05c5c33;color:#ff9c9c}
+.round-selects{display:grid;gap:8px}
+.round-selects label{display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center;gap:10px;color:#55caff;font:10px monospace;letter-spacing:.1em;text-transform:uppercase}
+.round-selects select{width:100%;height:40px;padding:0 8px;border:1px solid #55caff44;border-radius:5px;background:#07111f;color:#fff;font:13px Arial,sans-serif}
+.round-selects select:disabled{opacity:.5}
+.round-hint{margin:0;color:#ffb0b0;font-size:12px}
+.round-release{display:flex;align-items:flex-start;gap:9px;color:#cad6e3;font-size:13px;line-height:1.4;cursor:pointer}
+.round-release input{flex-shrink:0;width:17px;height:17px;margin:1px 0 0;accent-color:#ff7432}
+.round-release b{color:#fff;font-weight:700}
+.round-release em{color:#7f93a8;font-style:normal}
+.round-release.is-disabled{cursor:not-allowed;opacity:.7}
+.round-email{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:#aebfd1;font-size:12px}
+.round-email .ok{color:#7aebb0;font-weight:700}
+.round-email .bad{color:#ffb0b0}
+.round-email button{min-height:30px!important}
+.round-card footer button:disabled{opacity:.45;cursor:not-allowed}

@@ -4,7 +4,7 @@ import PaymentSettings from "../models/PaymentSettings.js";
 const makeIdentifier = (prefix) => `${prefix}-${Date.now().toString().slice(-7)}${Math.floor(Math.random() * 90 + 10)}`;
 
 export const createRegistration = async (request, response) => {
-  const { team, members, mentor, logo } = request.body;
+  const { team, members } = request.body;
 
   if (!team?.teamName || !["sathyabama", "other"].includes(team.collegeType) || !team.collegeName?.trim() || !Array.isArray(members) || members.length < 4 || members.length > 6) {
     return response.status(400).json({ message: "A complete team of 4–6 members is required." });
@@ -16,7 +16,6 @@ export const createRegistration = async (request, response) => {
     teamId: makeIdentifier("DX2026"),
     registrationNumber: makeIdentifier("REG"),
     teamName: team.teamName,
-    teamLogo: logo || "",
     college: team.collegeName.trim(),
     collegeType: team.collegeType,
     collegeName: team.collegeName.trim(),
@@ -24,7 +23,6 @@ export const createRegistration = async (request, response) => {
     year: team.year,
     leader: { name: team.leaderName, email: team.leaderEmail, phone: team.leaderPhone },
     members,
-    mentor,
     payment: { amount: registrationAmount },
   });
 

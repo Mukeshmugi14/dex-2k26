@@ -1,0 +1,57 @@
+/* Builds on AdminTeams.css + AdminPdfSubmissions.css */
+.admin-rs .admin-teams-message.is-error{border-color:#e05c5c66;color:#ffb0b0}
+.rs-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:22px}
+.rs-summary div{display:grid;gap:6px;padding:14px 16px;border:1px solid #ffffff15;border-radius:8px;background:#0e1a2b}
+.rs-summary span{color:#aebfd1;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.rs-summary b{font-size:24px}
+.rs-filter-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rs-filter-row>span{width:52px;color:#55caff;font:10px monospace;letter-spacing:.1em;text-transform:uppercase}
+.rs-count{color:#aebfd1;font-size:12px;white-space:nowrap}
+
+.rs-card{gap:14px}
+.rs-badge{display:inline-block;flex-shrink:0;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.rs-badge.rs-pending{background:#f2bb4a2b;color:#ffd77f}
+.rs-badge.rs-selected{background:#2fbf7140;color:#7aebb0}
+.rs-badge.rs-rejected{background:#e05c5c33;color:#ff9c9c}
+.rs-text{font-weight:700}
+.rs-text.rs-pending{color:#ffd77f}.rs-text.rs-selected{color:#7aebb0}.rs-text.rs-rejected{color:#ff9c9c}
+
+.rs-history{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.rs-history li{display:grid;grid-template-columns:70px minmax(0,1fr);align-items:center;column-gap:10px;row-gap:4px;padding:8px 10px;border:1px solid #ffffff12;border-left:3px solid #8a99ab66;border-radius:6px;background:#07111f}
+.rs-history li.rs-selected{border-left-color:#2fbf71}
+.rs-history li.rs-rejected{border-left-color:#e05c5c}
+.rs-history b{color:#cad6e3;font-size:12px}
+.rs-history span{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.rs-history li.rs-pending span{color:#9fb0c2}.rs-history li.rs-selected span{color:#7aebb0}.rs-history li.rs-rejected span{color:#ff9c9c}
+.rs-email{grid-column:2;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:11px;font-style:normal}
+.rs-email.ok{color:#7aebb0;font-weight:700}
+.rs-email.bad{color:#ffb0b0}
+.rs-email button{min-height:28px!important;padding:0 10px!important;font-size:11px!important}
+
+.rs-decide{display:grid;gap:10px;padding-top:12px;border-top:1px solid #ffffff15}
+.rs-decide label{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:10px}
+.rs-decide label span{color:#55caff;font:10px monospace;letter-spacing:.1em;text-transform:uppercase}
+.rs-decide select{width:100%;height:40px;padding:0 10px;border:1px solid #55caff44;border-radius:5px;background:#07111f;color:#fff;font:13px Arial,sans-serif}
+.rs-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rs-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:7px;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.rs-select{border:1.5px solid #2fbf71;background:#2fbf7114;color:#7aebb0}
+.rs-select:hover,.rs-select.is-current{background:#2fbf71;color:#04140b}
+.rs-reject{border:1.5px solid #e05c5c;background:#e05c5c14;color:#ff9c9c}
+.rs-reject:hover,.rs-reject.is-current{background:#e05c5c;color:#1a0505}
+.rs-locked{margin:0;padding-top:12px;border-top:1px solid #ffffff15;color:#aebfd1;font-size:13px}
+
+.rs-confirm{width:min(460px,100%)}
+.rs-confirm-question{margin:0;padding:14px;border-radius:8px;font-size:15px;font-weight:700;line-height:1.5}
+.rs-confirm-question.is-select{border:1px solid #2fbf7166;background:#2fbf7114;color:#d9fbe8}
+.rs-confirm-question.is-reject{border:1px solid #e05c5c66;background:#e05c5c14;color:#ffe0e0}
+.rs-confirm-note{display:flex;align-items:center;gap:6px;margin:0;color:#aebfd1;font-size:12px;overflow-wrap:anywhere}
+.edit-team-modal button.rs-danger{background:#e05c5c;color:#1a0505}
+
+@media(max-width:1100px){.rs-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){
+  .rs-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .rs-summary b{font-size:20px}
+  .rs-filter-row{align-items:flex-start;flex-direction:column;gap:6px}
+  .rs-actions{grid-template-columns:1fr}
+  .rs-confirm{width:100%}
+}

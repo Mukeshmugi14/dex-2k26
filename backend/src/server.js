@@ -5,6 +5,8 @@ import mongoose from "mongoose";
 import adminRoutes from "./routes/adminRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import registrationRoutes from "./routes/registrationRoutes.js";
+import submissionRoutes from "./routes/submissionRoutes.js";
+import teamRoutes from "./routes/teamRoutes.js";
 import { seedAdmin } from "./utils/seedAdmin.js";
 import { verifyEmailTransport } from "./services/emailService.js";
 
@@ -27,6 +29,8 @@ app.get("/api/health", (_request, response) => response.json({ ok: true, success
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/payment", paymentRoutes);
 app.get("/api/payment-settings", (request, response, next) => import("./controllers/paymentSettingsController.js").then(({ getPaymentSettings }) => getPaymentSettings(request, response)).catch(next));
+app.use("/api/submissions", submissionRoutes);
+app.use("/api/team", teamRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.use((error, _request, response, _next) => {

@@ -1,0 +1,197 @@
+.team-portal{--tp-navy:#050b16;--tp-navy-2:#0b1628;--tp-orange:#ff6b18;--tp-blue:#1f6fff;--tp-ink:#0f1726;--tp-muted:#5d6b7e;--tp-line:#e4e8ef;min-height:100vh;background:radial-gradient(circle at 15% -10%,#11305a 0,transparent 45%),radial-gradient(circle at 110% 10%,#3a1a08 0,transparent 35%),var(--tp-navy);color:#fff;font-family:Inter,Arial,sans-serif}
+.team-portal *,.team-portal *::before,.team-portal *::after{box-sizing:border-box}
+.team-portal .team-brand{font-family:"Barlow Condensed",Arial,sans-serif;font-size:15px;font-weight:800;letter-spacing:.32em;color:#fff}
+.team-portal .team-brand b{color:var(--tp-orange)}
+.team-portal .team-brand em{font-style:normal;color:#5fa2ff}
+
+/* ---------- Login ---------- */
+.team-portal.team-login{position:relative;display:grid;place-items:center;padding:32px 16px;overflow:hidden}
+.team-portal .team-login-glow{position:absolute;inset:auto -20% -40% -20%;height:60%;background:radial-gradient(closest-side,#ff6b1826,transparent);pointer-events:none}
+.team-portal .team-login-card{position:relative;width:min(440px,100%);overflow:hidden;border-radius:16px;background:#fff;color:var(--tp-ink);box-shadow:0 30px 80px #000a}
+.team-portal .team-login-card>header{padding:30px 30px 26px;background:linear-gradient(135deg,#071224,#0d2141);border-bottom:4px solid var(--tp-orange)}
+.team-portal .team-login-card h1{margin:16px 0 6px;color:#fff;font-family:"Barlow Condensed",Arial,sans-serif;font-size:34px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;line-height:1}
+.team-portal .team-login-card>header p{margin:0;color:#b8c7dc;font-size:14px}
+.team-portal .team-login-card form{display:grid;gap:16px;padding:26px 30px 8px}
+.team-portal .team-field{display:grid;gap:7px}
+.team-portal .team-field>span{color:var(--tp-ink);font-size:13px;font-weight:700}
+.team-portal .team-input{display:flex;align-items:center;gap:10px;height:48px;padding:0 6px 0 14px;border:1.5px solid #d3dbe6;border-radius:9px;background:#f7f9fc;color:#8090a6;transition:border-color .15s,box-shadow .15s}
+.team-portal .team-input:focus-within{border-color:var(--tp-blue);background:#fff;box-shadow:0 0 0 4px #1f6fff1f;color:var(--tp-blue)}
+.team-portal .team-input input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:var(--tp-ink);font:15px Inter,Arial,sans-serif}
+.team-portal .team-eye{display:grid;place-items:center;width:38px;height:38px;border:0;border-radius:7px;background:transparent;color:#6b7a90;cursor:pointer}
+.team-portal .team-eye:hover{background:#eef2f8;color:var(--tp-ink)}
+.team-portal .team-login-error{margin:0;padding:10px 12px;border-radius:8px;background:#fdecec;color:#b42318;font-size:13px;font-weight:600}
+.team-portal .team-login-submit{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;margin-top:4px;border:0;border-radius:9px;background:var(--tp-orange);color:#fff;font:800 15px Inter,Arial,sans-serif;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:0 10px 24px #ff6b1840}
+.team-portal .team-login-submit:hover:not(:disabled){background:#ff7d33}
+.team-portal .team-login-submit:disabled{opacity:.65;cursor:not-allowed}
+.team-portal .team-login-card>footer{padding:14px 30px 26px;color:var(--tp-muted);font-size:12px;line-height:1.5}
+
+/* ---------- Dashboard ---------- */
+.team-portal .team-topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px max(16px,calc((100% - 1160px)/2));background:#050b16e6;border-bottom:1px solid #ffffff14;backdrop-filter:blur(10px)}
+.team-portal .team-topbar>div:first-child{display:grid;gap:2px}
+.team-portal .team-topbar small{color:#9fb2ca;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.team-portal .team-topbar-user{display:flex;align-items:center;gap:12px;min-width:0}
+.team-portal .team-topbar-user span{overflow:hidden;color:#e7eef8;font-size:14px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+.team-portal .team-topbar-user button{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;height:36px;padding:0 13px;border:1px solid #ffffff33;border-radius:8px;background:transparent;color:#fff;font:600 13px Inter,Arial,sans-serif;cursor:pointer}
+.team-portal .team-topbar-user button:hover{border-color:var(--tp-orange);color:var(--tp-orange)}
+.team-portal .team-dash-inner{width:min(1160px,100%);margin:0 auto;padding:26px 16px 48px}
+.team-portal .team-state{margin:40px 0 12px;color:#c7d3e3;text-align:center}
+.team-portal .team-retry{display:block;margin:0 auto;padding:10px 18px;border:0;border-radius:8px;background:var(--tp-orange);color:#fff;font-weight:700;cursor:pointer}
+.team-portal .team-inline-error{margin:12px 0 0;color:#ffb4a8;font-size:13px}
+
+.team-portal .team-current{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px 20px;padding:26px 28px;border-radius:16px;background:linear-gradient(120deg,#0d2141,#11305a 55%,#1f6fff);box-shadow:0 20px 50px #0007;overflow:hidden}
+.team-portal .team-current::after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:#ff6b1830;pointer-events:none}
+.team-portal .team-current.is-stopped{background:linear-gradient(120deg,#1a1f2b,#2b3242)}
+.team-portal .team-current span{color:#b8c7dc;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+.team-portal .team-current h1{margin:6px 0 0;font-family:"Barlow Condensed",Arial,sans-serif;font-size:46px;font-weight:800;line-height:1;text-transform:uppercase}
+.team-portal .team-current>strong{position:relative;z-index:1;padding:11px 18px;border-radius:999px;font-size:16px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.team-portal .team-current-message{grid-column:1/-1;margin:4px 0 0;padding:14px 16px;border-radius:10px;background:#ffffff14;color:#e9eef6;font-size:14px;line-height:1.6}
+.team-portal .team-refresh{position:absolute;top:12px;right:12px;z-index:2;display:grid;place-items:center;width:30px;height:30px;border:1px solid #ffffff33;border-radius:8px;background:#0000002e;color:#fff;cursor:pointer}
+.team-portal .team-refresh .spin{animation:team-spin 1s linear infinite}
+@keyframes team-spin{to{transform:rotate(360deg)}}
+
+.team-portal .team-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(300px,.9fr);grid-template-areas:"details members progress" "pdf pdf progress";gap:18px;margin-top:20px}
+.team-portal .team-area-details{grid-area:details}.team-area-members{grid-area:members}.team-area-pdf{grid-area:pdf}.team-area-progress{grid-area:progress}
+.team-portal .team-card{padding:22px;border-radius:14px;background:#fff;color:var(--tp-ink);box-shadow:0 14px 40px #0005;border-top:4px solid var(--tp-blue)}
+.team-portal .team-area-pdf,.team-portal .team-area-progress{border-top-color:var(--tp-orange)}
+.team-portal .team-card h2{display:flex;align-items:center;gap:8px;margin:0 0 16px;color:var(--tp-ink);font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.team-portal .team-card h2 svg{color:var(--tp-orange)}
+.team-portal .team-details{display:grid;gap:0;margin:0}
+.team-portal .team-details div{display:grid;gap:3px;padding:10px 0;border-top:1px solid var(--tp-line)}
+.team-portal .team-details div:first-child{border-top:0;padding-top:0}
+.team-portal .team-details dt{color:var(--tp-muted);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.team-portal .team-details dd{margin:0;color:var(--tp-ink);font-size:15px;font-weight:600;line-height:1.4}
+.team-portal .team-details dd.break{overflow-wrap:anywhere}
+.team-portal .team-members{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.team-portal .team-members li{padding:10px 12px;border-radius:8px;background:#f4f7fb;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.team-portal .team-members b{margin-right:4px;color:var(--tp-orange)}
+.team-portal .team-muted{margin:10px 0 0;color:var(--tp-muted);font-size:14px;line-height:1.55}
+.team-portal .team-pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#fff1e6;color:#c2410c;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.team-portal .team-pill.ok{background:#e7f8ee;color:#137a45}
+.team-portal .team-action{display:inline-flex;align-items:center;gap:8px;margin-top:14px;height:42px;padding:0 18px;border:0;border-radius:9px;background:var(--tp-blue);color:#fff;font:700 14px Inter,Arial,sans-serif;cursor:pointer}
+.team-portal .team-action:hover{background:#3b82ff}
+.team-portal .team-score{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.team-portal .team-score div{display:grid;gap:4px;padding:12px 14px;border-radius:10px;background:#0d2141;color:#fff}
+.team-portal .team-score span{color:#9fb2ca;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.team-portal .team-score b{font-size:20px}
+
+/* Status badges */
+.team-portal .team-status{display:inline-block;padding:5px 11px;border-radius:999px;font-style:normal;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.team-portal .team-status-completed{background:#e7f8ee;color:#137a45}
+.team-portal .team-status-selected{background:#fff1e6;color:#d9480f}
+.team-portal .team-status-live{background:#e6efff;color:#1d4ed8}
+.team-portal .team-status-pending{background:#fff7e0;color:#a16207}
+.team-portal .team-status-upcoming{background:#eef1f5;color:#5d6b7e}
+.team-portal .team-status-not-selected{background:#fdecec;color:#b42318}
+
+/* Round tracker */
+.team-portal .team-tracker{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.team-portal .team-tracker-step{position:relative;display:grid;grid-template-columns:38px minmax(0,1fr);column-gap:14px;padding-bottom:26px}
+.team-portal .team-tracker-step:last-child{padding-bottom:0}
+.team-portal .team-tracker-node{position:relative;z-index:1;display:grid;place-items:center;width:38px;height:38px;border:3px solid #cfd7e2;border-radius:50%;background:#fff;color:#9aa7b8}
+.team-portal .team-tracker-line{position:absolute;left:18px;top:38px;bottom:0;width:3px;border-radius:3px;background:#dfe5ed}
+.team-portal .team-tracker-body{display:grid;justify-items:start;gap:4px;padding-top:2px}
+.team-portal .team-tracker-body b{font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.team-portal .team-tracker-body span{color:var(--tp-muted);font-size:13px}
+.team-portal .team-tracker-body em{margin-top:4px}
+.team-portal .step-completed .team-tracker-node{border-color:#1f9d5c;background:#1f9d5c;color:#fff}
+.team-portal .step-completed .team-tracker-line{background:#1f9d5c}
+.team-portal .step-selected .team-tracker-node{border-color:var(--tp-orange);background:var(--tp-orange);color:#fff}
+.team-portal .step-selected .team-tracker-line{background:linear-gradient(var(--tp-orange),#cfd7e2)}
+.team-portal .step-live .team-tracker-node{border-color:var(--tp-blue);color:var(--tp-blue);box-shadow:0 0 0 0 #1f6fff66;animation:team-pulse 1.8s ease-out infinite}
+.team-portal .step-live .team-tracker-node svg{fill:currentColor}
+.team-portal .step-pending .team-tracker-node{border-color:#e0a82e;border-style:dashed;color:#b7791f}
+.team-portal .step-not-selected .team-tracker-node{border-color:#d92d20;background:#d92d20;color:#fff}
+@keyframes team-pulse{0%{box-shadow:0 0 0 0 #1f6fff59}70%{box-shadow:0 0 0 12px #1f6fff00}100%{box-shadow:0 0 0 0 #1f6fff00}}
+@media (prefers-reduced-motion:reduce){.step-live .team-tracker-node,.team-refresh .spin{animation:none}}
+
+/* ---------- Long text never breaks the layout ---------- */
+.team-portal .team-card,.team-portal .team-details dd,.team-portal .team-tracker-body,.team-portal .team-current>div{min-width:0}
+.team-portal .team-details dd,.team-portal .team-pdf-file b{overflow-wrap:anywhere;word-break:break-word}
+
+/* ---------- Members: number column + name ---------- */
+.team-portal .team-members li{display:grid;grid-template-columns:30px minmax(0,1fr);align-items:baseline;gap:8px}
+.team-portal .team-members b{margin:0;font-variant-numeric:tabular-nums}
+
+/* ---------- Submission card ---------- */
+.team-portal .team-pdf-file{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--tp-line);border-radius:10px;background:#f7f9fc}
+.team-portal .team-pdf-file svg{flex-shrink:0;color:var(--tp-orange)}
+.team-portal .team-pdf-file div{display:grid;gap:2px;min-width:0}
+.team-portal .team-pdf-file b{font-size:15px;color:var(--tp-ink)}
+.team-portal .team-pdf-file span{color:var(--tp-muted);font-size:12px}
+.team-portal .team-pdf-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;color:var(--tp-muted);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+
+/* ---------- Tablet / small laptop ---------- */
+@media (max-width:1024px){
+  .team-portal .team-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"details members" "pdf progress"}
+}
+
+/* ---------- Tablet portrait / large phones: single column ---------- */
+@media (max-width:768px){
+  .team-portal .team-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"details" "members" "pdf" "progress";gap:14px;margin-top:14px}
+  .team-portal .team-dash-inner{padding:18px 14px 40px}
+  .team-portal .team-current{grid-template-columns:minmax(0,1fr);gap:12px;padding:22px 20px}
+  .team-portal .team-current h1{font-size:38px}
+  .team-portal .team-current>strong{justify-self:start}
+  .team-portal .team-card{padding:20px 18px}
+  .team-portal .team-action{width:100%;justify-content:center}
+  .team-portal .team-topbar{padding:12px 14px}
+  .team-portal .team-topbar-user span{max-width:40vw}
+  .team-portal.team-login{place-items:start center;padding:max(24px,6vh) 16px 24px}
+}
+
+/* ---------- Phones ---------- */
+@media (max-width:480px){
+  .team-portal .team-brand{font-size:13px;letter-spacing:.24em}
+  .team-portal .team-topbar small{font-size:11px}
+  .team-portal .team-topbar-user span{display:none}
+  .team-portal .team-topbar-user button{height:34px;padding:0 11px}
+  .team-portal .team-current{padding:20px 16px;border-radius:14px}
+  .team-portal .team-current h1{font-size:34px}
+  .team-portal .team-current>strong{padding:9px 15px;font-size:14px}
+  .team-portal .team-current-message{font-size:13px}
+  .team-portal .team-card{padding:18px 16px;border-radius:12px}
+  .team-portal .team-card h2{font-size:18px;margin-bottom:14px}
+  .team-portal .team-details dd,.team-portal .team-members li{font-size:14px}
+  .team-portal .team-score{grid-template-columns:minmax(0,1fr)}
+  .team-portal .team-tracker-step{grid-template-columns:34px minmax(0,1fr);column-gap:12px;padding-bottom:22px}
+  .team-portal .team-tracker-node{width:34px;height:34px}
+  .team-portal .team-tracker-line{left:16px;top:34px}
+  .team-portal .team-tracker-body b{font-size:18px}
+  .team-portal.team-login{padding:16px 12px}
+  .team-portal .team-login-card{border-radius:14px}
+  .team-portal .team-login-card>header{padding:24px 20px 20px}
+  .team-portal .team-login-card h1{font-size:28px}
+  .team-portal .team-login-card form{gap:14px;padding:20px 20px 6px}
+  .team-portal .team-login-card>footer{padding:12px 20px 20px}
+  .team-portal .team-input input{font-size:16px} /* 16px stops iOS zooming into the field */
+}
+
+/* ---------- Running team (Current Status card) ---------- */
+.team-portal .team-runners{position:relative;z-index:1;grid-column:1/-1;display:flex;align-items:center;gap:12px;min-width:0;padding-top:4px}
+.team-portal .team-runners-pack{display:flex;align-items:flex-end;gap:6px}
+.team-portal .team-runner{display:block;width:22px;height:30px;color:#e9f1ff;animation:team-runner-drift 2.2s ease-in-out infinite;animation-delay:calc(var(--i) * -0.37s)}
+.team-portal .team-runner:nth-child(odd){color:#ffd2b8}
+.team-portal .team-runner svg{display:block;width:100%;height:100%;overflow:visible;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;animation:team-runner-bob .55s ease-in-out infinite;animation-delay:calc(var(--i) * -0.11s)}
+.team-portal .team-runner .runner-head{fill:currentColor;stroke:none}
+.team-portal .runner-leg,.team-portal .runner-arm{transform-box:view-box}
+.team-portal .runner-leg{transform-origin:10px 19px}
+.team-portal .runner-arm{transform-origin:12.5px 11.5px}
+.team-portal .runner-leg-front,.team-portal .runner-arm-back{animation:team-runner-swing .55s ease-in-out infinite alternate}
+.team-portal .runner-leg-back,.team-portal .runner-arm-front{animation:team-runner-swing .55s ease-in-out infinite alternate-reverse}
+.team-portal .team-runner .runner-leg,.team-portal .team-runner .runner-arm{animation-delay:calc(var(--i) * -0.11s)}
+.team-portal .team-runners-arrow{color:#ff9a5c;font-size:20px;font-weight:800;line-height:1;animation:team-runner-arrow 1.4s ease-in-out infinite}
+.team-portal .team-runners.is-stopped .team-runner{color:#b8c3d4;opacity:.55;animation:none}
+.team-portal .team-runners.is-stopped svg,.team-portal .team-runners.is-stopped .runner-leg,.team-portal .team-runners.is-stopped .runner-arm{animation:none}
+@keyframes team-runner-swing{from{transform:rotate(-24deg)}to{transform:rotate(24deg)}}
+@keyframes team-runner-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes team-runner-drift{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+@keyframes team-runner-arrow{0%,100%{transform:translateX(0);opacity:.7}50%{transform:translateX(5px);opacity:1}}
+@media (max-width:480px){
+  .team-portal .team-runners{gap:9px}
+  .team-portal .team-runners-pack{gap:4px}
+  .team-portal .team-runner{width:17px;height:23px}
+  .team-portal .team-runners-arrow{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  .team-portal .team-runner,.team-portal .team-runner svg,.team-portal .runner-leg,.team-portal .runner-arm,.team-portal .team-runners-arrow{animation:none}
+}

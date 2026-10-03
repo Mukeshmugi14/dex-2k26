@@ -88,3 +88,40 @@
   .edit-team-logo-row{flex-direction:column;align-items:flex-start}
   .edit-team-modal>footer>div{display:grid;grid-template-columns:1fr 1fr}
 }
+
+/* Team management: selection, bulk actions, delete */
+.tm-toolbar{flex-direction:column;align-items:stretch;gap:12px}
+.tm-toolbar.has-selection{border-color:#ff743266}
+.tm-toolbar-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.tm-toolbar-row input:not([type=checkbox]){flex:1 1 260px;width:auto}
+.tm-toolbar-row select{height:40px;max-width:100%;padding:0 10px;border:1px solid #55caff44;border-radius:5px;background:#07111f;color:#fff;font:13px Arial,sans-serif}
+.tm-select-all{display:inline-flex;align-items:center;gap:9px;color:#e8f0f8;font-size:13px;font-weight:700;cursor:pointer}
+.tm-select-all input,.tm-card-check input,.tm-notify input{width:18px;height:18px;margin:0;accent-color:#ff7432;cursor:pointer}
+.tm-bulk-actions,.tm-card-actions{display:flex;flex-wrap:wrap;gap:8px}
+.admin-teams .tm-bulk-actions button,.admin-teams .tm-card-actions button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 13px;border:0;border-radius:6px;background:#ff7432;color:#07101a;font-size:13px;font-weight:800;cursor:pointer}
+.admin-teams .tm-bulk-actions button.ghost{border:1px solid #55caff44;background:transparent;color:#cad8e6}
+.admin-teams button.tm-danger,.edit-team-modal button.tm-danger{background:#e05c5c;color:#1a0505}
+.admin-teams button.tm-danger:hover,.edit-team-modal button.tm-danger:hover{background:#ec7474}
+.team-card.is-selected{border-color:#ff7432;box-shadow:0 0 0 1px #ff7432 inset}
+.tm-card-check{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;color:#aebfd1;font-size:12px;font-weight:700;cursor:pointer}
+.team-card footer{flex-wrap:wrap}
+.tm-dialog{width:min(480px,100%)}
+.tm-delete-text{margin:0;color:#e8f0f8;font-size:14px;line-height:1.5}
+.tm-delete-text b{font-size:17px}
+.tm-delete-list{margin:0;padding:10px 12px 10px 28px;border:1px solid #ffffff15;border-radius:8px;background:#07111f;color:#cad8e6;font-size:13px;line-height:1.7}
+.tm-delete-warning{margin:0;padding:10px 12px;border:1px solid #e05c5c55;border-radius:8px;background:#e05c5c14;color:#ffb0b0;font-size:12px;line-height:1.5}
+.tm-bulk-note{margin:0;color:#aebfd1;font-size:13px;line-height:1.5}
+.tm-notify{display:flex;align-items:flex-start;gap:9px;color:#cad8e6;font-size:13px;line-height:1.4;cursor:pointer}
+.edit-team-span{grid-column:1/-1}
+@media(max-width:700px){
+  .tm-toolbar-row{align-items:stretch}
+  .tm-toolbar-row>*{flex:1 1 100%}
+  .tm-toolbar-row select{width:100%}
+  .tm-bulk-actions{display:grid;grid-template-columns:1fr 1fr}
+  .tm-bulk-actions button.ghost{grid-column:1/-1}
+  .admin-teams .tm-bulk-actions button{justify-content:center}
+  .team-card footer{flex-direction:column;align-items:stretch}
+  .tm-card-actions{display:grid;grid-template-columns:1fr 1fr}
+  .admin-teams .tm-card-actions button{justify-content:center}
+}
+@media(max-width:700px){.admin-teams .tm-bulk-actions button{padding:0 8px;font-size:12px;white-space:nowrap}}
