@@ -31,6 +31,7 @@ app.get("/api/health", (_request, response) => response.json({ ok: true, success
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/payment", paymentRoutes);
 app.get("/api/payment-settings", (request, response, next) => import("./controllers/paymentSettingsController.js").then(({ getPaymentSettings }) => getPaymentSettings(request, response)).catch(next));
+app.get("/api/payment-settings/qr", (request, response, next) => import("./controllers/paymentSettingsController.js").then(({ getPaymentQr }) => getPaymentQr(request, response)).catch(next));
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/admin", adminRoutes);

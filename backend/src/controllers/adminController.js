@@ -3,17 +3,23 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import Registration from "../models/Registration.js";
+import { adminProfile } from "../services/adminAccess.js";
 import { sendPaymentConfirmationEmail } from "../services/emailService.js";
 import { buildSubmissionUrl, issueSubmissionToken } from "../services/submissionService.js";
 
 export const login = async (request, response) => {
-  const { username, password } = request.body;
-  const admin = await Admin.findOne({ username });
-  if (!admin || !(await bcrypt.compare(password || "", admin.passwordHash))) {
+  const username = typeof request.body.username === "string" ? request.body.username.trim() : "";
+  const password = typeof request.body.password === "string" ? request.body.password : "";
+  const admin = username ? await Admin.findOne({ username }) : null;
+  if (!admin || admin.active === false || !(await bcrypt.compare(password, admin.passwordHash))) {
     return response.status(401).json({ success: false, message: "Invalid username or password" });
   }
-  return response.json({ success: true, token: jwt.sign({ id: admin.id, username: admin.username }, process.env.JWT_SECRET, { expiresIn: "8h" }), admin: { username: admin.username } });
+  Admin.updateOne({ _id: admin._id }, { $set: { lastLoginAt: new Date() } }).catch(() => {});
+  const profile = adminProfile(admin);
+  return response.json({ success: true, token: jwt.sign({ id: admin.id, username: admin.username, role: profile.role }, process.env.JWT_SECRET, { expiresIn: "8h" }), admin: profile });
 };
+
+export const getMe = (request, response) => response.json({ admin: adminProfile({ _id: request.admin.id, ...request.admin }) });
 
 // ---------- Admin lists: computed in MongoDB, paginated, and never carrying the (large) team logos ----------
 
@@ -96,13 +102,18 @@ export const getColleges = async (_request, response) => {
   return response.json({ colleges });
 };
 
-const PAYMENT_FIELDS = { teamId: 1, teamName: 1, college: 1, "leader.name": 1, "leader.email": 1, payment: 1, createdAt: 1 };
+// Only what the Payment History table shows (no order IDs, UPI details or other team data).
+const PAYMENT_FIELDS = {
+  teamId: 1, teamName: 1, college: 1, "leader.name": 1, "leader.email": 1, createdAt: 1,
+  "payment.status": 1, "payment.amount": 1, "payment.transactionId": 1, "payment.paidAt": 1, "payment.confirmedAt": 1, "payment.confirmedBy": 1,
+  "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1,
+};
 
 // Paginated, server-filtered payment history with whole-collection summary totals.
 export const getPayments = async (request, response) => {
   const { query } = request;
   const { page, limit, skip } = pageParams(query);
-  const filters = [searchFilter(query.search, ["teamName", "teamId", "leader.name", "college", "payment.transactionId"])];
+  const filters = [searchFilter(query.search, ["teamName", "teamId", "leader.name", "leader.email", "college", "payment.transactionId"])];
   if (paymentCategory[query.status]) filters.push(paymentCategory[query.status]);
   const match = { $and: filters };
 

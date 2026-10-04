@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import { API_URL } from "../config/api";
+import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, usePagedList } from "../components/AdminListParts";
 
 const STATUSES = ["Pending", "Submitted", "Under Review", "Selected", "Not Selected"];
@@ -165,7 +166,7 @@ export default function AdminPdfSubmissions() {
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); }, [navigate]);
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/admin/login"); }, [navigate]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -240,7 +241,7 @@ export default function AdminPdfSubmissions() {
   return <main className="admin-teams admin-pdf">
     <header className="admin-teams-header">
       <div><p>DEXATHON 2026 ADMIN</p><h1>PDF Submissions</h1><span>Review second-round PDFs, score them and publish results.</span></div>
-      <nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/teams">Teams</Link><Link to="/admin/pdf-submissions" aria-current="page">PDF Submissions</Link><Link to="/admin/rounds">Round Status</Link><Link to="/admin/round-selection">Round Selection</Link><Link to="/admin/payment-settings">Payment Settings</Link><button type="button" onClick={logout}>Logout</button></nav>
+      <nav><AdminNav /></nav>
     </header>
 
     {message ? <p className="admin-teams-message" role="status">{message}<button type="button" aria-label="Dismiss" onClick={() => setMessage("")}><X size={14} /></button></p> : null}

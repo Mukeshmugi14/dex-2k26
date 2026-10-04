@@ -20,7 +20,7 @@ const toView = (team) => {
 
 // Teams that completed payment (the ones who can use the Team Head Portal).
 export const listRounds = async (_request, response) => {
-  const teams = await Registration.find({ "payment.confirmedAt": { $exists: true, $ne: null } }, LIST_FIELDS).sort({ "payment.confirmedAt": -1 });
+  const teams = await Registration.find({ "payment.confirmedAt": { $exists: true, $ne: null } }, LIST_FIELDS).sort({ "payment.confirmedAt": -1 }).lean();
   return response.json({ teams: teams.map(toView), allowed: ALLOWED_ROUND_STATUSES });
 };
 

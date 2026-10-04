@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 import "./AdminPrint.css";
 import { API_URL } from "../config/api";
+import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
 const apiUrl = API_URL;
@@ -26,7 +27,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); }, [navigate]);
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/admin/login"); }, [navigate]);
   const handleError = useCallback((requestError, text) => { if (requestError.response?.status === 401) logout(); else setError(text); }, [logout]);
 
   // Critical summary first (a single aggregation), college list in parallel; the table loads on its own.
@@ -66,7 +67,7 @@ export default function AdminDashboard() {
   }, [printing, printRows]);
 
   return <main className="admin-dashboard">
-    <header><h1>DEXATHON 2026 Admin</h1><nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/teams">Teams</Link><Link to="/admin/pdf-submissions">PDF Submissions</Link><Link to="/admin/rounds">Round Status</Link><Link to="/admin/round-selection">Round Selection</Link><Link to="/admin/payment-settings">Payment Settings</Link><button onClick={logout}>Logout</button></nav><button onClick={printAll} disabled={printing}>{printing ? "Preparing..." : "Print A4"}</button></header>
+    <header><h1>DEXATHON 2026 Admin</h1><nav><AdminNav /></nav><button onClick={printAll} disabled={printing}>{printing ? "Preparing..." : "Print A4"}</button></header>
     {error && <p className="admin-error">{error} <button type="button" onClick={loadRows}>Retry</button></p>}
     {stats ? <section className="admin-stats">{Object.entries(stats).map(([key, value]) => <div key={key}><small>{key.replace(/([A-Z])/g, " $1")}</small><b>{key === "totalAmount" ? `₹${value}` : value}</b></div>)}</section>
       : <AdminSkeleton rows={4} variant="cards" />}

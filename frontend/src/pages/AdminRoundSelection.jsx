@@ -6,6 +6,7 @@ import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import "./AdminRoundSelection.css";
 import { API_URL } from "../config/api";
+import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, usePagedList } from "../components/AdminListParts";
 
 const ROUNDS = [1, 2, 3];
@@ -133,7 +134,7 @@ export default function AdminRoundSelection() {
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); }, [navigate]);
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/admin/login"); }, [navigate]);
   const load = useCallback(() => {
     setLoading(true);
     setLoadError("");
@@ -189,7 +190,7 @@ export default function AdminRoundSelection() {
   return <main className="admin-teams admin-pdf admin-rs">
     <header className="admin-teams-header">
       <div><p>DEXATHON 2026 ADMIN</p><h1>Round Selection</h1><span>Select or reject teams round by round. Results are emailed and shown in the Team Head Portal.</span></div>
-      <nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/teams">Teams</Link><Link to="/admin/pdf-submissions">PDF Submissions</Link><Link to="/admin/rounds">Round Status</Link><Link to="/admin/round-selection" aria-current="page">Round Selection</Link><Link to="/admin/payment-settings">Payment Settings</Link><button type="button" onClick={logout}>Logout</button></nav>
+      <nav><AdminNav /></nav>
     </header>
 
     {message ? <p className={`admin-teams-message ${message.ok ? "" : "is-error"}`} role="status">{message.text}<button type="button" aria-label="Dismiss" onClick={() => setMessage(null)}><X size={14} /></button></p> : null}

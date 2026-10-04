@@ -14,6 +14,7 @@ import AdminPdfSubmissions from "./pages/AdminPdfSubmissions";
 import SubmitDocument from "./pages/SubmitDocument";
 import AdminRounds from "./pages/AdminRounds";
 import AdminRoundSelection from "./pages/AdminRoundSelection";
+import AdminUsers from "./pages/AdminUsers";
 import TeamLogin from "./pages/TeamLogin";
 import TeamDashboard from "./pages/TeamDashboard";
 import TeamProtectedRoute from "./components/TeamProtectedRoute";
@@ -34,15 +35,14 @@ function App() {
           <Route path="/team-dashboard" element={<TeamDashboard />} />
         </Route>
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route element={<AdminProtectedRoute />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/payment-history" element={<PaymentHistory />} />
-          <Route path="/admin/teams" element={<AdminTeams />} />
-          <Route path="/admin/pdf-submissions" element={<AdminPdfSubmissions />} />
-          <Route path="/admin/rounds" element={<AdminRounds />} />
-          <Route path="/admin/round-selection" element={<AdminRoundSelection />} />
-          <Route path="/admin/payment-settings" element={<AdminPaymentSettings />} />
-        </Route>
+        <Route path="/admin/dashboard" element={<AdminProtectedRoute section="dashboard"><AdminDashboard /></AdminProtectedRoute>} />
+        <Route path="/admin/payment-history" element={<AdminProtectedRoute section="payments"><PaymentHistory /></AdminProtectedRoute>} />
+        <Route path="/admin/teams" element={<AdminProtectedRoute section="teams"><AdminTeams /></AdminProtectedRoute>} />
+        <Route path="/admin/pdf-submissions" element={<AdminProtectedRoute section="pdf"><AdminPdfSubmissions /></AdminProtectedRoute>} />
+        <Route path="/admin/rounds" element={<AdminProtectedRoute section="rounds"><AdminRounds /></AdminProtectedRoute>} />
+        <Route path="/admin/round-selection" element={<AdminProtectedRoute section="rounds"><AdminRoundSelection /></AdminProtectedRoute>} />
+        <Route path="/admin/payment-settings" element={<AdminProtectedRoute section="paymentSettings"><AdminPaymentSettings /></AdminProtectedRoute>} />
+        <Route path="/admin/users" element={<AdminProtectedRoute section="users"><AdminUsers /></AdminProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );

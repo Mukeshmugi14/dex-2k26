@@ -3,10 +3,11 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./PaymentHistory.css";
 import { API_URL } from "../config/api";
+import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
 const apiUrl = API_URL;
-const PAGE_SIZE = 20;
+const PAGE_SIZES = [20, 50, 100];
 const EMAIL_POLL_MS = 2000;
 const EMAIL_POLL_LIMIT = 30;
 const FILTERS = [["all", "All"], ["success", "Successful"], ["pending", "Pending"], ["failed", "Failed"], ["confirmed", "Confirmed"], ["not-confirmed", "Not Confirmed"]];
@@ -31,7 +32,7 @@ const PaymentRow = memo(function PaymentRow({ row, busy, onConfirm, onResend }) 
       : busy ? <span className="confirming-mark">Confirming...</span>
         : <label className="confirm-checkbox"><input type="checkbox" checked={false} onChange={() => onConfirm(row)} disabled={!row.payment?.transactionId || category === "failed"} />Confirm Payment</label>}</td>
     <td><b>{row.teamName}</b><small>{row.teamId}</small></td>
-    <td>{row.leader?.name || "—"}</td>
+    <td>{row.leader?.name || "—"}{row.leader?.email ? <small className="payment-head-email">{row.leader.email}</small> : null}</td>
     <td>{row.college}</td>
     <td>₹{row.payment?.amount}</td>
     <td>{row.payment?.transactionId || "—"}</td>
@@ -49,6 +50,7 @@ export default function PaymentHistory() {
   const [summary, setSummary] = useState({ total: 0, successful: 0, pending: 0, failed: 0, amount: 0 });
   const [paging, setPaging] = useState({ page: 1, pages: 1, total: 0 });
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search);
@@ -62,13 +64,13 @@ export default function PaymentHistory() {
   const headers = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
   const pollers = useRef(new Map());
 
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); }, [navigate]);
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/admin/login"); }, [navigate]);
 
   const loadPayments = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
-      const response = await axios.get(`${apiUrl}/admin/payment-history`, { headers, params: { page, limit: PAGE_SIZE, status: statusFilter, search: debouncedSearch } });
+      const response = await axios.get(`${apiUrl}/admin/payment-history`, { headers, params: { page, limit: pageSize, status: statusFilter, search: debouncedSearch } });
       setPayments(response.data.items);
       setSummary(response.data.summary);
       setPaging({ page: response.data.page, pages: response.data.pages, total: response.data.total });
@@ -78,10 +80,10 @@ export default function PaymentHistory() {
     } finally {
       setLoading(false);
     }
-  }, [headers, page, statusFilter, debouncedSearch, logout]);
+  }, [headers, page, pageSize, statusFilter, debouncedSearch, logout]);
 
   useEffect(() => { loadPayments(); }, [loadPayments]);
-  useEffect(() => { setPage(1); }, [statusFilter, debouncedSearch]);
+  useEffect(() => { setPage(1); }, [statusFilter, debouncedSearch, pageSize]);
   useEffect(() => { const timers = pollers.current; return () => timers.forEach((timer) => clearTimeout(timer)); }, []);
 
   const replacePayment = useCallback((updated) => setPayments((current) => current.map((row) => (row._id === updated._id ? { ...row, ...updated, payment: { ...row.payment, ...updated.payment } } : row))), []);
@@ -143,7 +145,7 @@ export default function PaymentHistory() {
 
   const openConfirm = useCallback((row) => setConfirmTarget(row), []);
 
-  const nav = <nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/teams">Teams</Link><Link to="/admin/pdf-submissions">PDF Submissions</Link><Link to="/admin/rounds">Round Status</Link><Link to="/admin/round-selection">Round Selection</Link><Link to="/admin/payment-settings">Payment Settings</Link><button type="button" onClick={logout}>Logout</button></nav>;
+  const nav = <nav><AdminNav /></nav>;
 
   if (loadError && !payments.length && !loading) return <main className="payment-history"><section className="payment-history-error"><h1>Unable to load payment history.</h1><p>{loadError}</p><button type="button" onClick={loadPayments}>Retry</button></section></main>;
 
@@ -151,12 +153,12 @@ export default function PaymentHistory() {
     <header><div><p>DEXATHON 2026 ADMIN</p><h1>Payment History</h1><span>Track and verify all registration payments.</span></div>{nav}</header>
     {message ? <p className={`payment-history-message ${message.ok ? "" : "is-error"}`} role="status">{message.text}</p> : null}
     <section className="payment-summary">{[["Total Payments", summary.total], ["Successful", summary.successful], ["Pending", summary.pending], ["Failed", summary.failed], ["Total Amount Received", `₹${summary.amount}`]].map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong></article>)}</section>
-    <section className="payment-history-filters"><div className="payment-history-status">{FILTERS.map(([value, label]) => <button type="button" key={value} className={statusFilter === value ? "active" : ""} onClick={() => setStatusFilter(value)}>{label}</button>)}</div><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by Team / Transaction ID" /></section>
+    <section className="payment-history-filters"><div className="payment-history-status">{FILTERS.map(([value, label]) => <button type="button" key={value} className={statusFilter === value ? "active" : ""} onClick={() => setStatusFilter(value)}>{label}</button>)}</div><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by Team / Team Head / Email / Transaction ID" /><label className="payment-page-size">Show <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select> per page</label></section>
     {loadError ? <p className="payment-history-message is-error">{loadError} <button type="button" className="resend-email" onClick={loadPayments}>Retry</button></p> : null}
     {loading && !payments.length ? <AdminSkeleton rows={6} /> : <div className={`payment-history-table ${loading ? "is-refreshing" : ""}`}><table><thead><tr><th>Select</th><th>Team</th><th>Team Head</th><th>College</th><th>Amount</th><th>Transaction ID</th><th>Status</th><th>Date</th></tr></thead><tbody>
       {payments.map((row) => <PaymentRow key={row._id} row={row} busy={busyId === row._id} onConfirm={openConfirm} onResend={resendEmail} />)}
     </tbody></table>{!payments.length ? <p className="payment-history-empty">{summary.total ? "No payment records match the selected filters." : "No payment records found."}</p> : null}</div>}
-    <AdminPagination page={paging.page} pages={paging.pages} total={paging.total} limit={PAGE_SIZE} onChange={setPage} label="payments" />
+    <AdminPagination page={paging.page} pages={paging.pages} total={paging.total} limit={pageSize} onChange={setPage} label="payments" />
     {confirmTarget ? <div className="confirmation-overlay" role="dialog" aria-modal="true"><section><h2>Confirm Payment</h2><p>Are you sure you want to confirm this payment?</p><dl><div><dt>Team</dt><dd>{confirmTarget.teamName}</dd></div><div><dt>Amount</dt><dd>₹{confirmTarget.payment?.amount}</dd></div><div><dt>Transaction ID</dt><dd>{confirmTarget.payment?.transactionId}</dd></div></dl><footer><button type="button" onClick={() => setConfirmTarget(null)} disabled={Boolean(busyId)}>Cancel</button><button type="button" onClick={confirmPayment} disabled={Boolean(busyId)}>{busyId ? "Confirming..." : "Confirm Payment"}</button></footer></section></div> : null}
   </main>;
 }

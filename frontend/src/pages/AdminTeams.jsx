@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
 import { API_URL } from "../config/api";
+import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
 const PAGE_SIZE = 20;
@@ -278,7 +279,7 @@ export default function AdminTeams() {
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); navigate("/admin/login"); }, [navigate]);
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/admin/login"); }, [navigate]);
 
   // One page of teams at a time, searched and filtered by the server (logos load lazily per card).
   const loadTeams = useCallback(() => {
@@ -368,7 +369,7 @@ export default function AdminTeams() {
   return <main className="admin-teams">
     <header className="admin-teams-header">
       <div><p>DEXATHON 2026 ADMIN</p><h1>Teams</h1><span>Review and edit registered team details.</span></div>
-      <nav><Link to="/admin/dashboard">Dashboard</Link><Link to="/admin/payment-history">Payment History</Link><Link to="/admin/teams" aria-current="page">Teams</Link><Link to="/admin/pdf-submissions">PDF Submissions</Link><Link to="/admin/rounds">Round Status</Link><Link to="/admin/round-selection">Round Selection</Link><Link to="/admin/payment-settings">Payment Settings</Link><button type="button" onClick={logout}>Logout</button></nav>
+      <nav><AdminNav /></nav>
     </header>
 
     {message ? <p className="admin-teams-message" role="status">{message}<button type="button" aria-label="Dismiss" onClick={() => setMessage("")}><X size={14} /></button></p> : null}

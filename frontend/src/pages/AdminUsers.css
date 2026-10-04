@@ -1,0 +1,26 @@
+/* Builds on AdminTeams.css + AdminPdfSubmissions.css */
+.admin-users .au-create{margin-top:20px;gap:14px}
+.admin-users .au-create h2{display:flex;align-items:center;gap:8px;margin:0;font-size:17px}
+.admin-users .au-create h2 svg{color:#ff7432}
+.admin-users .au-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.admin-users .au-grid label,.admin-users .au-controls label{display:grid;align-content:start;gap:6px;min-width:0}
+.admin-users .au-grid span,.admin-users .au-controls span{color:#55caff;font:10px monospace;letter-spacing:.1em;text-transform:uppercase}
+.admin-users input,.admin-users select{width:100%;height:40px;padding:0 10px;border:1px solid #55caff44;border-radius:5px;background:#07111f;color:#fff;font:13px Arial,sans-serif}
+.admin-users .has-error input,.admin-users .has-error select{border-color:#ff8a8a}
+.admin-users .au-grid small{color:#ff9c9c;font-size:11px}
+.admin-users .au-grid small.au-hint{color:#91a4b9}
+.admin-users .au-create footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:12px;border-top:1px solid #ffffff15}
+.admin-users .au-create footer span{color:#91a4b9;font-size:12px;text-transform:none;letter-spacing:0}
+.admin-users .au-list{margin-top:18px}
+.admin-users .au-card h2 em{color:#91a4b9;font-size:13px;font-style:normal;text-transform:none}
+.admin-users .au-card.is-disabled{opacity:.6}
+.admin-users .au-role{display:inline-block;flex-shrink:0;padding:5px 9px;border-radius:999px;background:#55caff26;color:#8fdcff;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.admin-users .au-role-super_admin{background:#ff743233;color:#ffb088}
+.admin-users .au-controls{display:grid;gap:10px;padding-top:12px;border-top:1px solid #ffffff15}
+.admin-users .au-password{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}
+.admin-users .au-card footer{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.admin-users .au-card footer button,.admin-users .au-password button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:6px;font-size:12px;font-weight:800;cursor:pointer}
+.admin-users button.ghost{border:1px solid #55caff44;background:transparent;color:#cad8e6}
+.admin-users button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:1000px){.admin-users .au-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.admin-users .au-grid{grid-template-columns:1fr}.admin-users .au-card footer{display:grid;grid-template-columns:1fr 1fr}.admin-users .au-card footer button{justify-content:center}}

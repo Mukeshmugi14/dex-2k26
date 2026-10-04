@@ -17,3 +17,5 @@
 .upi-card{grid-template-columns:1fr}
 .upi-link{width:100%;min-height:46px}
 }
+
+.payment-qr-image{display:block;width:180px;max-width:100%;height:auto;aspect-ratio:1;object-fit:contain;padding:10px;background:#fff;border-radius:6px}

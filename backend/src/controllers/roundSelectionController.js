@@ -50,7 +50,7 @@ const summarize = (views) => ({
 
 // All payment-confirmed teams (the teams that take part in the rounds).
 export const listRoundSelection = async (_request, response) => {
-  const teams = await Registration.find({ "payment.confirmedAt": { $exists: true, $ne: null } }, LIST_FIELDS).sort({ teamName: 1 });
+  const teams = await Registration.find({ "payment.confirmedAt": { $exists: true, $ne: null } }, LIST_FIELDS).sort({ teamName: 1 }).lean();
   const views = teams.map(toView);
   return response.json({ teams: views, summary: summarize(views) });
 };

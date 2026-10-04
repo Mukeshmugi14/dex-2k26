@@ -11,7 +11,7 @@ const getSettings = async () => (await EvaluationSettings.findOne()) || new Eval
 const settingsView = (settings) => ({ maxScorePerCriterion: settings.maxScorePerCriterion ?? null, criteriaLabels: settings.criteriaLabels });
 
 const toAdminView = (registration) => {
-  const view = registration.toObject();
+  const view = registration.toObject ? registration.toObject() : { ...registration };
   view.pdfSubmission = { ...(view.pdfSubmission || {}), status: deriveSubmissionStatus(registration), hasPdf: Boolean(view.pdfSubmission?.fileId) };
   delete view.pdfSubmission.tokenHash;
   delete view.pdfSubmission.legacyTokenHash;
@@ -25,7 +25,7 @@ const findRegistration = async (id) => (mongoose.isValidObjectId(id) ? Registrat
 // Teams that have received a submission link (payment confirmed) or have already submitted a PDF.
 export const listSubmissions = async (_request, response) => {
   const [registrations, settings] = await Promise.all([
-    Registration.find({ $or: [{ "payment.confirmedAt": { $exists: true, $ne: null } }, { "pdfSubmission.fileId": { $exists: true, $ne: null } }] }, LIST_FIELDS).sort({ "pdfSubmission.submittedAt": -1, createdAt: -1 }),
+    Registration.find({ $or: [{ "payment.confirmedAt": { $exists: true, $ne: null } }, { "pdfSubmission.fileId": { $exists: true, $ne: null } }] }, LIST_FIELDS).sort({ "pdfSubmission.submittedAt": -1, createdAt: -1 }).lean(),
     getSettings(),
   ]);
   return response.json({ teams: registrations.map(toAdminView), settings: settingsView(settings) });
