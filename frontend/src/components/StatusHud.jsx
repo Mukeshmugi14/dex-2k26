@@ -1,51 +1,25 @@
-import {
-  Database,
-  MapPin,
-  Target,
-  UserRound,
-} from "lucide-react";
+import { CalendarDays, MapPin, Trophy, Users, Zap } from "lucide-react";
+
+// Compact event information bar shown under the navigation.
+const items = [
+  { label: "FORMAT", value: "24-HOUR AI HACKATHON", icon: Zap, tone: "orange" },
+  { label: "EVENT DATES", value: "4–5 NOVEMBER 2026", icon: CalendarDays, tone: "cyan" },
+  { label: "VENUE", value: "INDOOR AUDITORIUM, SATHYABAMA", icon: MapPin, tone: "cyan" },
+  { label: "TEAM SIZE", value: "4–6 MEMBERS", icon: Users, tone: "cyan" },
+  { label: "PRIZE POOL", value: "UP TO ₹50,000", icon: Trophy, tone: "gold" },
+];
 
 export default function StatusHud() {
   return (
-    <section className="dex-hud">
-
-      <div className="hud-module">
-        <Database size={17} />
-
-        <div>
-          <span>DEXATHON DATABASE</span>
-          <strong>ONLINE</strong>
-        </div>
+    <section className="home-event-info" aria-label="Event information">
+      <div className="home-event-info-inner">
+        {items.map(({ label, value, icon: Icon, tone }) => (
+          <div className={`home-info-chip is-${tone}`} key={label}>
+            <Icon size={17} aria-hidden="true" />
+            <div><span>{label}</span><strong>{value}</strong></div>
+          </div>
+        ))}
       </div>
-
-      <div className="hud-module">
-        <UserRound size={17} />
-
-        <div>
-          <span>TRAINER STATUS</span>
-          <strong>ACTIVE</strong>
-        </div>
-      </div>
-
-      <div className="hud-module mission">
-        <Target size={17} />
-
-        <div>
-          <span>MISSION</span>
-          <strong>DEXATHON 2026</strong>
-        </div>
-      </div>
-
-      <div className="hud-location">
-        <MapPin size={18} />
-
-        <div>
-          <span>13.0109° N</span>
-          <span>80.2341° E</span>
-          <small>CHENNAI, TN</small>
-        </div>
-      </div>
-
     </section>
   );
 }

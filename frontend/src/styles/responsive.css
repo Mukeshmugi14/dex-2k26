@@ -1,0 +1,105 @@
+/* =========================================================
+   MOBILE-ONLY FIXES (all pages)
+   Loaded after every page stylesheet. Nothing here applies above 767px,
+   so tablet/desktop layouts are unchanged. Rules are scoped to each
+   page's own classes and prefixed with "html" to win over equal selectors.
+   ========================================================= */
+
+/* iOS Safari zooms the page when focusing a field whose text is under 16px. */
+@media (max-width: 767px) {
+  html input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  html select,
+  html textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Comfortable tap targets (about 40px) for small buttons and text links. */
+@media (max-width: 640px) {
+  /* Admin menus (shared AdminNav inside each admin header) */
+  html .admin-teams-header nav a,
+  html .admin-teams-header nav button,
+  html .payment-history nav a,
+  html .payment-history nav button,
+  html .admin-dashboard header nav a,
+  html .admin-dashboard header nav button,
+  html .admin-dashboard > header > button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  /* Admin filter chips */
+  html .admin-status-filters button,
+  html .payment-history-status button,
+  html .pdf-filters button {
+    min-height: 38px;
+  }
+
+  /* "Resend email" buttons inside admin cards and the payment table
+     (their base rules use !important, so these must too). */
+  html .round-email button,
+  html .rs-email button {
+    min-height: 36px !important;
+  }
+
+  html .payment-history .resend-email {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  html .admin-login-help {
+    min-height: 40px;
+    padding: 8px 12px;
+  }
+
+  /* Register header "Already registered? Login" */
+  html .register-login {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding-left: 12px;
+  }
+
+  /* Team Head Portal refresh button */
+  html .team-portal .team-refresh {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* Home page text links */
+  html .home-page .home-hero-link {
+    min-height: 40px;
+    margin-top: 8px;
+  }
+
+  html .challenge-info-strip a,
+  html .helpdex-bottom a,
+  html .home-page .home-footer-coordinators {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  html .home-page .home-person-phone,
+  html .home-page .home-social {
+    min-height: 34px;
+  }
+
+  html .home-page .home-social {
+    padding: 6px 10px;
+  }
+
+  html .home-page .home-footer-links ul {
+    gap: 0;
+  }
+
+  html .home-page .home-footer-links a {
+    min-height: 38px;
+  }
+
+  html .home-page .home-footer-dev a {
+    min-height: 36px;
+  }
+}

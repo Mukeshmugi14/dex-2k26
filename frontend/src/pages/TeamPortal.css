@@ -195,3 +195,19 @@
 @media (prefers-reduced-motion:reduce){
   .team-portal .team-runner,.team-portal .team-runner svg,.team-portal .runner-leg,.team-portal .runner-arm,.team-portal .team-runners-arrow{animation:none}
 }
+
+/* Key competition dates (light panel with white date cards) */
+.team-portal .team-key-dates{margin-top:20px;padding:22px 22px 24px;border-radius:14px;background:linear-gradient(#0f2b390a 1px,transparent 1px) 0 0/34px 34px,linear-gradient(90deg,#0f2b390a 1px,transparent 1px) 0 0/34px 34px,#f5f7f7;box-shadow:0 14px 40px #0005}
+.team-portal .team-key-dates h2{margin:0 0 14px;color:#eb681f;font-size:13px;font-weight:800;letter-spacing:.12em}
+.team-portal .team-key-dates-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin:0;padding:0;list-style:none}
+.team-portal .team-key-date{display:flex;flex-direction:column;min-width:0;padding:14px 14px 16px;border:1px solid #0f2b391a;border-top:3px solid #146cff;border-radius:8px;background:#fff;box-shadow:0 6px 18px #0f2b3910;transition:transform .2s,box-shadow .2s}
+.team-portal .team-key-date:hover{transform:translateY(-3px);box-shadow:0 12px 24px #0f2b391a}
+.team-portal .team-key-date.is-orange{border-top-color:#eb681f}
+.team-portal .team-key-date.is-cyan{border-top-color:#2de2e6}
+.team-portal .team-key-date span{color:#7a8794;font-size:10px;font-weight:800;letter-spacing:.1em}
+.team-portal .team-key-date strong{margin-top:5px;color:#142733;font-size:18px;font-weight:800;line-height:1.2}
+.team-portal .team-key-date em{margin-top:2px;color:#eb681f;font-size:11.5px;font-style:normal;font-weight:700}
+.team-portal .team-key-date p{margin:14px 0 0;color:#4d5d6c;font-size:13px;line-height:1.4}
+@media (max-width:1100px){.team-portal .team-key-dates-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.team-portal .team-key-dates{padding:18px 14px 18px}.team-portal .team-key-dates-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.team-portal .team-key-date{padding:12px 11px 13px}.team-portal .team-key-date strong{font-size:15px}.team-portal .team-key-date p{margin-top:10px;font-size:12px}}
+@media (prefers-reduced-motion:reduce){.team-portal .team-key-date{transition:none}.team-portal .team-key-date:hover{transform:none}}

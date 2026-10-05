@@ -40,6 +40,29 @@ function TeamRunners({ count, stopped }) {
   </div>;
 }
 
+const KEY_DATES = [
+  { stage: "OPEN", date: "5 OCT 2026", when: "Monday", event: "Registration Opens", tone: "blue" },
+  { stage: "DEADLINE", date: "20 OCT 2026", when: "Tuesday · 11 PM", event: "Round 1 PPT Submission Closes", tone: "orange" },
+  { stage: "RESULTS", date: "25 OCT 2026", when: "Sunday · 7 PM", event: "Round 1 Results Announced", tone: "blue" },
+  { stage: "DEADLINE", date: "30 OCT 2026", when: "Friday · 11 PM", event: "Round 2 Prototype Closes", tone: "orange" },
+  { stage: "RESULTS", date: "2 NOV 2026", when: "Monday · 7 PM", event: "Round 2 Results Announced", tone: "blue" },
+  { stage: "FINALE", date: "4–5 NOV 2026", when: "Wed – Thu", event: "Final 24-Hour On-Campus Hackathon", tone: "cyan" },
+];
+
+function KeyDates() {
+  return <section className="team-key-dates" aria-labelledby="team-key-dates-title">
+    <h2 id="team-key-dates-title">KEY COMPETITION DATES</h2>
+    <ol className="team-key-dates-grid">
+      {KEY_DATES.map((item) => <li className={`team-key-date is-${item.tone}`} key={item.event}>
+        <span>{item.stage}</span>
+        <strong>{item.date}</strong>
+        <em>{item.when}</em>
+        <p>{item.event}</p>
+      </li>)}
+    </ol>
+  </section>;
+}
+
 function RoundTracker({ rounds }) {
   const stopIndex = rounds.findIndex((round) => round.status === "NOT_SELECTED");
   const visible = stopIndex >= 0 ? rounds.slice(0, stopIndex + 1) : rounds;
@@ -132,6 +155,8 @@ export default function TeamDashboard() {
         {notSelected ? <p className="team-current-message">Thank you for participating in DEXATHON 2026.<br />Your team was not selected for the next round.</p> : null}
       </section>
       {error ? <p className="team-inline-error">{error}</p> : null}
+
+      <KeyDates />
 
       <div className="team-grid">
         <section className="team-card team-area-details">

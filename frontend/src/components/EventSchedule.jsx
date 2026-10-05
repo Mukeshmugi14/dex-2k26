@@ -10,6 +10,15 @@ import {
 
 import "./EventSchedule.css";
 
+const keyDates = [
+  { stage: "OPEN", date: "5 OCT 2026", when: "Monday", event: "Registration Opens", tone: "blue" },
+  { stage: "DEADLINE", date: "20 OCT 2026", when: "Tuesday · 11 PM", event: "Round 1 PPT Submission Closes", tone: "orange" },
+  { stage: "RESULTS", date: "25 OCT 2026", when: "Sunday · 7 PM", event: "Round 1 Results Announced", tone: "blue" },
+  { stage: "DEADLINE", date: "30 OCT 2026", when: "Friday · 11 PM", event: "Round 2 Prototype Closes", tone: "orange" },
+  { stage: "RESULTS", date: "2 NOV 2026", when: "Monday · 7 PM", event: "Round 2 Results Announced", tone: "blue" },
+  { stage: "FINALE", date: "4–5 NOV 2026", when: "Wed – Thu", event: "Final 24-Hour On-Campus Hackathon", tone: "cyan" },
+];
+
 const dayOne = [
   {
     time: "08:00 AM – 09:00 AM",
@@ -102,6 +111,21 @@ export default function EventSchedule() {
                 <span>SATHYABAMA · CHENNAI</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* KEY COMPETITION DATES */}
+        <div className="key-dates">
+          <h3>KEY COMPETITION DATES</h3>
+          <div className="key-dates-grid">
+            {keyDates.map((item) => (
+              <article className={`key-date is-${item.tone}`} key={item.event}>
+                <span>{item.stage}</span>
+                <strong>{item.date}</strong>
+                <em>{item.when}</em>
+                <p>{item.event}</p>
+              </article>
+            ))}
           </div>
         </div>
 

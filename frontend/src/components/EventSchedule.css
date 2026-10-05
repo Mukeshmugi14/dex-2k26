@@ -659,3 +659,83 @@
   }
 
 }
+/* =========================================================
+   KEY COMPETITION DATES
+   ========================================================= */
+
+.event-schedule-section .key-dates {
+  margin-bottom: 34px;
+}
+
+.event-schedule-section .key-dates h3 {
+  margin: 0 0 12px;
+  color: #eb681f;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+}
+
+.event-schedule-section .key-dates-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.event-schedule-section .key-date {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px 14px 16px;
+  border: 1px solid rgba(15, 43, 57, 0.1);
+  border-top: 3px solid #146cff;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 43, 57, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.event-schedule-section .key-date:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(15, 43, 57, 0.1);
+}
+
+.event-schedule-section .key-date.is-orange { border-top-color: #eb681f; }
+.event-schedule-section .key-date.is-cyan { border-top-color: #2de2e6; }
+
+.event-schedule-section .key-date span {
+  color: #7a8794;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.event-schedule-section .key-date strong {
+  margin-top: 4px;
+  color: #142733;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.event-schedule-section .key-date em {
+  margin-top: 2px;
+  color: #eb681f;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.event-schedule-section .key-date p {
+  margin: 12px 0 0;
+  color: #4d5d6c;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+@media (max-width: 1100px) {
+  .event-schedule-section .key-dates-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .event-schedule-section .key-dates-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .event-schedule-section .key-date strong { font-size: 15px; }
+}

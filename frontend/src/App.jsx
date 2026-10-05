@@ -19,6 +19,7 @@ import TeamLogin from "./pages/TeamLogin";
 import TeamDashboard from "./pages/TeamDashboard";
 import TeamProtectedRoute from "./components/TeamProtectedRoute";
 import "./styles/dexathon.css";
+import "./styles/responsive.css";
 
 function App() {
   return (

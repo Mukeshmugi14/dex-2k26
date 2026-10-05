@@ -1,4 +1,4 @@
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   CalendarDays,
@@ -7,7 +7,6 @@ import {
   Crosshair,
   MapPin,
   Radar,
-  ScanLine,
   Sparkles,
   Target,
   Users,
@@ -19,9 +18,7 @@ import { Link } from "react-router-dom";
 const TARGET_DATE = new Date("2026-11-04T10:30:00+05:30").getTime();
 
 function getCountdown() {
-  const difference = Math.max(0, TARGET_DATE - Date.now());
-  const seconds = Math.floor(difference / 1000);
-
+  const seconds = Math.floor(Math.max(0, TARGET_DATE - Date.now()) / 1000);
   return {
     days: Math.floor(seconds / 86400),
     hours: Math.floor((seconds % 86400) / 3600),
@@ -30,463 +27,155 @@ function getCountdown() {
   };
 }
 
-function pad(value) {
-  return String(value ?? 0).padStart(2, "0");
-}
+const pad = (value) => String(value ?? 0).padStart(2, "0");
 
-const journey = [
-  {
-    number: "01",
-    title: "REGISTER",
-    description: "Join the mission",
-    link: "#register",
-  },
-  {
-    number: "02",
-    title: "SUBMIT",
-    description: "Send your solution",
-    link: "#rounds",
-  },
-  {
-    number: "03",
-    title: "QUALIFY",
-    description: "Clear Round 1 & 2",
-    link: "#timeline",
-  },
-  {
-    number: "04",
-    title: "CHAMPION",
-    description: "Build for 24 hours",
-    link: "#prizes",
-  },
+const details = [
+  { label: "DATE", value: "4–5 NOV 2026", icon: CalendarDays },
+  { label: "VENUE", value: "INDOOR AUDITORIUM", icon: MapPin },
+  { label: "TEAM SIZE", value: "4–6 MEMBERS", icon: Users },
+  { label: "DURATION", value: "24 HOURS", icon: Clock3 },
 ];
 
-export default function Hero() {
-  const [countdown, setCountdown] = useState(getCountdown());
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const springX = useSpring(mouseX, {
-    stiffness: 90,
-    damping: 22,
-  });
-
-  const springY = useSpring(mouseY, {
-    stiffness: 90,
-    damping: 22,
-  });
-
-  const imageX = useTransform(springX, [-500, 500], [-6, 6]);
-  const imageY = useTransform(springY, [-500, 500], [-5, 5]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCountdown(getCountdown());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleMouseMove = (event) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-
-    const x = event.clientX - (rect.left + rect.width / 2);
-    const y = event.clientY - (rect.top + rect.height / 2);
-
-    mouseX.set(x);
-    mouseY.set(y);
-  };
-
+function HeroContent({ countdown }) {
   const countdownItems = [
-    {
-      label: "DAYS",
-      value: countdown.days,
-    },
-    {
-      label: "HRS",
-      value: countdown.hours,
-    },
-    {
-      label: "MIN",
-      value: countdown.minutes,
-    },
-    {
-      label: "SEC",
-      value: countdown.seconds,
-    },
+    { label: "DAYS", value: countdown.days },
+    { label: "HRS", value: countdown.hours },
+    { label: "MIN", value: countdown.minutes },
+    { label: "SEC", value: countdown.seconds },
   ];
 
   return (
-    <section className="animated-hero" onMouseMove={handleMouseMove}>
-      <div className="hero-grid-noise" />
-      <div className="hero-blue-orb hero-blue-orb-one" />
-      <div className="hero-blue-orb hero-blue-orb-two" />
-
-      <div className="animated-hero-inner">
-
-        {/* ================= LEFT ================= */}
-
-        <motion.div
-          className="hero-copy"
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{
-            duration: 0.7,
-            ease: "easeOut",
-          }}
-        >
-          <div className="hero-kicker">
-            <span />
-            OFFICIAL DIGITAL ADVENTURE
-          </div>
-
-          <div className="hero-title-wrap">
-
-            <motion.div
-              className="hero-title-small"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                delay: 0.1,
-                duration: 0.5,
-              }}
-            >
-              DEXATHON
-            </motion.div>
-
-            <motion.div
-              className="hero-title-year"
-              initial={{ opacity: 0, y: 15, scale: 0.95 }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                scale: 1,
-              }}
-              transition={{
-                delay: 0.2,
-                duration: 0.55,
-              }}
-            >
-              2026
-            </motion.div>
-
-            <div className="hero-title-rule">
-              <span>24-HOUR HACKATHON</span>
-              <i />
-            </div>
-
-          </div>
-
-          <p className="hero-tagline">
-            Catch Ideas. Build Solutions. Become a Champion.
-          </p>
-
-          <div className="hero-facts">
-
-            <div>
-              <CalendarDays size={14} />
-
-              <span>
-                DATE
-                <strong>4–5 NOV 2026</strong>
-              </span>
-            </div>
-
-            <div>
-              <MapPin size={14} />
-
-              <span>
-                VENUE
-                <strong>INDOOR AUDITORIUM</strong>
-              </span>
-            </div>
-
-            <div>
-              <Users size={14} />
-
-              <span>
-                TEAM SIZE
-                <strong>4–6 TRAINERS</strong>
-              </span>
-            </div>
-
-            <div>
-              <Clock3 size={14} />
-
-              <span>
-                DURATION
-                <strong>24 HOURS</strong>
-              </span>
-            </div>
-
-          </div>
-
-          <div className="hero-actions">
-
-            <Link
-              to="/register"
-              className="hero-primary"
-            >
-              START YOUR JOURNEY
-              <ArrowRight size={16} />
-            </Link>
-
-            <a
-              href="#rounds"
-              className="hero-secondary"
-            >
-              EXPLORE DEXATHON
-              <Radar size={15} />
-            </a>
-
-            <a
-              href="#rules"
-              className="hero-link"
-            >
-              VIEW RULES
-              <ArrowRight size={13} />
-            </a>
-
-          </div>
-
-          {/* COUNTDOWN */}
-
-          <div className="hero-countdown">
-
-            {countdownItems.map((item) => (
-              <div
-                className="count-box"
-                key={item.label}
-              >
-                <motion.strong
-                  key={`${item.label}-${item.value}`}
-                  initial={{
-                    opacity: 0,
-                    y: -6,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                  }}
-                  transition={{
-                    duration: 0.18,
-                  }}
-                >
-                  {pad(item.value)}
-                </motion.strong>
-
-                <span>{item.label}</span>
-              </div>
-            ))}
-
-          </div>
-
-        </motion.div>
-
-        {/* ================= RIGHT ================= */}
-
-        <motion.div
-          className="hero-visual"
-          initial={{
-            opacity: 0,
-            x: 30,
-          }}
-          animate={{
-            opacity: 1,
-            x: 0,
-          }}
-          transition={{
-            duration: 0.8,
-            delay: 0.15,
-            ease: "easeOut",
-          }}
-        >
-
-          <motion.div
-            className="campus-frame"
-            style={{
-              x: imageX,
-              y: imageY,
-            }}
-          >
-
-            <img
-              src="/sathyabama-campus.jpg"
-              alt="Sathyabama Institute of Science and Technology campus"
-            />
-
-            <div className="campus-darken" />
-            <div className="scan-grid" />
-            <div className="scan-beam" />
-
-            <div className="hud-corner top-left" />
-            <div className="hud-corner top-right" />
-            <div className="hud-corner bottom-left" />
-            <div className="hud-corner bottom-right" />
-
-            <div className="campus-topline">
-              <span>LOCATION SCAN</span>
-              <b>CHENNAI HQ</b>
-            </div>
-
-            <div className="campus-coordinate">
-              DEXATHON HQ
-            </div>
-
-            <motion.div
-              className="target-reticle"
-              animate={{
-                rotate: 360,
-              }}
-              transition={{
-                duration: 12,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            >
-              <Crosshair size={56} />
-            </motion.div>
-
-            <div className="target-label">
-              <Target size={12} />
-              TARGET LOCKED
-            </div>
-
-            <div className="campus-side-status">
-
-              <span>SCAN</span>
-              <strong>ONLINE</strong>
-
-              <i />
-
-              <span>MISSION</span>
-              <strong>ACTIVE</strong>
-
-            </div>
-
-            <div className="campus-caption">
-
-              <div>
-                <Sparkles size={13} />
-
-                <span>
-                  SATHYABAMA INSTITUTE OF SCIENCE AND TECHNOLOGY
-                </span>
-              </div>
-
-              <small>
-                INDOOR AUDITORIUM · CHENNAI, TAMIL NADU
-              </small>
-
-            </div>
-
-          </motion.div>
-
-          {/* FLOATING MISSION CARD */}
-
-          <motion.div
-            className="mission-card-float"
-            animate={{
-              y: [0, -7, 0],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
-
-            <div className="mission-orb">
-              <Zap size={17} />
-            </div>
-
-            <div>
-              <span>MISSION STATUS</span>
-              <strong>READY TO BUILD</strong>
-            </div>
-
-            <div className="mission-code">
-              DX26
-            </div>
-
-          </motion.div>
-
-          {/* ELIGIBILITY */}
-
-          <div className="hero-eligibility">
-
-            <div>
-              <span>TEAM ELIGIBILITY</span>
-              <strong>4–6 TRAINERS</strong>
-            </div>
-
-            <CheckCircle2 size={19} />
-
-          </div>
-
-        </motion.div>
-
+    <motion.div
+      className="home-hero-content"
+      initial={{ opacity: 0, x: -24 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
+      <p className="home-hero-kicker"><span />OFFICIAL 24-HOUR NATIONAL HACKATHON</p>
+
+      <h1 className="home-hero-title" aria-label="DEXATHON 2026">
+        <span className="home-hero-title-main" aria-hidden="true">
+          DEXATH<i className="home-hero-ball" /><span>N</span>
+        </span>
+        <span className="home-hero-title-year" aria-hidden="true">2026</span>
+      </h1>
+
+      <div className="home-hero-organizer">
+        <small>ORGANIZED BY</small>
+        <strong>Department of Computer Applications</strong>
       </div>
 
-      {/* ================= JOURNEY ================= */}
+      <span className="home-hero-tag">24-HOUR PHYSICAL HACKATHON</span>
 
-      <div className="journey-rail">
+      <p className="home-hero-tagline">
+        Catch Ideas. Build Solutions. <em>Become a Champion.</em>
+      </p>
 
-        <div className="journey-rail-label">
-          <span>TRAINER JOURNEY</span>
-          <b>MISSION PATH</b>
+      <EventDetails />
+
+      <div className="home-hero-actions">
+        <Link to="/register" className="home-hero-primary">START YOUR JOURNEY <ArrowRight size={16} /></Link>
+        <a href="#rounds" className="home-hero-secondary">EXPLORE DEXATHON <Radar size={15} /></a>
+      </div>
+      <a href="#rules" className="home-hero-link">VIEW RULES <ArrowRight size={13} /></a>
+
+      <div className="home-hero-countdown" aria-label="Countdown to DEXATHON 2026">
+        {countdownItems.map((item) => (
+          <div key={item.label}>
+            <strong>{pad(item.value)}</strong>
+            <span>{item.label}</span>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function EventDetails() {
+  return (
+    <div className="home-hero-details">
+      {details.map(({ label, value, icon: Icon }) => (
+        <div className="home-hero-detail" key={label}>
+          <Icon size={16} aria-hidden="true" />
+          <div><span>{label}</span><strong>{value}</strong></div>
         </div>
+      ))}
+    </div>
+  );
+}
 
-        <div className="journey-rail-items">
-
-          {journey.map((item, index) => (
-            <motion.a
-              key={item.number}
-              href={item.link}
-              className="journey-node"
-              whileHover={{
-                y: -3,
-              }}
-            >
-
-              <span>
-                {item.number}
-              </span>
-
-              <strong>
-                {item.title}
-              </strong>
-
-              <small>
-                {item.description}
-              </small>
-
-              {index < journey.length - 1 && (
-                <i />
-              )}
-
-            </motion.a>
-          ))}
-
-        </div>
-
+function HeroVisual() {
+  return (
+    <motion.div
+      className="home-hero-visual"
+      initial={{ opacity: 0, x: 24 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
+    >
+      <div className="home-visual-logo">
+        <img src="/assets/branding/sathyabama-logo.png" alt="Sathyabama Institute of Science and Technology" width="1024" height="272" />
       </div>
 
-      <motion.div
-        className="hero-scroll-cue"
-        animate={{
-          y: [0, 6, 0],
-        }}
-        transition={{
-          duration: 1.8,
-          repeat: Infinity,
-        }}
-      >
-        SCROLL TO EXPLORE
-        <ScanLine size={13} />
-      </motion.div>
+      <div className="home-visual-frame">
+        <div className="home-visual-campus">
+          <img src="/sathyabama-campus.jpg" alt="Sathyabama Institute of Science and Technology campus" />
+          <div className="home-visual-shade" />
+          <div className="home-visual-grid" />
+          <div className="home-visual-scan" />
 
+          <div className="home-visual-top">
+            <span>LOCATION SCAN</span>
+            <b>CHENNAI HQ</b>
+          </div>
+          <div className="home-visual-hq">DEXATHON HQ</div>
+
+          <div className="home-visual-status">
+            <span>SCAN</span><strong>ONLINE</strong>
+            <i />
+            <span>MISSION</span><strong>ACTIVE</strong>
+          </div>
+
+          <div className="home-visual-target">
+            <Crosshair size={52} />
+            <span><Target size={11} /> TARGET LOCKED</span>
+          </div>
+
+          <div className="home-visual-caption">
+            <strong><Sparkles size={12} /> SATHYABAMA INSTITUTE OF SCIENCE AND TECHNOLOGY</strong>
+            <small>INDOOR AUDITORIUM · CHENNAI, TAMIL NADU</small>
+          </div>
+        </div>
+      </div>
+
+      <div className="home-visual-cards">
+        <div className="home-visual-mini is-cyan">
+          <div><span>TEAM ELIGIBILITY</span><strong>4–6 MEMBERS</strong></div>
+          <CheckCircle2 size={20} />
+        </div>
+        <div className="home-visual-mini is-orange">
+          <i className="home-visual-mini-icon"><Zap size={16} /></i>
+          <div><span>MISSION STATUS</span><strong>READY TO BUILD</strong></div>
+          <b>DX26</b>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+export default function Hero() {
+  const [countdown, setCountdown] = useState(getCountdown);
+
+  useEffect(() => {
+    const interval = setInterval(() => setCountdown(getCountdown()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <section className="home-hero" id="home">
+      <div className="home-hero-inner">
+        <HeroContent countdown={countdown} />
+        <HeroVisual />
+      </div>
     </section>
   );
 }

@@ -3,32 +3,28 @@ import {
   ChevronRight,
   CircleUserRound,
   FileText,
-  Gamepad2,
   Home,
+  Layers,
   Mail,
   Menu,
   ShieldCheck,
-  Sparkles,
   Trophy,
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+// Each item scrolls to its section on the Home page.
 const navItems = [
-  { label: "HOME", icon: Home },
-  { label: "ABOUT", icon: CircleUserRound },
-  { label: "TIMELINE", icon: CalendarDays },
-  { label: "RULES", icon: FileText },
-  { label: "ROUNDS", icon: Gamepad2 },
-  { label: "FINAL ROUND", icon: ShieldCheck },
-  { label: "PRIZES", icon: Trophy },
-  { label: "SCHEDULE", icon: CalendarDays },
-  { label: "FAQ", icon: Sparkles },
-  { label: "CONTACT", icon: Mail },
+  { label: "HOME", href: "#home", icon: Home },
+  { label: "ABOUT", href: "#about", icon: CircleUserRound },
+  { label: "THEMES", href: "#themes", icon: Layers },
+  { label: "FINAL SPRINT", href: "#final-round", icon: ShieldCheck },
+  { label: "RULES", href: "#rules", icon: FileText },
+  { label: "PRIZES", href: "#prizes", icon: Trophy },
+  { label: "SCHEDULE", href: "#schedule", icon: CalendarDays },
+  { label: "CONTACT", href: "#contact", icon: Mail },
 ];
-
-const toHref = (label) => `#${label.toLowerCase().replaceAll(" ", "-")}`;
 
 export default function MainNavigation() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -41,63 +37,44 @@ export default function MainNavigation() {
   }, [menuOpen]);
 
   return (
-    <header className="dex-nav">
+    <header className="home-navbar">
+      <div className="home-navbar-inner">
+        <a className="home-brand" href="#home" aria-label="DEXATHON 2026 home">
+          <span className="home-brand-mark" aria-hidden="true"><i /><b /></span>
+          <span className="home-brand-text">
+            <strong>DEXATHON <em>2026</em></strong>
+            <small>24-HOUR AI HACKATHON</small>
+          </span>
+        </a>
 
-      <div className="dex-nav-inner">
-
-        <div className="pokedex-logo">
-          <div className="pokedex-ring">
-            <div className="pokedex-center" />
-          </div>
-        </div>
-
-        <nav className="dex-nav-links">
-          {navItems.map(({ label, icon: Icon }) => (
-            <a
-              href={toHref(label)}
-              key={label}
-            >
-              <Icon size={11} />
-              <span>{label}</span>
-            </a>
+        <nav className="home-nav-links" aria-label="Home sections">
+          {navItems.map(({ label, href, icon: Icon }) => (
+            <a href={href} key={label}><Icon size={15} /><span>{label}</span></a>
           ))}
         </nav>
 
-        <div className="dex-nav-register">
-          <Link to="/register">
-            REGISTER NOW
-            <ChevronRight size={17} />
-          </Link>
-        </div>
+        <Link className="home-register" to="/register">REGISTER NOW <ChevronRight size={17} /></Link>
 
         <button
           type="button"
-          className="dex-mobile-menu"
+          className="home-menu-button"
           aria-label={menuOpen ? "Close menu" : "Open menu"}
           aria-expanded={menuOpen}
-          aria-controls="dex-mobile-panel"
+          aria-controls="home-mobile-menu"
           onClick={() => setMenuOpen((open) => !open)}
         >
           {menuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
-
       </div>
 
-      {menuOpen && (
-        <nav id="dex-mobile-panel" className="dex-mobile-panel" aria-label="Mobile navigation">
-          {navItems.map(({ label, icon: Icon }) => (
-            <a href={toHref(label)} key={label} onClick={() => setMenuOpen(false)}>
-              <Icon size={14} />
-              <span>{label}</span>
-            </a>
+      {menuOpen ? (
+        <nav id="home-mobile-menu" className="home-mobile-menu" aria-label="Mobile navigation">
+          {navItems.map(({ label, href, icon: Icon }) => (
+            <a href={href} key={label} onClick={() => setMenuOpen(false)}><Icon size={15} /><span>{label}</span></a>
           ))}
-          <Link className="dex-mobile-register" to="/register" onClick={() => setMenuOpen(false)}>
-            REGISTER NOW
-            <ChevronRight size={17} />
-          </Link>
+          <Link className="home-mobile-register" to="/register" onClick={() => setMenuOpen(false)}>REGISTER NOW <ChevronRight size={17} /></Link>
         </nav>
-      )}
-
+      ) : null}
     </header>
   );
 }
