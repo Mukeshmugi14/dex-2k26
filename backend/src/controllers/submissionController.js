@@ -2,9 +2,10 @@ import multer from "multer";
 import Registration from "../models/Registration.js";
 import { deletePdf, deriveSubmissionStatus, isPdfBuffer, isWellFormedToken, MAX_PDF_SIZE_BYTES, safePdfFileName, storePdf, tokenLookupQuery } from "../services/submissionService.js";
 
-const MAX_MB = Math.round((MAX_PDF_SIZE_BYTES / 1024 / 1024) * 10) / 10;
 const INVALID_LINK = { success: false, message: "This submission link is invalid. Please use the link from your DEXATHON 2026 confirmation email." };
 const ALREADY_SUBMITTED = { success: false, alreadySubmitted: true, message: "Your team has already submitted the PDF." };
+const INVALID_PDF_MESSAGE = "Invalid file format. Please upload your Round 1 submission as a PDF only.";
+const FILE_TOO_LARGE_MESSAGE = "File size exceeds the 15 MB limit. Please upload a PDF file under 15 MB.";
 
 const findByToken = (token) => (isWellFormedToken(token) ? Registration.findOne(tokenLookupQuery(token)) : null);
 
@@ -29,7 +30,7 @@ const upload = multer({
   limits: { fileSize: MAX_PDF_SIZE_BYTES, files: 1, fields: 0 },
   fileFilter: (_request, file, callback) => {
     const isPdf = file.mimetype === "application/pdf" && /\.pdf$/i.test(file.originalname || "");
-    callback(isPdf ? null : Object.assign(new Error("Only PDF files are allowed."), { status: 400 }), isPdf);
+    callback(isPdf ? null : Object.assign(new Error(INVALID_PDF_MESSAGE), { status: 400 }), isPdf);
   },
 }).single("pdf");
 
@@ -41,7 +42,7 @@ export const receivePdf = async (request, response, next) => {
   request.registration = registration;
   upload(request, response, (error) => {
     if (!error) return next();
-    if (error.code === "LIMIT_FILE_SIZE") return response.status(413).json({ success: false, message: `File size must not exceed ${MAX_MB} MB.` });
+    if (error.code === "LIMIT_FILE_SIZE") return response.status(413).json({ success: false, message: FILE_TOO_LARGE_MESSAGE });
     return response.status(400).json({ success: false, message: error.code ? "Upload a single PDF file." : error.message });
   });
 };
@@ -49,7 +50,7 @@ export const receivePdf = async (request, response, next) => {
 export const submitPdf = async (request, response) => {
   const { registration, file } = request;
   if (!file) return response.status(400).json({ success: false, message: "Choose a PDF file to upload." });
-  if (!isPdfBuffer(file.buffer)) return response.status(400).json({ success: false, message: "Only PDF files are allowed. This file is not a valid PDF document." });
+  if (!isPdfBuffer(file.buffer)) return response.status(400).json({ success: false, message: INVALID_PDF_MESSAGE });
 
   const fileName = safePdfFileName(file.originalname);
   const fileId = await storePdf(file.buffer, fileName, registration._id);

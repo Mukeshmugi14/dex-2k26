@@ -12,6 +12,13 @@
 .submit-doc-current b{color:#d9fbe8;font-size:14px;overflow-wrap:anywhere}
 .submit-doc-current span{color:#9fcfb6;font-size:12px}
 .submit-doc form{display:grid;gap:14px}
+.submit-doc-round-notice{display:grid;gap:5px;padding:16px;border:1px solid #ff9a3d;border-radius:10px;background:linear-gradient(135deg,#ff743228,#f2bb4a18);box-shadow:inset 3px 0 #ff7432}
+.submit-doc-round-notice span{color:#ffd7a5;font-size:12px;font-weight:800;letter-spacing:.04em}
+.submit-doc-round-notice strong{color:#fff;font-size:17px;letter-spacing:.02em}
+.submit-doc-round-notice b{color:#ffad83;font-size:14px;letter-spacing:.1em}
+.submit-doc-round-notice small{color:#e7c4a7;font-size:12px}
+.submit-doc-guidance{display:flex;align-items:flex-start;gap:8px;margin-top:-2px;color:#b6c7d7;font-size:12px;line-height:1.55}
+.submit-doc-guidance svg{flex:none;margin-top:1px;color:#55caff}
 .submit-doc-drop{position:relative;display:grid;justify-items:center;gap:6px;padding:26px 18px;border:1.5px dashed #55caff66;border-radius:10px;background:#07111f;text-align:center;cursor:pointer;color:#57ccff}
 .submit-doc-drop:hover,.submit-doc-drop:focus-within{border-color:#55caff;background:#0a1828}
 .submit-doc-drop.has-file{border-style:solid;border-color:#ff7432;color:#ff9a6b}
@@ -35,6 +42,9 @@
   .submit-doc h1{font-size:21px}
   .submit-doc-details div{flex-direction:column;gap:3px}
   .submit-doc-details dd{text-align:left}
+  .submit-doc-round-notice{padding:14px}
+  .submit-doc-round-notice strong{font-size:15px}
+  .submit-doc-round-notice span{font-size:11px}
 }
 
 /* Single-submission layout */
@@ -48,6 +58,8 @@
 .submit-doc-chosen div+div{border-top:1px solid #ffffff12}
 .submit-doc-chosen dt{color:#aebfd1;font-size:13px}
 .submit-doc-chosen dd{margin:0;color:#fff;font-size:13px;font-weight:700;text-align:right;overflow-wrap:anywhere}
+.submit-doc-ready{display:flex;align-items:center;gap:7px;margin:0;padding:10px 12px;border:1px solid #2fbf7166;border-radius:8px;background:#2fbf711a;color:#bdf2d6;font-size:13px;line-height:1.4}
+.submit-doc-ready svg{flex:none;color:#7aebb0}
 .submit-doc-result{display:flex;align-items:flex-start;gap:14px;padding:18px;border-radius:10px}
 .submit-doc-result div{display:grid;gap:5px}
 .submit-doc-result b{font-size:17px}

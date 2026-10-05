@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { Readable } from "stream";
 import Registration from "../models/Registration.js";
 
-export const MAX_PDF_SIZE_BYTES = Math.round((Number(process.env.MAX_PDF_SIZE_MB) || 5) * 1024 * 1024);
+export const MAX_PDF_SIZE_BYTES = 15 * 1024 * 1024;
 const BUCKET_NAME = "submissions";
 
 // --- Secret per-team submission links -------------------------------------------------------

@@ -1,11 +1,14 @@
 import axios from "axios";
-import { CheckCircle2, FileText, UploadCloud } from "lucide-react";
+import { CheckCircle2, FileText, ShieldCheck, UploadCloud } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./SubmitDocument.css";
 import { API_URL } from "../config/api";
 
 const MB = 1024 * 1024;
+const MAX_SIZE = 15 * MB;
+const INVALID_PDF_MESSAGE = "Invalid file format. Please upload your Round 1 submission as a PDF only.";
+const FILE_TOO_LARGE_MESSAGE = "File size exceeds the 15 MB limit. Please upload a PDF file under 15 MB.";
 const formatSize = (bytes) => (bytes >= MB / 10 ? `${(bytes / MB).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 const formatDate = (value) => (value ? new Date(value).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "");
 
@@ -39,17 +42,17 @@ export default function SubmitDocument() {
         : "Unable to load your submission details. Please check your connection and refresh the page."));
   }, [token]);
 
-  const maxSize = info?.maxFileSize || 5 * MB;
-  const maxLabel = `${Math.round((maxSize / MB) * 10) / 10} MB`;
+  const maxSize = Math.min(info?.maxFileSize || MAX_SIZE, MAX_SIZE);
+  const maxLabel = "15 MB";
 
   const chooseFile = async (chosen) => {
     setError("");
     setFile(null);
     if (!chosen) return;
     const reject = (message) => { setError(message); if (inputRef.current) inputRef.current.value = ""; };
-    if (chosen.type !== "application/pdf" || !/\.pdf$/i.test(chosen.name)) return reject("Only PDF files are allowed.");
-    if (chosen.size > maxSize) return reject(`File size must not exceed ${maxLabel}.`);
-    if (!(await hasPdfSignature(chosen))) return reject("Only PDF files are allowed. This file is not a valid PDF document.");
+    if (chosen.type !== "application/pdf" || !/\.pdf$/i.test(chosen.name)) return reject(INVALID_PDF_MESSAGE);
+    if (chosen.size > maxSize) return reject(FILE_TOO_LARGE_MESSAGE);
+    if (!(await hasPdfSignature(chosen))) return reject(INVALID_PDF_MESSAGE);
     setFile(chosen);
   };
 
@@ -76,7 +79,7 @@ export default function SubmitDocument() {
     }
   };
 
-  const card = (content) => <main className="submit-doc"><section className="submit-doc-card"><span className="submit-doc-kicker">DEXATHON 2026</span><h1>Second Round PDF Submission</h1>{content}</section></main>;
+  const card = (content) => <main className="submit-doc"><section className="submit-doc-card"><span className="submit-doc-kicker">DEXATHON 2026</span><h1>Round 1 — PPT Submission</h1>{content}</section></main>;
 
   if (loadError) return card(<p className="submit-doc-error">{loadError}</p>);
   if (!info) return card(<p className="submit-doc-muted">Loading your team details…</p>);
@@ -86,8 +89,8 @@ export default function SubmitDocument() {
     <div className={`submit-doc-result ${justSubmitted ? "success" : "done"}`} role="status">
       <CheckCircle2 size={28} />
       {justSubmitted
-        ? <div><b>PDF submitted successfully.</b><span>Your submission has been received successfully.</span></div>
-        : <div><b>PDF Already Submitted</b><span>Your team has already submitted the PDF.</span></div>}
+        ? <div><b>Round 1 PDF submitted successfully.</b><span>Your Round 1 PPT submission has been received successfully.</span></div>
+        : <div><b>Round 1 PDF Already Submitted</b><span>Your team has already submitted its Round 1 PDF.</span></div>}
     </div>
     {info.submission ? <p className="submit-doc-file-note"><FileText size={15} /> {info.submission.fileName} · {formatSize(info.submission.fileSize)} · {formatDate(info.submission.submittedAt)}</p> : null}
   </>);
@@ -95,19 +98,27 @@ export default function SubmitDocument() {
   return card(<>
     <TeamDetails info={info} />
     <form onSubmit={submit} noValidate>
-      <span className="submit-doc-label">Upload your PDF</span>
+      <div className="submit-doc-round-notice" role="note">
+        <span>⚠️ ROUND 1 SUBMISSION — PDF ONLY — MAX 15 MB</span>
+        <strong>ROUND 1 — PPT SUBMISSION</strong>
+        <b>PDF FORMAT ONLY</b>
+        <small>Maximum File Size: 15 MB</small>
+      </div>
+      <div className="submit-doc-guidance"><ShieldCheck size={16} /><span>Upload your Round 1 PPT submission as a PDF file only. PPT, PPTX, DOC, images, ZIP files, and all other formats are not accepted.</span></div>
+      <span className="submit-doc-label">Upload Round 1 PDF</span>
       <label className={`submit-doc-drop ${file ? "has-file" : ""} ${error ? "has-error" : ""}`}>
         <input ref={inputRef} type="file" accept="application/pdf,.pdf" onChange={(event) => chooseFile(event.target.files[0])} disabled={uploading} />
         {file ? <FileText size={26} /> : <UploadCloud size={26} />}
-        <em>Choose PDF</em>
-        <span>Maximum file size: {maxLabel}<br />Accepted format: PDF only</span>
+        <em>Choose Round 1 PDF</em>
+        <span>PDF format only · Maximum file size: {maxLabel}</span>
       </label>
 
       {file ? <dl className="submit-doc-chosen"><div><dt>File</dt><dd>{file.name}</dd></div><div><dt>Size</dt><dd>{formatSize(file.size)}</dd></div></dl> : null}
+      {file ? <p className="submit-doc-ready" role="status"><CheckCircle2 size={16} /> Valid PDF selected. Ready to submit your Round 1 entry.</p> : null}
       {error ? <p className="submit-doc-error" role="alert">{error}</p> : null}
       {uploading ? <div className="submit-doc-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><i style={{ width: `${progress}%` }} /><span>Uploading… {progress}%</span></div> : null}
 
-      <button type="submit" disabled={!file || uploading}>{uploading ? "Submitting…" : "Submit PDF"}</button>
+      <button type="submit" disabled={!file || uploading}>{uploading ? "Submitting…" : "Submit Round 1 PDF"}</button>
     </form>
   </>);
 }
