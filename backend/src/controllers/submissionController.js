@@ -47,6 +47,20 @@ export const receivePdf = async (request, response, next) => {
   });
 };
 
+// The Team Head Portal provides the registration identity through its signed token,
+// so a logged-in team can only upload against its own record.
+export const receiveOwnPdf = async (request, response, next) => {
+  const registration = await Registration.findById(request.teamRegistrationId);
+  if (!registration?.payment?.confirmedAt) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
+  if (registration.pdfSubmission?.fileId) return response.status(409).json(ALREADY_SUBMITTED);
+  request.registration = registration;
+  upload(request, response, (error) => {
+    if (!error) return next();
+    if (error.code === "LIMIT_FILE_SIZE") return response.status(413).json({ success: false, message: FILE_TOO_LARGE_MESSAGE });
+    return response.status(400).json({ success: false, message: error.code ? "Upload a single PDF file." : error.message });
+  });
+};
+
 export const submitPdf = async (request, response) => {
   const { registration, file } = request;
   if (!file) return response.status(400).json({ success: false, message: "Choose a PDF file to upload." });

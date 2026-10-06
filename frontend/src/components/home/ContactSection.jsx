@@ -1,5 +1,5 @@
 import { Building2, ExternalLink, GraduationCap, Info, MapPin, Phone, Users } from "lucide-react";
-import { InstagramIcon, LinkedInIcon } from "./SocialIcons";
+import { InstagramButton, InstagramIcon, LinkedInIcon } from "./SocialIcons";
 
 const officials = [
   { name: "Dr. Mariazeena Johnson", role: "Chancellor" },
@@ -45,6 +45,7 @@ export default function ContactSection() {
           <span className="home-pill is-orange"><i />ORGANIZING COMMITTEE &amp; CONTACT</span>
           <h2>GET IN <em className="is-cyan">TOUCH.</em></h2>
           <p>Have queries regarding registrations, PPT submissions, rules, or logistics? Reach out to the DEXATHON 2026 coordinators and organizing team.</p>
+          <InstagramButton className="is-centered" />
         </header>
 
         <div className="home-contact-grid">

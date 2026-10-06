@@ -62,6 +62,13 @@
     padding-left: 12px;
   }
 
+  /* Team Head Portal: Round 1 template download link */
+  html .team-portal .team-template-reference a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
   /* Team Head Portal refresh button */
   html .team-portal .team-refresh {
     width: 38px;

@@ -3,3 +3,5 @@
 
 /* Admin menu wraps on narrow screens (it gained links over time) */
 .admin-dashboard header nav{flex-wrap:wrap}
+
+.admin-dashboard .admin-theme-tag{display:block;margin-top:4px;color:#ffb27a;font-size:10px;font-weight:800;letter-spacing:.04em}

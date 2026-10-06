@@ -57,35 +57,68 @@
   text-decoration: none;
 }
 
-/* Ring emblem: dark disc, orange ring and glow, white core. */
+/* Poké Ball emblem: a fixed orange glowing ring (never moves, so no layout shift)
+   around a ball that spins on its own center. Sizes are relative to the ring,
+   so the same markup scales cleanly in the header, mobile header and footer. */
 .home-page .home-brand-mark {
+  --mark: 46px;
   position: relative;
   display: grid;
-  width: 46px;
-  height: 46px;
+  width: var(--mark);
+  height: var(--mark);
   flex-shrink: 0;
   place-items: center;
-  border: 3px solid var(--home-orange);
+  box-sizing: border-box;
+  border: calc(var(--mark) * 0.065) solid var(--home-orange);
   border-radius: 50%;
-  background: radial-gradient(circle, #1a1d24 0 55%, #0b0d12 56%);
-  box-shadow: 0 0 14px rgba(255, 107, 24, 0.6), inset 0 0 8px rgba(255, 107, 24, 0.35);
+  background: #0b0d12;
+  box-shadow: 0 0 14px rgba(255, 107, 24, 0.65), inset 0 0 6px rgba(255, 107, 24, 0.35);
+  animation: home-brand-glow 3.2s ease-in-out infinite;
 }
 
-.home-page .home-brand-mark i {
+.home-page .home-brand-ball {
+  position: relative;
+  display: block;
+  width: 74%;
+  height: 74%;
+  box-sizing: border-box;
+  border: calc(var(--mark) * 0.04) solid #15161c;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ef3b3b 0 44%, #15161c 44% 56%, #f5f7fa 56%);
+  box-shadow: inset calc(var(--mark) * -0.05) calc(var(--mark) * -0.05) 0 rgba(0, 0, 0, 0.14);
+  animation: home-brand-spin 3.2s linear infinite;
+  will-change: transform;
+}
+
+/* Center button: absolutely centered inside the ball, so it stays centered while spinning. */
+.home-page .home-brand-ball b {
   position: absolute;
-  inset: 7px;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  border-right-color: transparent;
-  border-radius: 50%;
-  transform: rotate(-35deg);
-}
-
-.home-page .home-brand-mark b {
-  width: 10px;
-  height: 10px;
-  border: 2px solid var(--home-orange);
+  top: 50%;
+  left: 50%;
+  width: 36%;
+  height: 36%;
+  box-sizing: border-box;
+  border: calc(var(--mark) * 0.04) solid #15161c;
   border-radius: 50%;
   background: #fff;
+  box-shadow: 0 0 0 calc(var(--mark) * 0.02) #f5f7fa;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes home-brand-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes home-brand-glow {
+  0%, 100% { box-shadow: 0 0 14px rgba(255, 107, 24, 0.65), inset 0 0 6px rgba(255, 107, 24, 0.35); }
+  50% { box-shadow: 0 0 18px rgba(255, 107, 24, 0.55), 0 0 10px rgba(45, 226, 230, 0.45), inset 0 0 6px rgba(45, 226, 230, 0.3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page .home-brand-mark,
+  .home-page .home-brand-ball {
+    animation: none;
+  }
 }
 
 .home-page .home-brand-text {
@@ -970,12 +1003,7 @@
     scroll-margin-top: 66px;
   }
 
-  .home-page .home-brand-mark {
-    width: 38px;
-    height: 38px;
-  }
-
-  .home-page .home-brand-mark i { inset: 5px; }
+  .home-page .home-brand-mark { --mark: 38px; }
   .home-page .home-brand-text strong { font-size: 21px; }
   .home-page .home-brand-text small { font-size: 10px; }
 

@@ -40,10 +40,10 @@ export const sendConfirmationEmail = async (registration) => {
   });
 };
 
-export const sendPaymentConfirmationEmail = async (registration, { submissionUrl } = {}) => {
+export const sendPaymentConfirmationEmail = async (registration) => {
   const mailer = createMailer();
   const recipientEmail = getRecipientEmail(registration);
-  const { html, text } = buildPaymentConfirmationEmail(registration, { submissionUrl, portal: portalAccess() });
+  const { html, text } = buildPaymentConfirmationEmail(registration, { portal: portalAccess() });
   const result = await mailer.sendMail({
     from: process.env.EMAIL_USER,
     to: recipientEmail,

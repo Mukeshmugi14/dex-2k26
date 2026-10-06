@@ -5,7 +5,7 @@ import { normalizeRounds, readRounds, roundSnapshot } from "../services/roundSer
 
 const ROUNDS = [1, 2, 3];
 const SENDING_TIMEOUT_MS = 2 * 60 * 1000;
-const LIST_FIELDS = "teamId teamName leader college collegeName payment.confirmedAt evaluation.totalScore roundResults rounds";
+const LIST_FIELDS = "teamId teamName leader college collegeName projectTheme payment.confirmedAt evaluation.totalScore roundResults rounds";
 const DECIDED = ["SELECTED", "REJECTED"];
 
 const readResults = (team) => Object.fromEntries(ROUNDS.map((n) => {

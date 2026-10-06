@@ -1274,3 +1274,41 @@
 @media (prefers-reduced-motion: reduce) {
   .home-page .home-rule-card { animation: none; }
 }
+
+/* ---------------- INSTAGRAM (contact + footer) ---------------- */
+
+.home-page .home-instagram-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 71, 117, 0.6);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 71, 117, 0.16), rgba(255, 107, 24, 0.1));
+  color: #ff8fab;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.home-page .home-instagram-link small {
+  color: #f2b8c8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.home-page .home-instagram-link:hover {
+  background: linear-gradient(135deg, rgba(255, 71, 117, 0.28), rgba(255, 107, 24, 0.18));
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.home-page .home-instagram-link.is-centered {
+  margin-top: 18px;
+}
+
+.home-page .home-footer-support .home-instagram-link {
+  margin-top: 6px;
+}

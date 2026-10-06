@@ -5,7 +5,7 @@ import { sendSelectionEmail } from "../services/emailService.js";
 import { deriveSubmissionStatus, openPdfStream } from "../services/submissionService.js";
 
 const CRITERIA = ["criterion1", "criterion2", "criterion3", "criterion4"];
-const LIST_FIELDS = "teamId teamName leader college collegeName payment.status payment.confirmedAt payment.confirmationEmailStatus pdfSubmission evaluation selectionEmailSent selectionEmailStatus selectionEmailSentAt createdAt";
+const LIST_FIELDS = "teamId teamName leader college collegeName projectTheme payment.status payment.confirmedAt payment.confirmationEmailStatus pdfSubmission evaluation selectionEmailSent selectionEmailStatus selectionEmailSentAt createdAt";
 
 const getSettings = async () => (await EvaluationSettings.findOne()) || new EvaluationSettings();
 const settingsView = (settings) => ({ maxScorePerCriterion: settings.maxScorePerCriterion ?? null, criteriaLabels: settings.criteriaLabels });

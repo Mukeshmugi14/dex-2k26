@@ -19,6 +19,7 @@ export default function ThankYou() {
           <div className="thank-you-details">
             <p><b>Team Name</b><span>{record.teamName}</span></p>
             <p><b>Team Head</b><span>{record.leader?.name || "—"}</span></p>
+            {record.projectTheme ? <p><b>Project Theme</b><span>{record.projectTheme}</span></p> : null}
             <p><b>Payment Amount</b><span>₹{record.payment?.amount}</span></p>
             <p><b>Payment Status</b><span>Submitted</span></p>
           </div>

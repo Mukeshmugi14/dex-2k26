@@ -1,6 +1,6 @@
 import { ChevronRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
-import { LinkedInIcon } from "./SocialIcons";
+import { InstagramButton, LinkedInIcon } from "./SocialIcons";
 
 const exploreLinks = [
   { label: "Home Overview", href: "#home" },
@@ -47,7 +47,7 @@ export default function SiteFooter() {
         <div className="home-footer-grid">
           <div className="home-footer-brand">
             <a className="home-brand" href="#home" aria-label="DEXATHON 2026 home">
-              <span className="home-brand-mark" aria-hidden="true"><i /><b /></span>
+              <span className="home-brand-mark" aria-hidden="true"><i className="home-brand-ball"><b /></i></span>
               <span className="home-brand-text">
                 <strong>DEXATHON <em>2026</em></strong>
                 <small className="is-orange">24-HOUR AI HACKATHON</small>
@@ -73,6 +73,8 @@ export default function SiteFooter() {
             <a href="#contact" className="home-footer-coordinators">View Event Coordinators &amp; Faculty</a>
             <small className="home-footer-partners-label">ASSOCIATE PARTNERS:</small>
             <div className="home-footer-partners"><span>SnapServe AI</span><span>Space Zee Tech</span></div>
+            <small className="home-footer-partners-label">FOLLOW US:</small>
+            <InstagramButton />
           </div>
         </div>
 

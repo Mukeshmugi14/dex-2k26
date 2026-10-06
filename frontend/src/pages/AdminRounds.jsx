@@ -58,7 +58,7 @@ function RoundCard({ team, allowed, headers, onUpdated, onUnauthorized }) {
     <dl className="pdf-card-details">
       <div><dt>Team Head</dt><dd>{team.leader?.name}</dd></div>
       <div><dt>Email</dt><dd className="break">{team.leader?.email}</dd></div>
-      <div><dt>College</dt><dd>{team.college}</dd></div>
+      <div><dt>College</dt><dd>{team.college}</dd></div><div><dt>Project Theme</dt><dd>{team.projectTheme || "Not selected"}</dd></div>
     </dl>
 
     <div className="round-selects">

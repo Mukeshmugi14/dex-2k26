@@ -3,6 +3,7 @@ export const SUBMISSION_STATUSES = ["Pending", "Submitted", "Under Review", "Sel
 export const EVALUATION_RESULTS = ["Pending", "Selected", "Not Selected"];
 export const ROUND_STATUSES = ["PENDING", "COMPLETED", "LIVE", "SELECTED", "NOT_SELECTED", "UPCOMING"];
 export const ROUND_DECISIONS = ["PENDING", "SELECTED", "REJECTED"];
+export const PROJECT_THEMES = ["OPEN INNOVATION", "BLOCKCHAIN & CYBERSECURITY", "HEALTHCARE", "AI & MACHINE LEARNING", "SUSTAINABILITY DEVELOPMENT", "FINTECH & EDTECH"];
 const roundResultSchema = new mongoose.Schema({
   status: { type: String, enum: ROUND_DECISIONS, default: "PENDING" },
   decidedAt: Date,
@@ -14,7 +15,7 @@ const roundResultSchema = new mongoose.Schema({
   emailAttemptAt: Date,
 }, { _id: false });
 const memberSchema = new mongoose.Schema({ name: String, email: String, phone: String, studentId: String }, { _id: false });
-const registrationSchema = new mongoose.Schema({ teamId: { type: String, unique: true }, registrationNumber: { type: String, unique: true }, teamName: String, teamLogo: String, college: String, collegeType: { type: String, enum: ["sathyabama", "other"] }, collegeName: String, department: String, year: String, leader: { name: String, email: String, phone: String }, members: [memberSchema], mentor: { name: String, email: String, phone: String }, payment: { status: { type: String, enum: ["Pending", "Awaiting Verification", "Successful", "Failed", "Refunded"], default: "Pending" }, amount: { type: Number, default: 300 }, orderId: String, paymentId: String, transactionId: String, upiId: String, paidAt: Date, confirmedAt: Date, confirmedBy: String, confirmationEmailStatus: { type: String, enum: ["Not Sent", "Sending", "Sent", "Failed"], default: "Not Sent" }, confirmationEmailSentAt: Date, confirmationEmailAttemptAt: Date },
+const registrationSchema = new mongoose.Schema({ teamId: { type: String, unique: true }, registrationNumber: { type: String, unique: true }, teamName: String, projectTheme: { type: String, enum: PROJECT_THEMES }, teamLogo: String, college: String, collegeType: { type: String, enum: ["sathyabama", "other"] }, collegeName: String, department: String, year: String, leader: { name: String, email: String, phone: String }, members: [memberSchema], mentor: { name: String, email: String, phone: String }, payment: { status: { type: String, enum: ["Pending", "Awaiting Verification", "Successful", "Failed", "Refunded"], default: "Pending" }, amount: { type: Number, default: 300 }, orderId: String, paymentId: String, transactionId: String, upiId: String, paidAt: Date, confirmedAt: Date, confirmedBy: String, confirmationEmailStatus: { type: String, enum: ["Not Sent", "Sending", "Sent", "Failed"], default: "Not Sent" }, confirmationEmailSentAt: Date, confirmationEmailAttemptAt: Date },
   // Second-round PDF submission. The file lives in the "submissions" GridFS bucket; only a hash of the team's secret link token is stored.
   pdfSubmission: {
     tokenHash: { type: String, index: true, select: false },
@@ -26,6 +27,12 @@ const registrationSchema = new mongoose.Schema({ teamId: { type: String, unique:
     fileSize: Number,
     submittedAt: Date,
     status: { type: String, enum: SUBMISSION_STATUSES, default: "Pending" },
+  },
+  // Round 2 prototype: SOFTWARE teams submit a website/app link, HARDWARE teams a YouTube demo video link.
+  prototypeSubmission: {
+    category: { type: String, enum: ["SOFTWARE", "HARDWARE"] },
+    url: String,
+    submittedAt: Date,
   },
   evaluation: {
     criterion1: Number,

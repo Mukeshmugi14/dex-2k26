@@ -49,8 +49,8 @@
 .team-portal .team-refresh .spin{animation:team-spin 1s linear infinite}
 @keyframes team-spin{to{transform:rotate(360deg)}}
 
-.team-portal .team-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(300px,.9fr);grid-template-areas:"details members progress" "pdf pdf progress";gap:18px;margin-top:20px}
-.team-portal .team-area-details{grid-area:details}.team-area-members{grid-area:members}.team-area-pdf{grid-area:pdf}.team-area-progress{grid-area:progress}
+.team-portal .team-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(300px,.9fr);grid-template-areas:"details members progress" "pdf pdf progress" "round2 round2 progress";gap:18px;margin-top:20px}
+.team-portal .team-area-details{grid-area:details}.team-area-members{grid-area:members}.team-area-pdf{grid-area:pdf}.team-area-round2{grid-area:round2}.team-area-progress{grid-area:progress}
 .team-portal .team-card{padding:22px;border-radius:14px;background:#fff;color:var(--tp-ink);box-shadow:0 14px 40px #0005;border-top:4px solid var(--tp-blue)}
 .team-portal .team-area-pdf,.team-portal .team-area-progress{border-top-color:var(--tp-orange)}
 .team-portal .team-card h2{display:flex;align-items:center;gap:8px;margin:0 0 16px;color:var(--tp-ink);font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
@@ -119,21 +119,40 @@
 .team-portal .team-pdf-file b{font-size:15px;color:var(--tp-ink)}
 .team-portal .team-pdf-file span{color:var(--tp-muted);font-size:12px}
 .team-portal .team-pdf-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;color:var(--tp-muted);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.team-portal .team-template-reference{display:grid;gap:7px;margin:0 0 14px;padding:14px 16px;border:1px solid #cfdcf0;border-radius:10px;background:#f4f8ff;color:var(--tp-ink)}
+.team-portal .team-template-reference>b{color:var(--tp-blue);font-size:11px;letter-spacing:.1em}.team-portal .team-template-reference>strong{font-size:14px}.team-portal .team-template-reference p{margin:0;color:#41526a;font-size:13px;font-weight:700;line-height:1.45}.team-portal .team-template-reference a{justify-self:start;margin-top:3px;color:var(--tp-blue);font-size:13px;font-weight:800;text-decoration:underline}
+/* Round 1 PDF upload */
+.team-portal .team-pdf-warning{display:grid;gap:4px;margin:0 0 4px;padding:14px 16px;border:1px solid #f0a12e;border-left:4px solid var(--tp-orange);border-radius:9px;background:#fff7e0;color:#8a5700}
+.team-portal .team-pdf-warning span{font-size:12px;font-weight:800;letter-spacing:.04em;line-height:1.45}
+.team-portal .team-pdf-warning strong{color:var(--tp-ink);font-family:"Barlow Condensed",Arial,sans-serif;font-size:20px;font-weight:800;letter-spacing:.04em}
+.team-portal .team-pdf-warning b{color:#c2410c;font-size:13px;letter-spacing:.08em}
+.team-portal .team-pdf-warning small{color:#8a5700;font-size:12px}
+.team-portal .team-pill.open{background:#e8f0ff;color:#1d4ed8}
+.team-portal .team-theme-value{color:#c2410c!important;font-weight:800!important;letter-spacing:.02em}
+.team-portal .team-upload-actions{display:flex;flex-wrap:wrap;gap:0 10px}
+.team-portal .team-upload-action{background:var(--tp-orange)}.team-portal .team-upload-action:hover{background:#ff7d33}
+.team-portal .team-action:disabled{opacity:.6;cursor:not-allowed}
+.team-portal .team-upload-progress{position:relative;height:30px;margin-top:14px;overflow:hidden;border-radius:8px;background:#eef2f8}
+.team-portal .team-upload-progress i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--tp-blue),#5fa2ff);transition:width .2s}
+.team-portal .team-upload-progress span{position:relative;display:grid;place-items:center;height:100%;color:var(--tp-ink);font-size:12px;font-weight:800}
+.team-portal .team-pdf-success{margin:0 0 12px;padding:12px 14px;border:1px solid #9be3bb;border-radius:9px;background:#e7f8ee;color:#137a45;font-size:14px;font-weight:800}
+.team-portal .team-pdf-error{padding:10px 12px;border-radius:8px;background:#fdecec;color:#b42318}
 
 /* ---------- Tablet / small laptop ---------- */
 @media (max-width:1024px){
-  .team-portal .team-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"details members" "pdf progress"}
+  .team-portal .team-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"details members" "pdf progress" "round2 round2"}
 }
 
 /* ---------- Tablet portrait / large phones: single column ---------- */
 @media (max-width:768px){
-  .team-portal .team-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"details" "members" "pdf" "progress";gap:14px;margin-top:14px}
+  .team-portal .team-grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"details" "members" "pdf" "round2" "progress";gap:14px;margin-top:14px}
   .team-portal .team-dash-inner{padding:18px 14px 40px}
   .team-portal .team-current{grid-template-columns:minmax(0,1fr);gap:12px;padding:22px 20px}
   .team-portal .team-current h1{font-size:38px}
   .team-portal .team-current>strong{justify-self:start}
   .team-portal .team-card{padding:20px 18px}
   .team-portal .team-action{width:100%;justify-content:center}
+  .team-portal .team-upload-actions{flex-direction:column}
   .team-portal .team-topbar{padding:12px 14px}
   .team-portal .team-topbar-user span{max-width:40vw}
   .team-portal.team-login{place-items:start center;padding:max(24px,6vh) 16px 24px}
@@ -211,3 +230,48 @@
 @media (max-width:1100px){.team-portal .team-key-dates-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:560px){.team-portal .team-key-dates{padding:18px 14px 18px}.team-portal .team-key-dates-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.team-portal .team-key-date{padding:12px 11px 13px}.team-portal .team-key-date strong{font-size:15px}.team-portal .team-key-date p{margin-top:10px;font-size:12px}}
 @media (prefers-reduced-motion:reduce){.team-portal .team-key-date{transition:none}.team-portal .team-key-date:hover{transform:none}}
+
+/* Stage badges keep Round 1 (orange) and Round 2 (teal) clearly apart */
+.team-portal .team-stage-badge{display:inline-block;margin-bottom:10px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.12em}
+.team-portal .team-stage-badge.is-round1{background:#fff1e6;color:#c2410c}
+.team-portal .team-stage-badge.is-round2{background:#e0f7f8;color:#0b7c84}
+
+/* Round 2 prototype submission */
+.team-portal .team-area-round2{border-top-color:#14b8c4;background:linear-gradient(180deg,#f3fdfd 0,#fff 140px)}
+.team-portal .team-area-round2 h2 svg{color:#0b9aa5}
+.team-portal .team-r2-intro{margin:0 0 12px;color:var(--tp-muted);font-size:14px;line-height:1.5}
+.team-portal .team-r2-intro b{color:var(--tp-ink)}
+.team-portal .team-r2-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.team-portal .team-r2-choice button{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 14px;border:2px solid #d3e3ea;border-radius:12px;background:#fff;color:var(--tp-ink);text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s,background .15s}
+.team-portal .team-r2-choice button svg{flex-shrink:0;color:#0b9aa5}
+.team-portal .team-r2-choice button span{display:grid;gap:2px;min-width:0}
+.team-portal .team-r2-choice button b{font-size:14px;letter-spacing:.06em}
+.team-portal .team-r2-choice button small{color:var(--tp-muted);font-size:12px}
+.team-portal .team-r2-choice button:hover:not(:disabled){border-color:#14b8c4}
+.team-portal .team-r2-choice button.is-active{border-color:#14b8c4;background:#e9fbfc;box-shadow:0 0 0 4px #14b8c41f}
+.team-portal .team-r2-form{display:grid;gap:12px;margin-top:14px;padding:16px;border:1px solid #9fe1e6;border-left:4px solid #14b8c4;border-radius:12px;background:#f3fdfd}
+.team-portal .team-r2-heading{display:grid;gap:3px}
+.team-portal .team-r2-heading b{color:#0b7c84;font-size:12px;font-weight:800;letter-spacing:.08em}
+.team-portal .team-r2-heading strong{color:var(--tp-ink);font-family:"Barlow Condensed",Arial,sans-serif;font-size:22px;font-weight:800;letter-spacing:.04em}
+.team-portal .team-r2-heading small{color:var(--tp-muted);font-size:13px;line-height:1.5}
+.team-portal .team-r2-form label{display:grid;gap:6px}
+.team-portal .team-r2-form label span{color:var(--tp-ink);font-size:13px;font-weight:700}
+.team-portal .team-r2-form input{width:100%;height:46px;padding:0 14px;border:1.5px solid #c7d6e2;border-radius:9px;background:#fff;color:var(--tp-ink);font:15px Inter,Arial,sans-serif}
+.team-portal .team-r2-form input:focus{outline:0;border-color:#14b8c4;box-shadow:0 0 0 4px #14b8c41f}
+.team-portal .team-r2-action{margin-top:0;justify-self:start;background:#0b9aa5;text-decoration:none}
+.team-portal .team-r2-action:hover{background:#0fb0bc}
+.team-portal .team-area-round2>.team-r2-action{margin-top:14px}
+.team-portal .team-r2-link{display:flex;align-items:flex-start;gap:12px;margin-top:12px;padding:14px;border:1px solid #9fe1e6;border-radius:10px;background:#f3fdfd}
+.team-portal .team-r2-link svg{flex-shrink:0;color:#0b9aa5}
+.team-portal .team-r2-link div{display:grid;gap:3px;min-width:0}
+.team-portal .team-r2-link b{color:var(--tp-muted);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.team-portal .team-r2-link a{color:#0b7c84;font-size:15px;font-weight:700;overflow-wrap:anywhere}
+.team-portal .team-r2-link span{color:var(--tp-muted);font-size:12px}
+.team-portal .team-pill.closed{background:#fdecec;color:#b42318}
+@media (max-width:640px){
+  .team-portal .team-r2-choice{grid-template-columns:minmax(0,1fr)}
+  .team-portal .team-r2-action{justify-self:stretch;justify-content:center}
+}
+.team-portal .team-stage-badge{justify-self:start;width:fit-content}
+.team-portal .team-pill{white-space:nowrap}
+.team-portal .team-pdf-status>span:first-child{min-width:0}

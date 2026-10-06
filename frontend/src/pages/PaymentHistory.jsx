@@ -33,6 +33,7 @@ const PaymentRow = memo(function PaymentRow({ row, busy, onConfirm, onResend }) 
         : <label className="confirm-checkbox"><input type="checkbox" checked={false} onChange={() => onConfirm(row)} disabled={!row.payment?.transactionId || category === "failed"} />Confirm Payment</label>}</td>
     <td><b>{row.teamName}</b><small>{row.teamId}</small></td>
     <td>{row.leader?.name || "—"}{row.leader?.email ? <small className="payment-head-email">{row.leader.email}</small> : null}</td>
+    <td>{row.projectTheme ? <span className="payment-theme">{row.projectTheme}</span> : <span className="payment-theme is-empty">Not selected</span>}</td>
     <td>{row.college}</td>
     <td>₹{row.payment?.amount}</td>
     <td>{row.payment?.transactionId || "—"}</td>
@@ -155,7 +156,7 @@ export default function PaymentHistory() {
     <section className="payment-summary">{[["Total Payments", summary.total], ["Successful", summary.successful], ["Pending", summary.pending], ["Failed", summary.failed], ["Total Amount Received", `₹${summary.amount}`]].map(([label, value]) => <article key={label}><small>{label}</small><strong>{value}</strong></article>)}</section>
     <section className="payment-history-filters"><div className="payment-history-status">{FILTERS.map(([value, label]) => <button type="button" key={value} className={statusFilter === value ? "active" : ""} onClick={() => setStatusFilter(value)}>{label}</button>)}</div><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by Team / Team Head / Email / Transaction ID" /><label className="payment-page-size">Show <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))}>{PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select> per page</label></section>
     {loadError ? <p className="payment-history-message is-error">{loadError} <button type="button" className="resend-email" onClick={loadPayments}>Retry</button></p> : null}
-    {loading && !payments.length ? <AdminSkeleton rows={6} /> : <div className={`payment-history-table ${loading ? "is-refreshing" : ""}`}><table><thead><tr><th>Select</th><th>Team</th><th>Team Head</th><th>College</th><th>Amount</th><th>Transaction ID</th><th>Status</th><th>Date</th></tr></thead><tbody>
+    {loading && !payments.length ? <AdminSkeleton rows={6} /> : <div className={`payment-history-table ${loading ? "is-refreshing" : ""}`}><table><thead><tr><th>Select</th><th>Team</th><th>Team Head</th><th>Project Theme</th><th>College</th><th>Amount</th><th>Transaction ID</th><th>Status</th><th>Date</th></tr></thead><tbody>
       {payments.map((row) => <PaymentRow key={row._id} row={row} busy={busyId === row._id} onConfirm={openConfirm} onResend={resendEmail} />)}
     </tbody></table>{!payments.length ? <p className="payment-history-empty">{summary.total ? "No payment records match the selected filters." : "No payment records found."}</p> : null}</div>}
     <AdminPagination page={paging.page} pages={paging.pages} total={paging.total} limit={pageSize} onChange={setPage} label="payments" />

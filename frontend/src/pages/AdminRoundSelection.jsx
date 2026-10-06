@@ -85,7 +85,7 @@ function TeamCard({ team, onDecide, onRetry, retrying }) {
     <dl className="pdf-card-details">
       <div><dt>Team Head</dt><dd>{team.leader?.name}</dd></div>
       <div><dt>Email</dt><dd className="break">{team.leader?.email}</dd></div>
-      <div><dt>College</dt><dd>{team.college}</dd></div>
+      <div><dt>College</dt><dd>{team.college}</dd></div><div><dt>Project Theme</dt><dd>{team.projectTheme || "Not selected"}</dd></div>
       <div><dt>Current Round</dt><dd>Round {team.currentRound}</dd></div>
       <div><dt>Score</dt><dd>{team.score ?? "--"}</dd></div>
       <div><dt>Status</dt><dd><span className={`rs-text rs-${currentStatus.toLowerCase()}`}>{MARK[currentStatus]} {LABEL[currentStatus]}</span></dd></div>

@@ -3,7 +3,7 @@ import Registration from "../models/Registration.js";
 import { sendRoundUpdateEmail } from "../services/emailService.js";
 import { ALLOWED_ROUND_STATUSES, currentRound, normalizeRounds, readRounds, ROUND_INFO, ROUND_KEYS, roundSnapshot } from "../services/roundService.js";
 
-const LIST_FIELDS = "teamId teamName leader college collegeName payment.confirmedAt evaluation.totalScore evaluation.result rounds roundEmail";
+const LIST_FIELDS = "teamId teamName leader college collegeName projectTheme payment.confirmedAt evaluation.totalScore evaluation.result rounds roundEmail";
 const SENDING_TIMEOUT_MS = 2 * 60 * 1000;
 
 const toView = (team) => {

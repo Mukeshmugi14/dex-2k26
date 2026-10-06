@@ -1,6 +1,6 @@
 import axios from "axios";
-import { Check, Circle, Clock3, Eye, FileText, LogOut, RefreshCw, Users, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Check, Circle, Clock3, Cpu, ExternalLink, Eye, FileText, Link2, LogOut, Monitor, RefreshCw, Rocket, Upload, Users, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TeamPortal.css";
 import { API_URL } from "../config/api";
@@ -15,6 +15,21 @@ const STATUS = {
   NOT_SELECTED: { label: "Not Selected", icon: X, mark: "✕" },
 };
 const REFRESH_MS = 60_000;
+const MB = 1024 * 1024;
+const MAX_PDF_BYTES = 15 * MB;
+const INVALID_PDF_MESSAGE = "Invalid file format. Please upload your Round 1 submission as a PDF only. PPT and PPTX files are not accepted.";
+const FILE_TOO_LARGE_MESSAGE = "File size exceeds the 15 MB limit. Please upload a PDF file under 15 MB.";
+// Round 2: what each prototype category submits.
+const PROTOTYPE_TYPES = {
+  SOFTWARE: { label: "Software", title: "SOFTWARE PROTOTYPE", hint: "Website / application link", field: "Website / Prototype URL", placeholder: "https://your-project-url.com", button: "SUBMIT PROTOTYPE →", view: "Open Prototype", help: "Submit your working software prototype as a website / application link.", icon: Monitor },
+  HARDWARE: { label: "Hardware", title: "HARDWARE PROTOTYPE VIDEO", hint: "YouTube demo video", field: "YouTube Video Link", placeholder: "https://youtube.com/...", button: "SUBMIT PROTOTYPE VIDEO →", view: "Watch Video", help: "Create and publish a demonstration video of your hardware prototype on YouTube, then submit the video link.", icon: Cpu },
+};
+const formatDeadline = (value) => (value ? new Date(value).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }) : "");
+const formatSize = (bytes) => (bytes >= MB / 10 ? `${(bytes / MB).toFixed(2)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+// A real PDF starts with "%PDF-"; this catches renamed files before uploading.
+const hasPdfSignature = async (file) => {
+  try { return new TextDecoder().decode(await file.slice(0, 5).arrayBuffer()) === "%PDF-"; } catch { return true; }
+};
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }) : "");
 const statusClass = (status) => `team-status team-status-${status.toLowerCase().replace("_", "-")}`;
 
@@ -87,6 +102,16 @@ export default function TeamDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [pdfError, setPdfError] = useState("");
+  const [selectedPdf, setSelectedPdf] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [justSubmitted, setJustSubmitted] = useState(false);
+  const [prototypeType, setPrototypeType] = useState("");
+  const [prototypeUrl, setPrototypeUrl] = useState("");
+  const [prototypeError, setPrototypeError] = useState("");
+  const [prototypeSaving, setPrototypeSaving] = useState(false);
+  const [prototypeJustSubmitted, setPrototypeJustSubmitted] = useState(false);
+  const fileInputRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
 
@@ -130,6 +155,53 @@ export default function TeamDashboard() {
     }
   };
 
+  const choosePdf = async (file) => {
+    setPdfError("");
+    setSelectedPdf(null);
+    if (fileInputRef.current) fileInputRef.current.value = ""; // allow picking the same file again after an error
+    if (!file) return;
+    if (file.type !== "application/pdf" || !/\.pdf$/i.test(file.name)) return setPdfError(INVALID_PDF_MESSAGE);
+    if (file.size > MAX_PDF_BYTES) return setPdfError(FILE_TOO_LARGE_MESSAGE);
+    if (!(await hasPdfSignature(file))) return setPdfError(INVALID_PDF_MESSAGE);
+    setSelectedPdf(file);
+  };
+
+  const uploadPdf = async () => {
+    if (!selectedPdf || uploading) return;
+    setUploading(true); setUploadProgress(0); setPdfError("");
+    try {
+      const formData = new FormData();
+      formData.append("pdf", selectedPdf);
+      await axios.post(`${API_URL}/team/me/pdf`, formData, { headers: { Authorization: `Bearer ${getTeamToken()}` }, onUploadProgress: (event) => { if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100)); } });
+      setSelectedPdf(null);
+      setJustSubmitted(true);
+      await load();
+    } catch (requestError) {
+      if (requestError.response?.status === 401) { logout(); return; }
+      if (requestError.response?.status === 409) { setSelectedPdf(null); await load(); }
+      setPdfError(requestError.response?.data?.message || "Unable to upload your PDF. Please check your connection and try again.");
+    } finally { setUploading(false); }
+  };
+
+  const choosePrototypeType = (type) => { setPrototypeType(type); setPrototypeUrl(""); setPrototypeError(""); };
+
+  const submitPrototype = async (event) => {
+    event.preventDefault();
+    if (prototypeSaving) return;
+    if (!prototypeUrl.trim()) { setPrototypeError(`Please enter your ${PROTOTYPE_TYPES[prototypeType].field.toLowerCase()}.`); return; }
+    setPrototypeSaving(true); setPrototypeError("");
+    try {
+      await axios.post(`${API_URL}/team/me/prototype`, { category: prototypeType, url: prototypeUrl.trim() }, { headers: { Authorization: `Bearer ${getTeamToken()}` } });
+      setPrototypeJustSubmitted(true);
+      setPrototypeUrl("");
+      await load();
+    } catch (requestError) {
+      if (requestError.response?.status === 401) { logout(); return; }
+      if ([403, 409].includes(requestError.response?.status)) await load();
+      setPrototypeError(requestError.response?.data?.message || "Unable to submit your prototype. Please check your connection and try again.");
+    } finally { setPrototypeSaving(false); }
+  };
+
   const header = <header className="team-topbar">
     <div><span className="team-brand">DE<b>X</b>ATHON <em>2026</em></span><small>Team Head Portal</small></div>
     <div className="team-topbar-user">{data ? <span>{data.team.teamHead}</span> : null}<button type="button" onClick={logout}><LogOut size={15} /> Logout</button></div>
@@ -137,9 +209,14 @@ export default function TeamDashboard() {
 
   if (!data) return <main className="team-portal team-dash">{header}<div className="team-dash-inner"><p className="team-state">{error || "Loading your team dashboard..."}</p>{error ? <button type="button" className="team-retry" onClick={load}>Retry</button> : null}</div></main>;
 
-  const { team, submission, rounds, current, evaluation } = data;
+  const { team, submission, rounds, current, evaluation, prototype } = data;
+  const prototypeInfo = prototype?.category ? PROTOTYPE_TYPES[prototype.category] : null;
+  const chosenType = PROTOTYPE_TYPES[prototypeType] || null;
+  const prototypeStatus = !prototype ? null : prototype.submitted ? <span className="team-pill ok">✓ Submitted</span> : prototype.open ? <span className="team-pill open">● Submission Open</span> : <span className="team-pill closed">✕ Not Submitted</span>;
   const currentInfo = STATUS[current.status] || STATUS.UPCOMING;
   const notSelected = current.status === "NOT_SELECTED";
+  const roundOne = rounds.find((round) => round.number === 1);
+  const roundOneInfo = STATUS[roundOne?.status] || STATUS.UPCOMING;
 
   return <main className="team-portal team-dash">
     {header}
@@ -166,6 +243,10 @@ export default function TeamDashboard() {
             <div><dt>Team Head</dt><dd>{team.teamHead}</dd></div>
             <div><dt>Team Head Email</dt><dd className="break">{team.teamHeadEmail}</dd></div>
             <div><dt>College</dt><dd>{team.college}</dd></div>
+            <div><dt>Selected Project Theme</dt><dd className="team-theme-value">{team.projectTheme}</dd></div>
+            <div><dt>Round 1 Status</dt><dd>{roundOne ? <span className={statusClass(roundOne.status)}>{roundOneInfo.mark} {roundOneInfo.label}</span> : "—"}</dd></div>
+            <div><dt>Round 1 PDF Submission Status</dt><dd>{submission.submitted ? <span className="team-pill ok">✓ PDF Submitted</span> : <span className="team-pill open">● Submission Open</span>}</dd></div>
+            {prototypeStatus ? <div><dt>Round 2 Prototype Status</dt><dd>{prototypeStatus}</dd></div> : null}
           </dl>
         </section>
 
@@ -175,17 +256,68 @@ export default function TeamDashboard() {
         </section>
 
         <section className="team-card team-area-pdf">
-          <h2><FileText size={17} /> Your Submission</h2>
+          <span className="team-stage-badge is-round1">STAGE 1 · ROUND 1</span>
+          <h2><FileText size={17} /> Round 1 PDF Submission</h2>
+          <div className="team-template-reference">
+            <b>ROUND 1 PPT TEMPLATE</b>
+            <strong>Official DEXATHON 2026 Round 1 Presentation Template</strong>
+            <p>Download the official PPT template → Prepare your presentation → Convert to PDF → Upload PDF</p>
+            <a href="/Dexathon-PPT-Template-2026.pptx" download>Download / View Official Template</a>
+          </div>
           {submission.submitted ? <>
-            <div className="team-pdf-file"><FileText size={22} /><div><b>{submission.fileName}</b><span>Submitted {formatDate(submission.submittedAt)}</span></div></div>
-            <div className="team-pdf-status"><span>Status</span><span className="team-pill ok">✓ Submitted</span></div>
+            {justSubmitted ? <p className="team-pdf-success" role="status">✓ Round 1 PDF Submitted Successfully</p> : null}
+            <div className="team-pdf-file"><FileText size={22} /><div><b>{submission.fileName}</b><span>{submission.fileSize ? `${formatSize(submission.fileSize)} · ` : ""}Submitted {formatDate(submission.submittedAt)}</span></div></div>
+            <div className="team-pdf-status"><span>Round 1 PDF Status</span><span className="team-pill ok">✓ PDF Submitted</span></div>
             <button type="button" className="team-action" onClick={viewPdf}><Eye size={16} /> View PDF</button>
             {pdfError ? <p className="team-inline-error">{pdfError}</p> : null}
           </> : <>
-            <div className="team-pdf-status"><span>Status</span><span className="team-pill">Not Submitted</span></div>
-            <p className="team-muted">Please submit your PDF using the submission link sent to your registered email.</p>
+            <div className="team-pdf-warning" role="note">
+              <span>⚠️ ROUND 1 SUBMISSION — PDF ONLY — MAX 15 MB</span>
+              <strong>ROUND 1 — PDF SUBMISSION</strong>
+              <b>PDF FORMAT ONLY</b>
+              <small>Maximum File Size: 15 MB · PPT / PPTX files are not accepted</small>
+            </div>
+            <div className="team-pdf-status"><span>Round 1 PDF Status</span><span className="team-pill open">● Submission Open</span></div>
+            <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" hidden onChange={(event) => choosePdf(event.target.files?.[0])} />
+            {selectedPdf ? <div className="team-pdf-file"><FileText size={22} /><div><b>{selectedPdf.name}</b><span>{formatSize(selectedPdf.size)} · Ready to submit</span></div></div> : null}
+            {uploading ? <div className="team-upload-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}><i style={{ width: `${uploadProgress}%` }} /><span>Uploading… {uploadProgress}%</span></div> : null}
+            <div className="team-upload-actions">
+              <button type="button" className="team-action" onClick={() => fileInputRef.current?.click()} disabled={uploading}><Upload size={16} /> {selectedPdf ? "Choose Another PDF" : "Choose Round 1 PDF"}</button>
+              {selectedPdf ? <button type="button" className="team-action team-upload-action" onClick={uploadPdf} disabled={uploading}><Upload size={16} /> {uploading ? "Submitting…" : "Submit Round 1 PDF"}</button> : null}
+            </div>
+            {pdfError ? <p className="team-inline-error team-pdf-error" role="alert">{pdfError}</p> : null}
           </>}
           {evaluation ? <div className="team-score"><div><span>Evaluation Score</span><b>{evaluation.totalScore}</b></div><div><span>Result</span><b>{evaluation.result}</b></div></div> : null}
+        </section>
+
+        <section className="team-card team-area-round2" aria-labelledby="team-round2-title">
+          <span className="team-stage-badge is-round2">STAGE 2 · ROUND 2</span>
+          <h2 id="team-round2-title"><Rocket size={17} /> Round 2 — Prototype Submission</h2>
+          {!prototype ? <p className="team-muted">Round 2 prototype submission will be available soon.</p>
+            : prototype.submitted ? <>
+              {prototypeJustSubmitted ? <p className="team-pdf-success" role="status">✓ Round 2 Prototype Submitted Successfully</p> : null}
+              <div className="team-r2-heading"><b>ROUND 2 — PROTOTYPE SUBMISSION</b><strong>{prototypeInfo?.title}</strong></div>
+              <div className="team-r2-link"><Link2 size={20} /><div><b>{prototypeInfo?.field}</b><a href={prototype.url} target="_blank" rel="noopener noreferrer">{prototype.url}</a><span>Submitted {formatDate(prototype.submittedAt)}</span></div></div>
+              <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
+              <a className="team-action team-r2-action" href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} /> {prototypeInfo?.view || "Open Link"}</a>
+            </>
+            : !prototype.open ? <>
+              <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
+              <p className="team-muted">{prototype.eligible ? `Round 2 prototype submission closed on ${formatDeadline(prototype.deadline)}.` : "Round 2 submission is not available for your team."}</p>
+            </>
+            : <>
+              <p className="team-r2-intro">Choose your prototype type. Submission closes on <b>{formatDeadline(prototype.deadline)}</b>.</p>
+              <div className="team-r2-choice" role="radiogroup" aria-label="Prototype type">
+                {Object.entries(PROTOTYPE_TYPES).map(([key, type]) => <button type="button" role="radio" aria-checked={prototypeType === key} className={prototypeType === key ? "is-active" : ""} key={key} onClick={() => choosePrototypeType(key)} disabled={prototypeSaving}><type.icon size={20} /><span><b>{type.label.toUpperCase()}</b><small>{type.hint}</small></span></button>)}
+              </div>
+              {chosenType ? <form className="team-r2-form" onSubmit={submitPrototype} noValidate>
+                <div className="team-r2-heading"><b>ROUND 2 — PROTOTYPE SUBMISSION</b><strong>{chosenType.title}</strong><small>{chosenType.help}</small></div>
+                <label><span>{chosenType.field}</span><input type="url" inputMode="url" autoComplete="url" placeholder={chosenType.placeholder} value={prototypeUrl} onChange={(event) => { setPrototypeUrl(event.target.value); setPrototypeError(""); }} disabled={prototypeSaving} /></label>
+                <button type="submit" className="team-action team-r2-action" disabled={prototypeSaving || !prototypeUrl.trim()}>{prototypeSaving ? "Submitting…" : chosenType.button}</button>
+              </form> : null}
+              <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
+              {prototypeError ? <p className="team-inline-error team-pdf-error" role="alert">{prototypeError}</p> : null}
+            </>}
         </section>
 
         <section className="team-card team-area-progress">

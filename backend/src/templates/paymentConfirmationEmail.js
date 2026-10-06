@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 export const POSTER_CID = "dexathon-poster";
 export const POSTER_IMAGE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "../assets/dexathon-2026-poster.jpg");
 
+// Official DEXATHON community links shown in the payment confirmation email.
+export const WHATSAPP_URL = "https://chat.whatsapp.com/B4t2PoZlgx7GFuO1E526Gr?s=cl&p=a&mlu=0";
+export const INSTAGRAM_URL = "https://www.instagram.com/dexathon2k26/";
+
 const EVENT = { date: "Wednesday, 4 November 2026", venue: "Indoor Auditorium", campus: "Sathyabama Institute of Science and Technology", duration: "24 Hours" };
 
 export const BLACK = "#0b0b0d";
@@ -24,6 +28,7 @@ const getDetails = (registration) => ({
   leaderEmail: registration.leader?.email?.trim() || "",
   teamName: registration.teamName?.trim() || "",
   college: registration.college || registration.collegeName || "",
+  projectTheme: registration.projectTheme || "",
   amount: Number(registration.payment?.amount ?? 0).toLocaleString("en-IN"),
   transactionId: registration.payment?.transactionId || "",
   confirmedAt: formatDate(registration.payment?.confirmedAt),
@@ -61,8 +66,8 @@ export const renderPortalCredentials = ({ email, password, loginUrl }, { padding
   return `<tr><td class="px" style="padding:${padding};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0b1628" style="background:#0b1628;border-top:4px solid ${ORANGE};">
       <tr><td style="padding:24px 26px 26px;">
-        <div style="font-family:${FONT};font-size:20px;line-height:26px;font-weight:900;letter-spacing:1px;color:#ffffff;">TEAM HEAD PORTAL</div>
-        <div style="font-family:${FONT};font-size:13px;line-height:20px;color:#b8c7dc;padding:6px 0 18px;">Your Team Head Portal access has been created. Use these details to view your team, PDF submission and round progress.</div>
+        <div style="font-family:${FONT};font-size:20px;line-height:26px;font-weight:900;letter-spacing:1px;color:#ffffff;">TEAM LOGIN PORTAL</div>
+        <div style="font-family:${FONT};font-size:13px;line-height:20px;color:#b8c7dc;padding:6px 0 18px;">Use your registered Team Head email ID to access your team dashboard and round progress.</div>
         <div style="font-family:${FONT};font-size:11px;line-height:14px;letter-spacing:2px;font-weight:800;color:${ORANGE};padding-bottom:12px;">LOGIN CREDENTIALS</div>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           ${field("Team Head Email", e.email)}
@@ -77,8 +82,8 @@ export const renderPortalCredentials = ({ email, password, loginUrl }, { padding
   </td></tr>`;
 };
 
-export const portalCredentialsText = ({ email, password, loginUrl }) => `TEAM HEAD PORTAL
-Your Team Head Portal access has been created.
+export const portalCredentialsText = ({ email, password, loginUrl }) => `TEAM LOGIN PORTAL
+Use your registered Team Head email ID to access your team dashboard.
 
 LOGIN CREDENTIALS
 Team Head Email: ${email}
@@ -87,8 +92,8 @@ Login Portal: ${loginUrl}`;
 
 const detailCell = (title, value, extra = "") => `<td class="stack" valign="top" style="padding:16px 0 0;${extra}">${label(title)}<div style="font-family:${FONT};font-size:15px;line-height:22px;font-weight:700;color:${INK};padding-top:3px;">${value}</div></td>`;
 
-export const buildPaymentConfirmationEmail = (registration, { submissionUrl = "", portal = null } = {}) => {
-  const d = { ...getDetails(registration), submissionUrl };
+export const buildPaymentConfirmationEmail = (registration, { portal = null } = {}) => {
+  const d = getDetails(registration);
   const portalAccess = portal ? { email: d.leaderEmail, password: portal.password, loginUrl: portal.loginUrl } : null;
   const e = Object.fromEntries(Object.entries(d).map(([key, value]) => [key, escapeHtml(value)]));
 
@@ -167,6 +172,13 @@ export const buildPaymentConfirmationEmail = (registration, { submissionUrl = ""
           </tr>
           <tr>${detailCell("College", e.college || "&mdash;", "")}<td class="stack" style="padding:16px 0 0;">${label("Payment Status")}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:5px;"><tr><td style="border:1px solid ${BLUE};padding:4px 10px;font-family:${FONT};font-size:11px;font-weight:800;letter-spacing:1.5px;color:${BLUE};">&#9679; CONFIRMED</td></tr></table></td></tr>
         </table>
+        ${e.projectTheme ? `<!-- Selected project theme (highlighted) -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;"><tr>
+          <td bgcolor="#fff3ea" style="background:#fff3ea;border:2px solid ${ORANGE};padding:14px 16px;">
+            <div style="font-family:${FONT};font-size:10px;line-height:14px;letter-spacing:2px;font-weight:800;color:${ORANGE};">PROJECT THEME</div>
+            <div style="font-family:${FONT};font-size:19px;line-height:25px;font-weight:900;letter-spacing:.5px;color:${INK};padding-top:4px;text-transform:uppercase;">${e.projectTheme}</div>
+          </td>
+        </tr></table>` : ""}
         <div style="padding-top:18px;">${label("Transaction ID")}</div>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px;"><tr>
           <td bgcolor="#ffffff" style="background:#ffffff;border:1px dashed #c9ccd3;padding:11px 14px;font-family:${MONO};font-size:15px;letter-spacing:1px;color:${INK};word-break:break-all;">${e.transactionId || "&mdash;"}</td>
@@ -190,6 +202,32 @@ export const buildPaymentConfirmationEmail = (registration, { submissionUrl = ""
     </table>
   </td></tr>
 
+  <!-- Community: WhatsApp + Instagram -->
+  <tr><td class="px" style="padding:20px 40px 0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f6f7f9" style="background:#f6f7f9;border:1px solid ${LINE};border-top:4px solid ${ORANGE};">
+      <tr><td style="padding:22px 24px 8px;">
+        ${label("Follow DEXATHON 2026", ORANGE)}
+        <div style="font-family:${FONT};font-size:20px;line-height:26px;font-weight:900;color:${INK};padding-top:4px;">JOIN OUR WHATSAPP COMMUNITY</div>
+        <div style="font-family:${FONT};font-size:14px;line-height:22px;color:#3d404a;padding-top:6px;">Get event updates, announcements and help from the organizers. Follow us on Instagram for highlights.</div>
+      </td></tr>
+      <tr><td style="padding:8px 24px 22px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td class="stack" valign="top" style="padding:8px 3px 0;width:50%;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td align="center" bgcolor="#1fa855" style="background:#1fa855;"><a href="${escapeHtml(WHATSAPP_URL)}" target="_blank" style="display:block;padding:14px 12px;font-family:${FONT};font-size:13px;font-weight:800;letter-spacing:1px;color:#ffffff;text-decoration:none;">&#128241; JOIN WHATSAPP GROUP &rarr;</a></td>
+            </tr></table>
+          </td>
+          <td class="stack" valign="top" style="padding:8px 3px 0;width:50%;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td align="center" bgcolor="#d62976" style="background:#d62976;"><a href="${escapeHtml(INSTAGRAM_URL)}" target="_blank" style="display:block;padding:14px 12px;font-family:${FONT};font-size:13px;font-weight:800;letter-spacing:1px;color:#ffffff;text-decoration:none;">&#128248; FOLLOW US ON INSTAGRAM &rarr;</a></td>
+            </tr></table>
+          </td>
+        </tr></table>
+        <div style="font-family:${FONT};font-size:12px;line-height:18px;color:${MUTED};padding-top:12px;word-break:break-all;">WhatsApp: <a href="${escapeHtml(WHATSAPP_URL)}" target="_blank" style="color:${BLUE};">${escapeHtml(WHATSAPP_URL)}</a><br>Instagram: <a href="${escapeHtml(INSTAGRAM_URL)}" target="_blank" style="color:${BLUE};">${escapeHtml(INSTAGRAM_URL)}</a></div>
+      </td></tr>
+    </table>
+  </td></tr>
+
   <!-- Event info -->
   <tr><td class="px" style="padding:20px 40px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${BLACK}" style="background:${BLACK};">
@@ -209,23 +247,6 @@ export const buildPaymentConfirmationEmail = (registration, { submissionUrl = ""
     </table>
   </td></tr>
 
-  ${e.submissionUrl ? `<!-- Second round submission -->
-  <tr><td class="px" style="padding:20px 40px 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${LINE};border-top:4px solid ${BLUE};">
-      <tr><td style="padding:24px 26px 26px;">
-        ${label("DEXATHON 2026", BLUE)}
-        <div style="font-family:${FONT};font-size:20px;line-height:26px;font-weight:900;color:${INK};padding-top:4px;">SECOND ROUND SUBMISSION</div>
-        <div style="font-family:${FONT};font-size:14px;line-height:22px;color:#3d404a;padding-top:10px;">Your registration and payment have been successfully confirmed. Please submit your required PDF document using the link below.</div>
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;"><tr>
-          <td bgcolor="${ORANGE}" style="background:${ORANGE};"><a href="${e.submissionUrl}" target="_blank" style="display:inline-block;padding:13px 26px;font-family:${FONT};font-size:13px;font-weight:800;letter-spacing:2px;color:#ffffff;text-decoration:none;">SUBMIT PDF &rarr;</a></td>
-        </tr></table>
-        <div style="padding-top:18px;">${label("Submission Link")}</div>
-        <div style="font-family:${MONO};font-size:12px;line-height:18px;color:${BLUE};padding-top:4px;word-break:break-all;"><a href="${e.submissionUrl}" target="_blank" style="color:${BLUE};text-decoration:underline;">${e.submissionUrl}</a></div>
-        <div style="font-family:${FONT};font-size:13px;line-height:20px;color:${MUTED};padding-top:14px;">This link is unique to your team &mdash; please do not share it. Upload your PDF before the submission deadline.</div>
-      </td></tr>
-    </table>
-  </td></tr>
-` : ""}
   ${portalAccess ? `<!-- Team Head Portal credentials -->\n${renderPortalCredentials(portalAccess)}` : ""}
   <!-- Important -->
   <tr><td class="px" style="padding:20px 40px 40px;">
@@ -255,7 +276,7 @@ We're excited to have your team join this 24-hour hackathon.
 REGISTRATION DETAILS
 Team Name: ${d.teamName}
 Team Head: ${d.leaderName}
-College: ${d.college}
+College: ${d.college}${d.projectTheme ? `\n\nPROJECT THEME: ${d.projectTheme.toUpperCase()}\n` : ""}
 Registration Amount: ₹${d.amount}
 Transaction ID: ${d.transactionId}
 Payment Status: CONFIRMED${d.confirmedAt ? `\nConfirmed On: ${d.confirmedAt}` : ""}
@@ -263,21 +284,15 @@ Payment Status: CONFIRMED${d.confirmedAt ? `\nConfirmed On: ${d.confirmedAt}` : 
 ✓ PAYMENT VERIFIED
 Your registration payment has been successfully verified by the DEXATHON administration.
 
+FOLLOW DEXATHON 2026
+Join our WhatsApp Community: ${WHATSAPP_URL}
+Follow us on Instagram: ${INSTAGRAM_URL}
+
 EVENT DETAILS
 Date: ${EVENT.date}
 Venue: ${EVENT.venue}, ${EVENT.campus}
 Duration: ${EVENT.duration}
-${d.submissionUrl ? `
-DEXATHON 2026 — SECOND ROUND SUBMISSION
-Your registration and payment have been successfully confirmed.
-Please submit your required PDF document using the link below:
-
-Submission Link:
-${d.submissionUrl}
-
-This link is unique to your team — please do not share it.
-Please upload your PDF before the submission deadline.
-` : ""}${portalAccess ? `\n${portalCredentialsText(portalAccess)}\n` : ""}
+${portalAccess ? `\n${portalCredentialsText(portalAccess)}\n` : ""}
 Keep this email for your records.
 Please carry your registration details during the event.
 

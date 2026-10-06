@@ -5949,3 +5949,7 @@ a {
     min-width: 0;
   }
 }
+
+/* Phones use the MobileJourney mission path (no panorama, no swipe hint). */
+
+.trainer-journey-section.is-mobile::after { content: none; display: none; }

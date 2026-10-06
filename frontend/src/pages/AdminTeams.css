@@ -125,3 +125,4 @@
   .admin-teams .tm-card-actions button{justify-content:center}
 }
 @media(max-width:700px){.admin-teams .tm-bulk-actions button{padding:0 8px;font-size:12px;white-space:nowrap}}
+.team-card dd.break a{color:#7fd3ff;text-decoration:underline}

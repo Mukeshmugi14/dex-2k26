@@ -5,7 +5,6 @@ import Admin from "../models/Admin.js";
 import Registration from "../models/Registration.js";
 import { adminProfile } from "../services/adminAccess.js";
 import { sendPaymentConfirmationEmail } from "../services/emailService.js";
-import { buildSubmissionUrl, issueSubmissionToken } from "../services/submissionService.js";
 
 export const login = async (request, response) => {
   const username = typeof request.body.username === "string" ? request.body.username.trim() : "";
@@ -104,7 +103,7 @@ export const getColleges = async (_request, response) => {
 
 // Only what the Payment History table shows (no order IDs, UPI details or other team data).
 const PAYMENT_FIELDS = {
-  teamId: 1, teamName: 1, college: 1, "leader.name": 1, "leader.email": 1, createdAt: 1,
+  teamId: 1, teamName: 1, projectTheme: 1, college: 1, "leader.name": 1, "leader.email": 1, createdAt: 1,
   "payment.status": 1, "payment.amount": 1, "payment.transactionId": 1, "payment.paidAt": 1, "payment.confirmedAt": 1, "payment.confirmedBy": 1,
   "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1,
 };
@@ -204,9 +203,7 @@ const sendConfirmationEmailInBackground = (registrationId) => {
       const registration = await Registration.findById(registrationId);
       recipient = registration?.leader?.email || null;
       console.log(`Starting payment confirmation email for ${registrationId} to ${recipient || "missing recipient"}.`);
-      // Every confirmation email (including resends) carries the team's one permanent PDF submission link.
-      const submissionToken = await issueSubmissionToken(registrationId);
-      sent = await sendPaymentConfirmationEmail(registration, { submissionUrl: buildSubmissionUrl(submissionToken) });
+      sent = await sendPaymentConfirmationEmail(registration);
       console.log(`Payment confirmation email ${sent ? "sent" : "not accepted"} for ${registrationId}.`);
     } catch (error) {
       console.error("Confirmation Email Error:", { registrationId: String(registrationId), recipient, code: error.code || null, responseCode: error.responseCode || null, message: error.message });

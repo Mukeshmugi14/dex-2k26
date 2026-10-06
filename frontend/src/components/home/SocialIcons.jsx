@@ -1,3 +1,5 @@
+export const INSTAGRAM_URL = "https://www.instagram.com/dexathon2k26/";
+
 // Small brand marks (the installed lucide-react version has no brand icons).
 export function LinkedInIcon({ size = 12 }) {
   return (
@@ -14,5 +16,14 @@ export function InstagramIcon({ size = 12 }) {
       <circle cx="12" cy="12" r="4" />
       <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
     </svg>
+  );
+}
+
+// Official DEXATHON Instagram button used in the Contact section and footer.
+export function InstagramButton({ className = "" }) {
+  return (
+    <a className={`home-instagram-link ${className}`.trim()} href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" aria-label="DEXATHON 2026 on Instagram (opens in a new tab)">
+      <InstagramIcon size={16} /> <span>Instagram</span> <small>@dexathon2k26</small>
+    </a>
   );
 }

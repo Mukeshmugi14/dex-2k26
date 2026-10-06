@@ -408,6 +408,9 @@ export default function AdminTeams() {
               <div><dt>Email</dt><dd className="break">{team.leader?.email}</dd></div>
               <div><dt>Phone</dt><dd>{team.leader?.phone}</dd></div>
               <div><dt>College</dt><dd>{team.college || team.collegeName || "—"}</dd></div>
+              <div><dt>Project Theme</dt><dd>{team.projectTheme || "Not selected"}</dd></div>
+              <div><dt>Round 1 PDF</dt><dd>{team.pdfSubmission?.fileId ? "PDF Submitted" : "Submission Open"}</dd></div>
+              <div><dt>Round 2 Prototype</dt><dd className="break">{team.prototypeSubmission?.url ? <>{team.prototypeSubmission.category === "HARDWARE" ? "Hardware · YouTube video" : "Software · Website"}: <a href={team.prototypeSubmission.url} target="_blank" rel="noopener noreferrer">{team.prototypeSubmission.url}</a></> : "Not submitted"}</dd></div>
               <div><dt>Team Members</dt><dd><ol>{team.members.map((member, index) => <li key={index}><b>{pad(index)}.</b> {member.name}</li>)}</ol></dd></div>
             </dl>
             <footer><span>Members: <b>{team.members.length}</b></span>

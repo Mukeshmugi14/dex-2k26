@@ -271,7 +271,7 @@ export default function AdminPdfSubmissions() {
                 <div><dt>Team Head</dt><dd>{team.leader?.name}</dd></div>
                 <div><dt>Email</dt><dd className="break">{team.leader?.email}</dd></div>
                 <div><dt>Phone</dt><dd>{team.leader?.phone}</dd></div>
-                <div><dt>College</dt><dd>{team.college || team.collegeName}</dd></div>
+                <div><dt>College</dt><dd>{team.college || team.collegeName}</dd></div><div><dt>Project Theme</dt><dd>{team.projectTheme || "Not selected"}</dd></div>
                 <div><dt>Submitted</dt><dd>{hasPdf ? formatDate(team.pdfSubmission.submittedAt) : "Not yet"}</dd></div>
               </dl>
               <div className="pdf-card-actions">

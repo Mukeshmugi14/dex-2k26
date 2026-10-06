@@ -40,7 +40,7 @@ export default function MainNavigation() {
     <header className="home-navbar">
       <div className="home-navbar-inner">
         <a className="home-brand" href="#home" aria-label="DEXATHON 2026 home">
-          <span className="home-brand-mark" aria-hidden="true"><i /><b /></span>
+          <span className="home-brand-mark" aria-hidden="true"><i className="home-brand-ball"><b /></i></span>
           <span className="home-brand-text">
             <strong>DEXATHON <em>2026</em></strong>
             <small>24-HOUR AI HACKATHON</small>
