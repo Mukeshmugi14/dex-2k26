@@ -7,6 +7,20 @@
 
 /* iOS Safari zooms the page when focusing a field whose text is under 16px. */
 @media (max-width: 767px) {
+  html,
+  body,
+  #root {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
   html input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
   html select,
   html textarea {

@@ -5555,10 +5555,10 @@ a {
   display: block;
   width: 100%;
   height: auto;
-  max-width: none;
+  max-width: 100%;
   margin: 0;
   padding: 0;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
   transform-origin: center center;
   user-select: none;
@@ -5674,14 +5674,14 @@ a {
 
   .trainer-journey-visual {
     width: 100%;
-    aspect-ratio: 1.45 / 1;
+    aspect-ratio: auto;
   }
 
   .trainer-journey-image {
     width: 100%;
-    height: 100%;
+    height: auto;
 
-    object-fit: cover;
+    object-fit: contain;
     object-position: center center;
   }
 
@@ -5707,7 +5707,7 @@ a {
 @media (max-width: 380px) {
 
   .trainer-journey-visual {
-    aspect-ratio: 1.30 / 1;
+    aspect-ratio: auto;
   }
 
   .trainer-journey-image {
@@ -5892,46 +5892,22 @@ a {
     min-height: 60px;
   }
 
-  /* Journey map: keep the artwork readable as a swipeable panorama instead of cropping it */
+  /* Journey map: preserve the full artwork within the viewport. */
   .trainer-journey-visual {
     aspect-ratio: auto;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-
-  .trainer-journey-visual::-webkit-scrollbar {
-    display: none;
+    overflow: hidden;
   }
 
   .trainer-journey-image {
     position: static;
-    width: auto;
-    max-width: none;
-    height: 280px;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
     object-fit: contain;
   }
 
   .trainer-journey-scan {
     display: none;
-  }
-
-  .trainer-journey-section::after {
-    content: "SWIPE TO EXPLORE \2192";
-    position: absolute;
-    right: 12px;
-    bottom: 10px;
-    z-index: 3;
-    padding: 5px 9px;
-    background: rgba(3, 21, 34, 0.85);
-    border: 1px solid rgba(45, 226, 230, 0.35);
-    color: #2de2e6;
-    font-family: "Barlow Condensed", sans-serif;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    line-height: 1;
-    pointer-events: none;
   }
 
   /* Schedule: icon beside the text, with the time above both */
@@ -5949,7 +5925,3 @@ a {
     min-width: 0;
   }
 }
-
-/* Phones use the MobileJourney mission path (no panorama, no swipe hint). */
-
-.trainer-journey-section.is-mobile::after { content: none; display: none; }
