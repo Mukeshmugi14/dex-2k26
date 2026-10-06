@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import Registration from "../models/Registration.js";
 import { adminProfile } from "../services/adminAccess.js";
-import { sendPaymentConfirmationEmail } from "../services/emailService.js";
+import { describeEmailError, getEmailHealth, resetEmailHealth, sendPaymentConfirmationEmail } from "../services/emailService.js";
 
 export const login = async (request, response) => {
   const username = typeof request.body.username === "string" ? request.body.username.trim() : "";
@@ -105,17 +105,31 @@ export const getColleges = async (_request, response) => {
 const PAYMENT_FIELDS = {
   teamId: 1, teamName: 1, projectTheme: 1, college: 1, "leader.name": 1, "leader.email": 1, createdAt: 1,
   "payment.status": 1, "payment.amount": 1, "payment.transactionId": 1, "payment.paidAt": 1, "payment.confirmedAt": 1, "payment.confirmedBy": 1,
-  "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1,
+  "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1, "payment.confirmationEmailError": 1,
+};
+
+// Shows the real error only while developing; production gets the plain message.
+const errorDetail = (error) => (process.env.NODE_ENV === "production" ? undefined : error?.message);
+
+// Optional YYYY-MM-DD date range on the payment date (paid date, or registration date before payment).
+const dateRangeFilter = (from, to) => {
+  const range = {};
+  if (/^\d{4}-\d{2}-\d{2}$/.test(from || "")) range.$gte = new Date(`${from}T00:00:00+05:30`);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(to || "")) range.$lte = new Date(`${to}T23:59:59.999+05:30`);
+  if (!Object.keys(range).length) return {};
+  return { $or: [{ "payment.paidAt": range }, { "payment.paidAt": null, createdAt: range }] };
 };
 
 // Paginated, server-filtered payment history with whole-collection summary totals.
 export const getPayments = async (request, response) => {
   const { query } = request;
   const { page, limit, skip } = pageParams(query);
-  const filters = [searchFilter(query.search, ["teamName", "teamId", "leader.name", "leader.email", "college", "payment.transactionId"])];
+  const filters = [searchFilter(query.search, ["teamName", "teamId", "leader.name", "leader.email", "college", "projectTheme", "payment.transactionId"])];
   if (paymentCategory[query.status]) filters.push(paymentCategory[query.status]);
+  filters.push(dateRangeFilter(query.from, query.to));
   const match = { $and: filters };
 
+  try {
   const [[summary = {}], items, total] = await Promise.all([
     Registration.aggregate([{ $group: {
       _id: null,
@@ -127,10 +141,17 @@ export const getPayments = async (request, response) => {
     Registration.find(match, PAYMENT_FIELDS).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
     Registration.countDocuments(match),
   ]);
+  // Older or incomplete records still load; log them so they can be fixed.
+  const incomplete = items.filter((row) => !row.teamName || !row.leader?.email || !row.payment);
+  if (incomplete.length) console.warn(`Payment history: ${incomplete.length} record(s) with missing team name / Team Head email / payment details:`, incomplete.map((row) => String(row._id)).join(", "));
   return response.json({
-    items, total, page, limit, pages: Math.max(Math.ceil(total / limit), 1),
+    items: items.map(paymentRow), total, page, limit, pages: Math.max(Math.ceil(total / limit), 1),
     summary: { total: summary.total || 0, successful: summary.successful || 0, failed: summary.failed || 0, pending: (summary.total || 0) - (summary.successful || 0) - (summary.failed || 0), amount: summary.amount || 0 },
   });
+  } catch (error) {
+    console.error("Payment history API error:", { query: { page, limit, status: query.status, search: query.search, from: query.from, to: query.to }, message: error.message });
+    return response.status(500).json({ success: false, message: "Failed to fetch payment history.", error: errorDetail(error) });
+  }
 };
 export const getFaculty = async (_request, response) => response.json(await Registration.find({ "mentor.name": { $ne: "" } }, "mentor college teamName createdAt"));
 
@@ -199,18 +220,22 @@ const sendConfirmationEmailInBackground = (registrationId) => {
   setImmediate(async () => {
     let sent = false;
     let recipient = null;
+    let failure = "The email could not be sent. Please try again.";
     try {
       const registration = await Registration.findById(registrationId);
       recipient = registration?.leader?.email || null;
       console.log(`Starting payment confirmation email for ${registrationId} to ${recipient || "missing recipient"}.`);
       sent = await sendPaymentConfirmationEmail(registration);
       console.log(`Payment confirmation email ${sent ? "sent" : "not accepted"} for ${registrationId}.`);
+      if (!sent) failure = "The email server did not accept the message. Please try again.";
     } catch (error) {
-      console.error("Confirmation Email Error:", { registrationId: String(registrationId), recipient, code: error.code || null, responseCode: error.responseCode || null, message: error.message });
+      failure = describeEmailError(error);
+      console.error("Confirmation Email Error:", { registrationId: String(registrationId), recipient, code: error.code || null, responseCode: error.responseCode || null, message: error.message, reason: failure });
     }
+    resetEmailHealth();
     await Registration.updateOne({ _id: registrationId }, sent
-      ? { $set: { "payment.confirmationEmailStatus": "Sent", "payment.confirmationEmailSentAt": new Date() } }
-      : { $set: { "payment.confirmationEmailStatus": "Failed" } }).catch((error) => console.error("Unable to record confirmation email status:", error.message));
+      ? { $set: { "payment.confirmationEmailStatus": "Sent", "payment.confirmationEmailSentAt": new Date() }, $unset: { "payment.confirmationEmailError": "" } }
+      : { $set: { "payment.confirmationEmailStatus": "Failed", "payment.confirmationEmailError": failure } }).catch((error) => console.error("Unable to record confirmation email status:", error.message));
   });
 };
 
@@ -270,7 +295,11 @@ export const resendPaymentConfirmationEmail = async (request, response) => {
 // Lightweight poll target for one row's email status (used only while that row shows "Sending").
 export const getPaymentEmailStatus = async (request, response) => {
   if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ message: "Registration not found." });
-  const row = await Registration.findById(request.params.id, { "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1 }).lean();
+  const row = await Registration.findById(request.params.id, { "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1, "payment.confirmationEmailError": 1 }).lean();
   if (!row) return response.status(404).json({ message: "Registration not found." });
-  return response.json({ confirmationEmailStatus: effectiveEmailStatus(row.payment), confirmationEmailSentAt: row.payment?.confirmationEmailSentAt || null });
+  const status = effectiveEmailStatus(row.payment);
+  return response.json({ confirmationEmailStatus: status, confirmationEmailSentAt: row.payment?.confirmationEmailSentAt || null, confirmationEmailError: status === "Failed" ? row.payment?.confirmationEmailError || "The email could not be sent. Please try again." : null });
 };
+
+// Is the sender email account working right now? (Payment History shows a banner when it is not.)
+export const getEmailHealthStatus = async (_request, response) => response.json(await getEmailHealth());

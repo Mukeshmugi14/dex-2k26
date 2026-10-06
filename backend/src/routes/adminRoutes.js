@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { confirmPayment, getColleges, getDashboard, getFaculty, getMe, getPaymentEmailStatus, getPayments, getRegistrations, login, resendPaymentConfirmationEmail, updateRegistration } from "../controllers/adminController.js";
+import { confirmPayment, getColleges, getDashboard, getFaculty, getEmailHealthStatus, getMe, getPaymentEmailStatus, getPayments, getRegistrations, login, resendPaymentConfirmationEmail, updateRegistration } from "../controllers/adminController.js";
 import { createAdmin, deleteAdmin, listAdmins, updateAdmin } from "../controllers/adminUsersController.js";
 import { getEvaluationSettings, listSubmissions, retrySelectionEmail, saveEvaluation, streamSubmissionPdf, updateEvaluationSettings } from "../controllers/evaluationController.js";
 import { updatePaymentSettings } from "../controllers/paymentSettingsController.js";
@@ -31,6 +31,7 @@ router.get("/payment-history", requireSection("payments"), getPayments);
 router.put("/payments/:id/confirm", requireSection("payments"), confirmPayment);
 router.post("/payments/:id/resend-email", requireSection("payments"), resendPaymentConfirmationEmail);
 router.get("/payments/:id/email-status", requireSection("payments"), getPaymentEmailStatus);
+router.get("/email-health", requireSection("payments"), getEmailHealthStatus);
 
 // PDF submissions & evaluation (General Admin, PDF Admin)
 router.get("/pdf-submissions", requireSection("pdf"), listSubmissions);

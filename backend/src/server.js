@@ -36,9 +36,12 @@ app.use("/api/submissions", submissionRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/admin", adminRoutes);
 
-app.use((error, _request, response, _next) => {
-  console.error(error);
-  response.status(error.status || 500).json({ message: error.message || "An unexpected error occurred." });
+app.use((error, request, response, _next) => {
+  console.error(`Unhandled API error on ${request.method} ${request.originalUrl}:`, error);
+  const status = error.status || 500;
+  // Client errors keep their message; server errors only reveal details outside production.
+  const message = status < 500 ? error.message : "An unexpected server error occurred. Please try again.";
+  response.status(status).json({ success: false, message, ...(process.env.NODE_ENV === "production" ? {} : { error: error.message }) });
 });
 
 mongoose

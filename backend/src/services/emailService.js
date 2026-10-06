@@ -94,11 +94,42 @@ export const sendRoundResultEmail = async (registration, round, decision) => {
   return accepted;
 };
 
+// Plain-language reason for a failed send, safe to show to admins (never includes credentials).
+export const describeEmailError = (error) => {
+  const code = error?.code || "";
+  const response = Number(error?.responseCode) || 0;
+  const text = String(error?.message || "");
+  if (/not configured/i.test(text)) return "Email is not configured on the server (EMAIL_USER / EMAIL_PASSWORD are missing).";
+  if (code === "EAUTH" || response === 535 || response === 534) return "Gmail rejected the sender login (EMAIL_USER / EMAIL_PASSWORD). The Gmail App Password needs to be renewed in the server settings.";
+  if (/leader email is missing/i.test(text)) return "This team has no Team Head email address.";
+  if (code === "EENVELOPE" || [550, 551, 553].includes(response)) return "The team's email address was rejected. Check the Team Head email.";
+  if (["ECONNECTION", "ETIMEDOUT", "ESOCKET", "EDNS", "ECONNRESET"].includes(code)) return "Could not reach the email server. Check the server's internet connection and try again.";
+  if ([421, 450, 451, 452, 454].includes(response)) return "The email server is temporarily refusing messages (rate limit). Please try again in a few minutes.";
+  return "The email could not be sent. Please try again.";
+};
+
 export const verifyEmailTransport = async () => {
   try {
     await createMailer().verify();
     console.log("SMTP server is ready");
+    return { ok: true };
   } catch (error) {
     console.error("SMTP verification failed:", error.code || "", error.responseCode || "", error.message);
+    return { ok: false, code: error.code || null, reason: describeEmailError(error) };
   }
 };
+
+// Cached health check for the admin Payment History banner (a real SMTP login, at most once a minute).
+let emailHealth = { checkedAt: 0, result: null };
+export const getEmailHealth = async () => {
+  if (emailHealth.result && Date.now() - emailHealth.checkedAt < 60_000) return emailHealth.result;
+  let result;
+  try {
+    result = await Promise.race([verifyEmailTransport(), new Promise((resolve) => { setTimeout(() => resolve({ ok: false, code: "ETIMEDOUT", reason: "Could not reach the email server. Check the server's internet connection and try again." }), 10_000); })]);
+  } catch (error) {
+    result = { ok: false, code: null, reason: describeEmailError(error) };
+  }
+  emailHealth = { checkedAt: Date.now(), result };
+  return result;
+};
+export const resetEmailHealth = () => { emailHealth = { checkedAt: 0, result: null }; };
