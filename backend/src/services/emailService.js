@@ -4,20 +4,45 @@ import { buildSelectionEmail } from "../templates/resultEmail.js";
 import { buildRoundResultEmail } from "../templates/roundResultEmail.js";
 import { buildRoundUpdateEmail } from "../templates/roundUpdateEmail.js";
 import { getTeamLoginUrl, getTeamPortalPassword } from "./submissionService.js";
+import { createGmailApiTransport, gmailApiConfigured } from "./gmailApiTransport.js";
 
 // Team Head Portal login details included in team emails (the email address itself comes from each team record).
 const portalAccess = () => ({ loginUrl: getTeamLoginUrl(), password: getTeamPortalPassword() });
 
-// One pooled SMTP transport for the whole process: reuses the authenticated connection instead of
-// opening (and verifying) a new one for every email.
+// How email is delivered:
+//  - "gmail-api": Gmail API over HTTPS. Used automatically when GMAIL_CLIENT_ID / GMAIL_CLIENT_SECRET /
+//    GMAIL_REFRESH_TOKEN are set. Needed on hosts that block SMTP ports (e.g. Render's free plan).
+//  - "smtp": Gmail SMTP with EMAIL_USER + EMAIL_PASSWORD (an App Password). Works locally.
+// EMAIL_PROVIDER=smtp or EMAIL_PROVIDER=gmail-api forces one of them.
+export const emailProvider = () => {
+  const forced = (process.env.EMAIL_PROVIDER || "").trim().toLowerCase();
+  if (forced === "smtp" || forced === "gmail-api") return forced;
+  return gmailApiConfigured() ? "gmail-api" : "smtp";
+};
+
+// One transport per process (the SMTP one is pooled so the authenticated connection is reused).
 let mailer = null;
+let mailerKind = null;
 const createMailer = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    throw new Error("Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD in the backend environment.");
-  }
-  if (!mailer) {
-    console.log("EMAIL_USER exists:", true, "| EMAIL_PASSWORD exists:", true);
-    mailer = nodemailer.createTransport({ service: "gmail", pool: true, maxConnections: 3, auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD } });
+  const kind = emailProvider();
+  if (!process.env.EMAIL_USER) throw new Error("Email is not configured. Set EMAIL_USER in the backend environment.");
+  if (kind === "gmail-api" && !gmailApiConfigured()) throw new Error("Email is not configured. Set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN in the backend environment.");
+  if (kind === "smtp" && !process.env.EMAIL_PASSWORD) throw new Error("Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD in the backend environment.");
+  if (!mailer || mailerKind !== kind) {
+    console.log(`Email provider: ${kind} | sender: ${process.env.EMAIL_USER}`);
+    mailer = kind === "gmail-api"
+      ? createGmailApiTransport()
+      : nodemailer.createTransport({
+        service: "gmail",
+        pool: true,
+        maxConnections: 3,
+        // Fail fast when the network blocks SMTP, so the admin sees "Failed" + Resend instead of a long "Sending…".
+        connectionTimeout: 15_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 30_000,
+        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD },
+      });
+    mailerKind = kind;
   }
   return mailer;
 };
@@ -99,11 +124,17 @@ export const describeEmailError = (error) => {
   const code = error?.code || "";
   const response = Number(error?.responseCode) || 0;
   const text = String(error?.message || "");
-  if (/not configured/i.test(text)) return "Email is not configured on the server (EMAIL_USER / EMAIL_PASSWORD are missing).";
+  if (/not configured/i.test(text)) return "Email is not configured on the server. Set the email environment variables (see the server log).";
+  if (code === "EGMAILAUTH") return /invalid_grant/i.test(text)
+    ? "Gmail API refresh token is expired or revoked. Create a new GMAIL_REFRESH_TOKEN in the server settings."
+    : "Gmail API sign-in failed. Check GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN in the server settings.";
+  if (code === "EGMAILSEND") return "Gmail API refused the message. Check that EMAIL_USER is the Gmail account that authorized the refresh token.";
   if (code === "EAUTH" || response === 535 || response === 534) return "Gmail rejected the sender login (EMAIL_USER / EMAIL_PASSWORD). The Gmail App Password needs to be renewed in the server settings.";
   if (/leader email is missing/i.test(text)) return "This team has no Team Head email address.";
   if (code === "EENVELOPE" || [550, 551, 553].includes(response)) return "The team's email address was rejected. Check the Team Head email.";
-  if (["ECONNECTION", "ETIMEDOUT", "ESOCKET", "EDNS", "ECONNRESET"].includes(code)) return "Could not reach the email server. Check the server's internet connection and try again.";
+  if (["ECONNECTION", "ETIMEDOUT", "ESOCKET", "EDNS", "ECONNRESET"].includes(code)) return emailProvider() === "smtp"
+    ? "Could not reach the Gmail SMTP server. This host may block SMTP ports (Render's free plan does); set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN to send through the Gmail API instead."
+    : "Could not reach the Gmail API. Check the server's internet connection and try again.";
   if ([421, 450, 451, 452, 454].includes(response)) return "The email server is temporarily refusing messages (rate limit). Please try again in a few minutes.";
   return "The email could not be sent. Please try again.";
 };
@@ -111,11 +142,11 @@ export const describeEmailError = (error) => {
 export const verifyEmailTransport = async () => {
   try {
     await createMailer().verify();
-    console.log("SMTP server is ready");
-    return { ok: true };
+    console.log(`Email ready (${emailProvider()})`);
+    return { ok: true, provider: emailProvider() };
   } catch (error) {
-    console.error("SMTP verification failed:", error.code || "", error.responseCode || "", error.message);
-    return { ok: false, code: error.code || null, reason: describeEmailError(error) };
+    console.error(`Email verification failed (${emailProvider()}):`, error.code || "", error.responseCode || "", error.message);
+    return { ok: false, provider: emailProvider(), code: error.code || null, reason: describeEmailError(error) };
   }
 };
 
@@ -125,7 +156,7 @@ export const getEmailHealth = async () => {
   if (emailHealth.result && Date.now() - emailHealth.checkedAt < 60_000) return emailHealth.result;
   let result;
   try {
-    result = await Promise.race([verifyEmailTransport(), new Promise((resolve) => { setTimeout(() => resolve({ ok: false, code: "ETIMEDOUT", reason: "Could not reach the email server. Check the server's internet connection and try again." }), 10_000); })]);
+    result = await Promise.race([verifyEmailTransport(), new Promise((resolve) => { setTimeout(() => resolve({ ok: false, code: "ETIMEDOUT", reason: describeEmailError({ code: "ETIMEDOUT" }) }), 20_000); })]);
   } catch (error) {
     result = { ok: false, code: null, reason: describeEmailError(error) };
   }
@@ -133,3 +164,5 @@ export const getEmailHealth = async () => {
   return result;
 };
 export const resetEmailHealth = () => { emailHealth = { checkedAt: 0, result: null }; };
+// A real send just succeeded, so email is healthy right now (clears the admin banner immediately).
+export const markEmailHealthy = () => { emailHealth = { checkedAt: Date.now(), result: { ok: true, provider: emailProvider() } }; };

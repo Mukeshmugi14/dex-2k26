@@ -9,7 +9,7 @@ import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components
 const apiUrl = API_URL;
 const PAGE_SIZES = [20, 50, 100];
 const EMAIL_POLL_MS = 2000;
-const EMAIL_POLL_LIMIT = 30;
+const EMAIL_POLL_LIMIT = 75; // 2.5 minutes: longer than the slowest possible send, so the final status is always shown
 const FILTERS = [["all", "All"], ["success", "Successful"], ["pending", "Pending"], ["failed", "Failed"], ["confirmed", "Verified"], ["not-confirmed", "Not Verified"]];
 const COLUMNS = ["Team", "Team Head", "Email", "Project Theme", "Amount", "Transaction ID", "Payment Status", "Date", "Actions"];
 
@@ -25,9 +25,9 @@ const emailFailure = (payment) => payment?.confirmationEmailError || "The email 
 
 function EmailState({ payment }) {
   const status = payment?.confirmationEmailStatus;
-  if (status === "Sending") return <span className="payment-email sending">Email: Sending…</span>;
-  if (status === "Sent") return <span className="payment-email sent">✓ Confirmation email sent</span>;
-  if (status === "Failed") return <span className="payment-email failed" title={emailFailure(payment)}>⚠ Email not sent: {emailFailure(payment).split(/(?<=\.)\s/)[0]}</span>;
+  if (status === "Sending") return <span className="payment-email sending">Email: SENDING…</span>;
+  if (status === "Sent") return <span className="payment-email sent">Email: ✓ SENT</span>;
+  if (status === "Failed") return <span className="payment-email failed" title={emailFailure(payment)}>Email: ⚠ FAILED — {emailFailure(payment).split(/(?<=\.)\s/)[0]}</span>;
   return <span className="payment-email">Email: Not sent</span>;
 }
 
@@ -145,9 +145,12 @@ export default function PaymentHistory() {
     if (!intent) return;
     const to = intent.email ? ` to ${intent.email}` : "";
     if (payment.confirmationEmailStatus === "Sent") {
-      setMessage({ ok: true, text: intent.kind === "confirm" ? `✓ Payment verified and confirmation email sent${to}.` : `✓ Confirmation email sent${to}.` });
+      setMessage({ ok: true, text: intent.kind === "confirm" ? `✓ Payment confirmed. Confirmation email sent successfully${to}.` : `✓ Confirmation email sent successfully${to}.` });
+      checkEmailHealth();
     } else if (payment.confirmationEmailStatus === "Failed") {
-      setMessage({ ok: intent.kind === "confirm", lines: [...(intent.kind === "confirm" ? [`✓ Payment verified successfully${intent.teamName ? ` for ${intent.teamName}` : ""}.`] : []), `⚠ Confirmation email could not be sent: ${emailFailure(payment)} Please use Resend Email.`] });
+      setMessage({ ok: intent.kind === "confirm", lines: intent.kind === "confirm"
+        ? [`✓ Payment confirmed successfully${intent.teamName ? ` for ${intent.teamName}` : ""}, but the confirmation email could not be sent. Use Resend Confirmation Email.`, `Reason: ${emailFailure(payment)}`]
+        : [`⚠ Confirmation email could not be sent. Use Resend Confirmation Email to try again.`, `Reason: ${emailFailure(payment)}`] });
       checkEmailHealth();
     }
   }, [checkEmailHealth]);
@@ -155,7 +158,7 @@ export default function PaymentHistory() {
   // While one row's email is "Sending", check only that row until it is Sent or Failed.
   const watchEmail = useCallback((id, attempt = 0) => {
     clearTimeout(pollers.current.get(id));
-    if (attempt >= EMAIL_POLL_LIMIT) { pollers.current.delete(id); setMessage({ ok: true, text: "The confirmation email is still being sent. Use Refresh to check its status." }); return; }
+    if (attempt >= EMAIL_POLL_LIMIT) { pollers.current.delete(id); intents.current.delete(id); setMessage({ ok: false, text: "The email server did not respond in time. Use Refresh to see the final status, then Resend Confirmation Email if needed." }); return; }
     pollers.current.set(id, setTimeout(async () => {
       try {
         const { data } = await axios.get(`${apiUrl}/admin/payments/${id}/email-status`, { headers });

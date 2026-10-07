@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import Registration from "../models/Registration.js";
 import { adminProfile } from "../services/adminAccess.js";
-import { describeEmailError, getEmailHealth, resetEmailHealth, sendPaymentConfirmationEmail } from "../services/emailService.js";
+import { describeEmailError, getEmailHealth, markEmailHealthy, resetEmailHealth, sendPaymentConfirmationEmail } from "../services/emailService.js";
 
 export const login = async (request, response) => {
   const username = typeof request.body.username === "string" ? request.body.username.trim() : "";
@@ -232,7 +232,7 @@ const sendConfirmationEmailInBackground = (registrationId) => {
       failure = describeEmailError(error);
       console.error("Confirmation Email Error:", { registrationId: String(registrationId), recipient, code: error.code || null, responseCode: error.responseCode || null, message: error.message, reason: failure });
     }
-    resetEmailHealth();
+    if (sent) markEmailHealthy(); else resetEmailHealth();
     await Registration.updateOne({ _id: registrationId }, sent
       ? { $set: { "payment.confirmationEmailStatus": "Sent", "payment.confirmationEmailSentAt": new Date() }, $unset: { "payment.confirmationEmailError": "" } }
       : { $set: { "payment.confirmationEmailStatus": "Failed", "payment.confirmationEmailError": failure } }).catch((error) => console.error("Unable to record confirmation email status:", error.message));
