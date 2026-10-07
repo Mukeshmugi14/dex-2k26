@@ -88,7 +88,6 @@ export default function PaymentHistory() {
   const [message, setMessage] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [emailHealth, setEmailHealth] = useState(null);
   const navigate = useNavigate();
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
@@ -119,17 +118,7 @@ export default function PaymentHistory() {
     }
   }, [headers, page, pageSize, statusFilter, debouncedSearch, dateFrom, dateTo, logout]);
 
-  const checkEmailHealth = useCallback(async () => {
-    try {
-      const { data } = await axios.get(`${apiUrl}/admin/email-health`, { headers });
-      setEmailHealth(data);
-    } catch (error) {
-      if (error.response?.status === 401) logout();
-    }
-  }, [headers, logout]);
-
   useEffect(() => { loadPayments(); }, [loadPayments]);
-  useEffect(() => { checkEmailHealth(); }, [checkEmailHealth]);
   useEffect(() => { setPage(1); }, [statusFilter, debouncedSearch, pageSize, dateFrom, dateTo]);
   useEffect(() => { const timers = pollers.current; return () => timers.forEach((timer) => clearTimeout(timer)); }, []);
 
@@ -145,15 +134,13 @@ export default function PaymentHistory() {
     if (!intent) return;
     const to = intent.email ? ` to ${intent.email}` : "";
     if (payment.confirmationEmailStatus === "Sent") {
-      setMessage({ ok: true, text: intent.kind === "confirm" ? `✓ Payment confirmed. Confirmation email sent successfully${to}.` : `✓ Confirmation email sent successfully${to}.` });
-      checkEmailHealth();
+      setMessage({ ok: true, lines: intent.kind === "confirm" ? ["✓ Payment verified successfully.", `✓ Confirmation email sent successfully${to}.`] : [`✓ Confirmation email sent successfully${to}.`] });
     } else if (payment.confirmationEmailStatus === "Failed") {
       setMessage({ ok: intent.kind === "confirm", lines: intent.kind === "confirm"
-        ? [`✓ Payment confirmed successfully${intent.teamName ? ` for ${intent.teamName}` : ""}, but the confirmation email could not be sent. Use Resend Confirmation Email.`, `Reason: ${emailFailure(payment)}`]
-        : [`⚠ Confirmation email could not be sent. Use Resend Confirmation Email to try again.`, `Reason: ${emailFailure(payment)}`] });
-      checkEmailHealth();
+        ? ["Payment verified successfully, but confirmation email could not be sent.", "Please use Resend Confirmation Email.", `Reason: ${emailFailure(payment)}`]
+        : ["Confirmation email could not be sent.", "Please use Resend Confirmation Email to try again.", `Reason: ${emailFailure(payment)}`] });
     }
-  }, [checkEmailHealth]);
+  }, []);
 
   // While one row's email is "Sending", check only that row until it is Sent or Failed.
   const watchEmail = useCallback((id, attempt = 0) => {
@@ -186,7 +173,7 @@ export default function PaymentHistory() {
       setConfirmTarget(null);
       if (response.data.registration?.payment?.confirmationEmailStatus === "Sending") {
         intents.current.set(target._id, { kind: "confirm", teamName: target.teamName, email: target.leader?.email });
-        setMessage({ ok: true, text: "✓ Payment verified successfully. Sending the confirmation email…" });
+        setMessage({ ok: true, lines: ["✓ Payment verified successfully.", "Sending the confirmation email…"] });
         watchEmail(target._id);
       } else {
         setMessage({ ok: true, text: response.data.alreadyConfirmed ? "Payment was already verified." : "✓ Payment verified successfully." });
@@ -217,7 +204,7 @@ export default function PaymentHistory() {
   }, [headers, replacePayment, watchEmail, logout]);
 
   const openConfirm = useCallback((row) => setConfirmTarget(row), []);
-  const refresh = () => { loadPayments(); checkEmailHealth(); };
+  const refresh = () => { loadPayments(); };
   const clearDates = () => { setDateFrom(""); setDateTo(""); };
 
   const nav = <nav><AdminNav /></nav>;
@@ -226,7 +213,6 @@ export default function PaymentHistory() {
 
   return <main className="payment-history">
     <header><div><p>DEXATHON 2026 ADMIN</p><h1>Payment History</h1><span>Track and verify all registration payments.</span></div>{nav}</header>
-    {emailHealth && !emailHealth.ok ? <p className="payment-history-message is-error payment-email-health" role="alert"><b>⚠ Confirmation emails are not being sent right now.</b> {emailHealth.reason} Payments can still be verified; use Resend Confirmation Email once this is fixed. <button type="button" className="resend-email" onClick={checkEmailHealth}>Check again</button></p> : null}
     {message ? <p className={`payment-history-message ${message.ok ? "" : "is-error"}`} role="status">{message.lines ? message.lines.map((line) => <span key={line}>{line}</span>) : message.text}</p> : null}
     <section className="payment-summary">{[["Total Payments", summary.total], ["Successful", summary.successful], ["Pending", summary.pending], ["Failed", summary.failed], ["Total Amount Received", formatAmount(summary.amount)]].map(([label, value]) => <article key={label}><small>{label}</small><strong>{value ?? 0}</strong></article>)}</section>
     <section className="payment-history-filters">

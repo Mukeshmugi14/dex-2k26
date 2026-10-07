@@ -14,10 +14,14 @@ const portalAccess = () => ({ loginUrl: getTeamLoginUrl(), password: getTeamPort
 //    GMAIL_REFRESH_TOKEN are set. Needed on hosts that block SMTP ports (e.g. Render's free plan).
 //  - "smtp": Gmail SMTP with EMAIL_USER + EMAIL_PASSWORD (an App Password). Works locally.
 // EMAIL_PROVIDER=smtp or EMAIL_PROVIDER=gmail-api forces one of them.
+// The sending Gmail address: GMAIL_USER (preferred) or EMAIL_USER.
+export const senderAddress = () => (process.env.GMAIL_USER || process.env.EMAIL_USER || "").trim();
+// Render sets RENDER=true. Hosted servers use the Gmail API only (their SMTP ports may be blocked).
+const onHostedServer = () => process.env.RENDER === "true" || process.env.NODE_ENV === "production";
 export const emailProvider = () => {
   const forced = (process.env.EMAIL_PROVIDER || "").trim().toLowerCase();
   if (forced === "smtp" || forced === "gmail-api") return forced;
-  return gmailApiConfigured() ? "gmail-api" : "smtp";
+  return gmailApiConfigured() || onHostedServer() ? "gmail-api" : "smtp";
 };
 
 // One transport per process (the SMTP one is pooled so the authenticated connection is reused).
@@ -25,11 +29,11 @@ let mailer = null;
 let mailerKind = null;
 const createMailer = () => {
   const kind = emailProvider();
-  if (!process.env.EMAIL_USER) throw new Error("Email is not configured. Set EMAIL_USER in the backend environment.");
-  if (kind === "gmail-api" && !gmailApiConfigured()) throw new Error("Email is not configured. Set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN in the backend environment.");
+  if (kind === "gmail-api" && (!gmailApiConfigured() || !senderAddress())) throw new Error("Gmail API is not configured. Set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN and GMAIL_USER in the backend environment.");
+  if (!senderAddress()) throw new Error("Email is not configured. Set GMAIL_USER (or EMAIL_USER) in the backend environment.");
   if (kind === "smtp" && !process.env.EMAIL_PASSWORD) throw new Error("Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD in the backend environment.");
   if (!mailer || mailerKind !== kind) {
-    console.log(`Email provider: ${kind} | sender: ${process.env.EMAIL_USER}`);
+    console.log(`Email provider: ${kind} | sender: ${senderAddress()}`);
     mailer = kind === "gmail-api"
       ? createGmailApiTransport()
       : nodemailer.createTransport({
@@ -40,7 +44,7 @@ const createMailer = () => {
         connectionTimeout: 15_000,
         greetingTimeout: 10_000,
         socketTimeout: 30_000,
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASSWORD },
+        auth: { user: senderAddress(), pass: process.env.EMAIL_PASSWORD },
       });
     mailerKind = kind;
   }
@@ -58,7 +62,7 @@ export const sendConfirmationEmail = async (registration) => {
   const mailer = createMailer();
   const recipientEmail = getRecipientEmail(registration);
   await mailer.sendMail({
-    from: process.env.EMAIL_USER,
+    from: senderAddress(),
     to: recipientEmail,
     subject: "DEXATHON 2026 Registration Confirmation",
     text: `DEXATHON 2026 Registration Successful\n\nTeam Name: ${registration.teamName}\nTeam ID: ${registration.teamId}\nRegistration Number: ${registration.registrationNumber}\nAmount Paid: ₹${registration.payment.amount}\nTransaction ID: ${registration.payment.transactionId}\nPayment Status: ${registration.payment.status}\nUPI ID: ${registration.payment.upiId || "Razorpay"}\nRegistration Date: ${registration.createdAt.toLocaleDateString()}`,
@@ -70,7 +74,7 @@ export const sendPaymentConfirmationEmail = async (registration) => {
   const recipientEmail = getRecipientEmail(registration);
   const { html, text } = buildPaymentConfirmationEmail(registration, { portal: portalAccess() });
   const result = await mailer.sendMail({
-    from: process.env.EMAIL_USER,
+    from: senderAddress(),
     to: recipientEmail,
     subject: "DEXATHON 2026 — Payment Confirmed ✓",
     html,
@@ -88,7 +92,7 @@ export const sendSelectionEmail = async (registration) => {
   const mailer = createMailer();
   const recipientEmail = getRecipientEmail(registration);
   const { subject, html, text } = buildSelectionEmail(registration);
-  const sent = await mailer.sendMail({ from: process.env.EMAIL_USER, to: recipientEmail, subject, html, text });
+  const sent = await mailer.sendMail({ from: senderAddress(), to: recipientEmail, subject, html, text });
   const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
   if (accepted) console.log("Second round selection email sent successfully", { messageId: sent.messageId });
   else console.error("Second Round Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
@@ -100,7 +104,7 @@ export const sendRoundUpdateEmail = async (registration, rounds) => {
   const mailer = createMailer();
   const recipientEmail = getRecipientEmail(registration);
   const { subject, html, text } = buildRoundUpdateEmail(registration, rounds, portalAccess());
-  const sent = await mailer.sendMail({ from: process.env.EMAIL_USER, to: recipientEmail, subject, html, text });
+  const sent = await mailer.sendMail({ from: senderAddress(), to: recipientEmail, subject, html, text });
   const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
   if (accepted) console.log("Round update email sent successfully", { messageId: sent.messageId });
   else console.error("Round Update Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
@@ -112,7 +116,7 @@ export const sendRoundResultEmail = async (registration, round, decision) => {
   const mailer = createMailer();
   const recipientEmail = getRecipientEmail(registration);
   const { subject, html, text } = buildRoundResultEmail(registration, round, decision, portalAccess());
-  const sent = await mailer.sendMail({ from: process.env.EMAIL_USER, to: recipientEmail, subject, html, text });
+  const sent = await mailer.sendMail({ from: senderAddress(), to: recipientEmail, subject, html, text });
   const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
   if (accepted) console.log(`Round ${round} ${decision} email sent successfully`, { messageId: sent.messageId });
   else console.error("Round Result Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
@@ -124,11 +128,12 @@ export const describeEmailError = (error) => {
   const code = error?.code || "";
   const response = Number(error?.responseCode) || 0;
   const text = String(error?.message || "");
+  if (/Gmail API is not configured/i.test(text)) return "Gmail API is not configured on the server. Add GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN and GMAIL_USER to the backend environment variables (Render → Environment).";
   if (/not configured/i.test(text)) return "Email is not configured on the server. Set the email environment variables (see the server log).";
   if (code === "EGMAILAUTH") return /invalid_grant/i.test(text)
     ? "Gmail API refresh token is expired or revoked. Create a new GMAIL_REFRESH_TOKEN in the server settings."
     : "Gmail API sign-in failed. Check GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN in the server settings.";
-  if (code === "EGMAILSEND") return "Gmail API refused the message. Check that EMAIL_USER is the Gmail account that authorized the refresh token.";
+  if (code === "EGMAILSEND") return "Gmail API refused the message. Check that GMAIL_USER is the Gmail account that authorized the refresh token.";
   if (code === "EAUTH" || response === 535 || response === 534) return "Gmail rejected the sender login (EMAIL_USER / EMAIL_PASSWORD). The Gmail App Password needs to be renewed in the server settings.";
   if (/leader email is missing/i.test(text)) return "This team has no Team Head email address.";
   if (code === "EENVELOPE" || [550, 551, 553].includes(response)) return "The team's email address was rejected. Check the Team Head email.";

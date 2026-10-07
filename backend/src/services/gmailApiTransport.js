@@ -2,7 +2,7 @@
 // Hosts such as Render's free plan block outgoing SMTP ports, but allow HTTPS.
 // Credentials come only from environment variables:
 //   GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN (OAuth, scope gmail.send)
-//   EMAIL_USER (the Gmail address that authorized the refresh token; used as the sender)
+//   GMAIL_USER (or EMAIL_USER): the Gmail address that authorized the refresh token; used as the sender
 import MailComposer from "nodemailer/lib/mail-composer/index.js";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
