@@ -1,8 +1,8 @@
 import bcrypt from "bcryptjs";
 import Admin from "../models/Admin.js";
 
-// An older version created a non-sparse unique email index, which allows only one admin without an email.
-// Rebuild it as sparse so several admin logins can exist (one-time, index-only repair).
+let adminSeeded = false;
+
 const repairEmailIndex = async () => {
   try {
     const indexes = await Admin.collection.indexes();
@@ -18,8 +18,10 @@ const repairEmailIndex = async () => {
 };
 
 export const seedAdmin = async () => {
+  if (adminSeeded) return;
+  adminSeeded = true;
+
   await repairEmailIndex();
-  // Accounts created before roles existed are the General Admin.
   await Admin.updateMany({ role: { $exists: false } }, { $set: { role: "SUPER_ADMIN", active: true } });
 
   const username = process.env.ADMIN_USERNAME;
