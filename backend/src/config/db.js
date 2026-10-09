@@ -3,8 +3,7 @@ import mongoose from "mongoose";
 let isConnected = false;
 
 export const connectDB = async () => {
-  if (isConnected || mongoose.connection.readyState === 1) {
-    isConnected = true;
+  if (isConnected && mongoose.connection.readyState === 1) {
     return;
   }
 
@@ -15,17 +14,22 @@ export const connectDB = async () => {
     process.env.mongodb_uri;
 
   if (!uri) {
-    console.warn("MongoDB connection warning: Neither MONGO_URI nor mongo_uri environment variable is set.");
-    return;
+    throw Object.assign(
+      new Error("MONGO_URI environment variable is missing on Vercel. Please add MONGO_URI in Vercel → Settings → Environment Variables."),
+      { status: 500 }
+    );
   }
 
   try {
     const db = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 7000,
     });
     isConnected = db.connections[0].readyState === 1;
-    console.log("MongoDB connected successfully.");
   } catch (error) {
-    console.error("MongoDB connection failure:", error.message);
+    isConnected = false;
+    throw Object.assign(
+      new Error(`Database connection failed (${error.message}). Please ensure 0.0.0.0/0 is added to Network Access in MongoDB Atlas.`),
+      { status: 500 }
+    );
   }
 };
