@@ -1,173 +1,154 @@
-import nodemailer from "nodemailer";
-import { buildPaymentConfirmationEmail, POSTER_CID, POSTER_IMAGE_PATH } from "../templates/paymentConfirmationEmail.js";
+// Central email service. Every transactional email is sent through the Brevo API (HTTPS) from this backend.
+// There is no SMTP or other provider: the browser never sends email and never sees the Brevo key.
+import { buildPaymentConfirmationEmail, POSTER_CID } from "../templates/paymentConfirmationEmail.js";
 import { buildSelectionEmail } from "../templates/resultEmail.js";
 import { buildRoundResultEmail } from "../templates/roundResultEmail.js";
 import { buildRoundUpdateEmail } from "../templates/roundUpdateEmail.js";
 import { getTeamLoginUrl, getTeamPortalPassword } from "./submissionService.js";
-import { createGmailApiTransport, gmailApiConfigured } from "./gmailApiTransport.js";
+import { brevoConfigured, brevoSender, sendWithBrevo, verifyBrevo } from "./brevoTransport.js";
 
 // Team Head Portal login details included in team emails (the email address itself comes from each team record).
 const portalAccess = () => ({ loginUrl: getTeamLoginUrl(), password: getTeamPortalPassword() });
 
-// How email is delivered:
-//  - "gmail-api": Gmail API over HTTPS. Used automatically when GMAIL_CLIENT_ID / GMAIL_CLIENT_SECRET /
-//    GMAIL_REFRESH_TOKEN are set. Needed on hosts that block SMTP ports (e.g. Render's free plan).
-//  - "smtp": Gmail SMTP with EMAIL_USER + EMAIL_PASSWORD (an App Password). Works locally.
-// EMAIL_PROVIDER=smtp or EMAIL_PROVIDER=gmail-api forces one of them.
-// The sending Gmail address: GMAIL_USER (preferred) or EMAIL_USER.
-export const senderAddress = () => (process.env.GMAIL_USER || process.env.EMAIL_USER || "").trim();
-// Render sets RENDER=true. Hosted servers use the Gmail API only (their SMTP ports may be blocked).
-const onHostedServer = () => process.env.RENDER === "true" || process.env.NODE_ENV === "production";
-export const emailProvider = () => {
-  const forced = (process.env.EMAIL_PROVIDER || "").trim().toLowerCase();
-  if (forced === "smtp" || forced === "gmail-api") return forced;
-  return gmailApiConfigured() || onHostedServer() ? "gmail-api" : "smtp";
-};
+export const emailProvider = () => "brevo";
 
-// One transport per process (the SMTP one is pooled so the authenticated connection is reused).
-let mailer = null;
-let mailerKind = null;
-const createMailer = () => {
-  const kind = emailProvider();
-  if (kind === "gmail-api" && (!gmailApiConfigured() || !senderAddress())) throw new Error("Gmail API is not configured. Set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN and GMAIL_USER in the backend environment.");
-  if (!senderAddress()) throw new Error("Email is not configured. Set GMAIL_USER (or EMAIL_USER) in the backend environment.");
-  if (kind === "smtp" && !process.env.EMAIL_PASSWORD) throw new Error("Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD in the backend environment.");
-  if (!mailer || mailerKind !== kind) {
-    console.log(`Email provider: ${kind} | sender: ${senderAddress()}`);
-    mailer = kind === "gmail-api"
-      ? createGmailApiTransport()
-      : nodemailer.createTransport({
-        service: "gmail",
-        pool: true,
-        maxConnections: 3,
-        // Fail fast when the network blocks SMTP, so the admin sees "Failed" + Resend instead of a long "Sending…".
-        connectionTimeout: 15_000,
-        greetingTimeout: 10_000,
-        socketTimeout: 30_000,
-        auth: { user: senderAddress(), pass: process.env.EMAIL_PASSWORD },
-      });
-    mailerKind = kind;
-  }
-  return mailer;
-};
+// Brevo cannot embed images, so the poster is loaded from a public URL (override with EMAIL_POSTER_URL).
+const DEFAULT_POSTER_URL = "https://raw.githubusercontent.com/Sudhar6424/sathyabama-website/main/backend/src/assets/dexathon-2026-poster.jpg";
+const posterUrl = () => (process.env.EMAIL_POSTER_URL || "").trim() || DEFAULT_POSTER_URL;
 
+// The recipient always comes from the team's registration record (Team Head email); never hardcoded.
 const getRecipientEmail = (registration) => {
   const recipientEmail = registration?.leader?.email?.trim();
-  console.log("Recipient Email:", recipientEmail || "(missing)");
-  if (!recipientEmail) throw new Error("The team leader email is missing from this registration.");
+  if (!recipientEmail) throw Object.assign(new Error("The team leader email is missing from this registration."), { code: "ENORECIPIENT" });
   return recipientEmail;
 };
 
+// The one place that sends: logs start/success/failure (recipient, type, message ID only — never secrets).
+const sendEmail = async ({ type, to, subject, html, text }) => {
+  console.log(`EMAIL_SEND_START type=${type} to=${to}`);
+  try {
+    const { messageId } = await sendWithBrevo({ to, subject, html, text });
+    console.log(`EMAIL_SEND_SUCCESS type=${type} to=${to} messageId=${messageId || "n/a"}`);
+    return { sent: true, messageId };
+  } catch (error) {
+    console.error(`EMAIL_SEND_FAILED type=${type} to=${to} status=${error.responseCode ?? "-"} reason="${describeEmailError(error)}" detail="${error.message}"`);
+    throw error;
+  }
+};
+
+// Payment confirmation (admin verified the payment). Resolves { sent, messageId } only after Brevo accepted it.
+export const sendPaymentConfirmationEmail = async (registration) => {
+  const to = getRecipientEmail(registration);
+  const { html, text } = buildPaymentConfirmationEmail(registration, { portal: portalAccess() });
+  return sendEmail({
+    type: "payment-confirmation",
+    to,
+    subject: "DEXATHON 2026 — Payment Confirmed ✓",
+    html: html.split(`cid:${POSTER_CID}`).join(posterUrl()),
+    text,
+  });
+};
+export const sendPaymentConfirmation = sendPaymentConfirmationEmail;
+export const resendConfirmationEmail = sendPaymentConfirmationEmail;
+
+// Plain registration receipt (Razorpay payment flow).
 export const sendConfirmationEmail = async (registration) => {
-  const mailer = createMailer();
-  const recipientEmail = getRecipientEmail(registration);
-  await mailer.sendMail({
-    from: senderAddress(),
-    to: recipientEmail,
+  const to = getRecipientEmail(registration);
+  const result = await sendEmail({
+    type: "registration-receipt",
+    to,
     subject: "DEXATHON 2026 Registration Confirmation",
     text: `DEXATHON 2026 Registration Successful\n\nTeam Name: ${registration.teamName}\nTeam ID: ${registration.teamId}\nRegistration Number: ${registration.registrationNumber}\nAmount Paid: ₹${registration.payment.amount}\nTransaction ID: ${registration.payment.transactionId}\nPayment Status: ${registration.payment.status}\nUPI ID: ${registration.payment.upiId || "Razorpay"}\nRegistration Date: ${registration.createdAt.toLocaleDateString()}`,
   });
+  return result.sent;
 };
 
-export const sendPaymentConfirmationEmail = async (registration) => {
-  const mailer = createMailer();
-  const recipientEmail = getRecipientEmail(registration);
-  const { html, text } = buildPaymentConfirmationEmail(registration, { portal: portalAccess() });
-  const result = await mailer.sendMail({
-    from: senderAddress(),
-    to: recipientEmail,
-    subject: "DEXATHON 2026 — Payment Confirmed ✓",
-    html,
-    text,
-    attachments: [{ filename: "dexathon-2026-poster.jpg", path: POSTER_IMAGE_PATH, cid: POSTER_CID }],
-  });
-  const accepted = result.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
-  if (accepted) console.log("Confirmation email sent successfully", { messageId: result.messageId, response: result.response });
-  else console.error("Confirmation Email Error: recipient not accepted by SMTP server", { accepted: result.accepted, rejected: result.rejected, response: result.response });
-  return accepted;
-};
-
-// Second-round selection email to the team head's registered email. Returns true only if the SMTP server accepted it.
+// Second-round selection after the Round 1 PDF evaluation. Returns true only when Brevo accepted it.
 export const sendSelectionEmail = async (registration) => {
-  const mailer = createMailer();
-  const recipientEmail = getRecipientEmail(registration);
+  const to = getRecipientEmail(registration);
   const { subject, html, text } = buildSelectionEmail(registration);
-  const sent = await mailer.sendMail({ from: senderAddress(), to: recipientEmail, subject, html, text });
-  const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
-  if (accepted) console.log("Second round selection email sent successfully", { messageId: sent.messageId });
-  else console.error("Second Round Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
-  return accepted;
+  return (await sendEmail({ type: "round2-selection", to, subject, html, text })).sent;
 };
 
-// Round update email to the team head's registered email. Returns true only if the SMTP server accepted it.
+// Round progress update. Returns true only when Brevo accepted it.
 export const sendRoundUpdateEmail = async (registration, rounds) => {
-  const mailer = createMailer();
-  const recipientEmail = getRecipientEmail(registration);
+  const to = getRecipientEmail(registration);
   const { subject, html, text } = buildRoundUpdateEmail(registration, rounds, portalAccess());
-  const sent = await mailer.sendMail({ from: senderAddress(), to: recipientEmail, subject, html, text });
-  const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
-  if (accepted) console.log("Round update email sent successfully", { messageId: sent.messageId });
-  else console.error("Round Update Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
-  return accepted;
+  return (await sendEmail({ type: "round-update", to, subject, html, text })).sent;
 };
 
-// Round Selection result email (Selected / Rejected for a specific round) to the team head's registered email.
+// Round result (SELECTED / REJECTED for one round). Returns true only when Brevo accepted it.
 export const sendRoundResultEmail = async (registration, round, decision) => {
-  const mailer = createMailer();
-  const recipientEmail = getRecipientEmail(registration);
+  const to = getRecipientEmail(registration);
   const { subject, html, text } = buildRoundResultEmail(registration, round, decision, portalAccess());
-  const sent = await mailer.sendMail({ from: senderAddress(), to: recipientEmail, subject, html, text });
-  const accepted = sent.accepted.map((address) => String(address).toLowerCase()).includes(recipientEmail.toLowerCase());
-  if (accepted) console.log(`Round ${round} ${decision} email sent successfully`, { messageId: sent.messageId });
-  else console.error("Round Result Email Error: recipient not accepted by SMTP server", { rejected: sent.rejected, response: sent.response });
-  return accepted;
+  return (await sendEmail({ type: `round${round}-${String(decision).toLowerCase()}`, to, subject, html, text })).sent;
 };
+export const sendRound1SelectionEmail = (registration) => sendRoundResultEmail(registration, 1, "SELECTED");
+export const sendRound2SelectionEmail = (registration) => sendRoundResultEmail(registration, 2, "SELECTED");
+export const sendRejectionEmail = (registration, round) => sendRoundResultEmail(registration, round, "REJECTED");
+
+// Admin test email (POST /api/admin/test-email).
+export const sendTestEmail = async (to) => sendEmail({
+  type: "admin-test",
+  to,
+  subject: "DEXATHON 2026 — Email delivery test",
+  html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#16171b"><h2 style="margin:0 0 8px">DEXATHON 2026</h2><p>This is a test email sent by the DEXATHON backend through the Brevo API.</p><p>If you received it, payment confirmation emails can be delivered.</p></div>`,
+  text: "DEXATHON 2026\n\nThis is a test email sent by the DEXATHON backend through the Brevo API.\nIf you received it, payment confirmation emails can be delivered.",
+});
 
 // Plain-language reason for a failed send, safe to show to admins (never includes credentials).
 export const describeEmailError = (error) => {
   const code = error?.code || "";
   const response = Number(error?.responseCode) || 0;
   const text = String(error?.message || "");
-  if (/Gmail API is not configured/i.test(text)) return "Gmail API is not configured on the server. Add GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN and GMAIL_USER to the backend environment variables (Render → Environment).";
-  if (/not configured/i.test(text)) return "Email is not configured on the server. Set the email environment variables (see the server log).";
-  if (code === "EGMAILAUTH") return /invalid_grant/i.test(text)
-    ? "Gmail API refresh token is expired or revoked. Create a new GMAIL_REFRESH_TOKEN in the server settings."
-    : "Gmail API sign-in failed. Check GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN in the server settings.";
-  if (code === "EGMAILSEND") return "Gmail API refused the message. Check that GMAIL_USER is the Gmail account that authorized the refresh token.";
-  if (code === "EAUTH" || response === 535 || response === 534) return "Gmail rejected the sender login (EMAIL_USER / EMAIL_PASSWORD). The Gmail App Password needs to be renewed in the server settings.";
-  if (/leader email is missing/i.test(text)) return "This team has no Team Head email address.";
-  if (code === "EENVELOPE" || [550, 551, 553].includes(response)) return "The team's email address was rejected. Check the Team Head email.";
-  if (["ECONNECTION", "ETIMEDOUT", "ESOCKET", "EDNS", "ECONNRESET"].includes(code)) return emailProvider() === "smtp"
-    ? "Could not reach the Gmail SMTP server. This host may block SMTP ports (Render's free plan does); set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET and GMAIL_REFRESH_TOKEN to send through the Gmail API instead."
-    : "Could not reach the Gmail API. Check the server's internet connection and try again.";
-  if ([421, 450, 451, 452, 454].includes(response)) return "The email server is temporarily refusing messages (rate limit). Please try again in a few minutes.";
+  if (code === "ENORECIPIENT") return "This team has no Team Head email address.";
+  if (code === "EBREVOCONFIG") return /SENDER/.test(text)
+    ? "Brevo is not configured: set BREVO_SENDER_EMAIL to a sender verified in Brevo."
+    : "Brevo is not configured: set BREVO_API_KEY in the backend environment (Render → Environment).";
+  if (code === "EBREVOSENDER") return `${text} Brevo only sends from verified senders.`;
+  if (code === "ETIMEDOUT") return "Could not reach Brevo. Check the server's internet connection and try again.";
+  const blockedIp = text.match(/unrecogni[sz]ed IP address (\d{1,3}(?:\.\d{1,3}){3}|[0-9a-f]*:[0-9a-f:]+)/i);
+  if (blockedIp || /authori[sz]ed_?ips/i.test(text)) return `Brevo blocked this server's IP address${blockedIp ? ` (${blockedIp[1]})` : ""}. In Brevo → Security → Authorized IPs, turn off IP blocking (needed for Render, whose IP changes) or add this IP.`;
+  if (response === 401) return "Brevo rejected the API key (BREVO_API_KEY). Create a new API key in Brevo → SMTP & API → API keys.";
+  if (response === 403) return "Brevo refused the request (account not activated for transactional email). Check your Brevo account status.";
+  if (response === 429) return "Brevo rate limit reached. Please try again in a few minutes.";
+  if (response >= 500) return "Brevo had a temporary server error. Please try again.";
+  if (response === 400 && /sender/i.test(text)) return "Brevo rejected the sender (BREVO_SENDER_EMAIL). Add and verify it in Brevo → Senders, domains & dedicated IPs.";
+  if (response === 400 && /email|recipient|to\b/i.test(text)) return "Brevo rejected the recipient email address. Check the Team Head email.";
+  if (response === 400) return text.replace(/^Brevo rejected the email \(HTTP 400\): /, "Brevo rejected the email: ");
   return "The email could not be sent. Please try again.";
+};
+
+// Startup check: which Brevo settings are present (names only, never the values).
+export const logEmailConfiguration = () => {
+  const state = (value) => (value && String(value).trim() ? "configured" : "MISSING");
+  console.log("Email provider: Brevo API");
+  console.log(`  BREVO_API_KEY: ${state(process.env.BREVO_API_KEY)}`);
+  console.log(`  BREVO_SENDER_EMAIL: ${state(brevoSender().email)}`);
+  console.log(`  BREVO_SENDER_NAME: ${brevoSender().name}`);
+  const missing = [["BREVO_API_KEY", brevoConfigured()], ["BREVO_SENDER_EMAIL", Boolean(brevoSender().email)]].filter(([, ok]) => !ok).map(([name]) => name);
+  if (missing.length) console.error(`Brevo is not fully configured. Missing environment variable(s): ${missing.join(", ")}. Emails will fail until they are set.`);
 };
 
 export const verifyEmailTransport = async () => {
   try {
-    await createMailer().verify();
-    console.log(`Email ready (${emailProvider()})`);
-    return { ok: true, provider: emailProvider() };
+    await verifyBrevo();
+    console.log("Email ready (Brevo API)");
+    return { ok: true, provider: "brevo" };
   } catch (error) {
-    console.error(`Email verification failed (${emailProvider()}):`, error.code || "", error.responseCode || "", error.message);
-    return { ok: false, provider: emailProvider(), code: error.code || null, reason: describeEmailError(error) };
+    console.error(`Email check failed (Brevo): ${error.code || ""} ${error.responseCode || ""} ${describeEmailError(error)}`);
+    return { ok: false, provider: "brevo", code: error.code || null, reason: describeEmailError(error) };
   }
 };
 
-// Cached health check for the admin Payment History banner (a real SMTP login, at most once a minute).
+// Cached health check for the admin panel (a real Brevo API call, at most once a minute).
 let emailHealth = { checkedAt: 0, result: null };
 export const getEmailHealth = async () => {
   if (emailHealth.result && Date.now() - emailHealth.checkedAt < 60_000) return emailHealth.result;
-  let result;
-  try {
-    result = await Promise.race([verifyEmailTransport(), new Promise((resolve) => { setTimeout(() => resolve({ ok: false, code: "ETIMEDOUT", reason: describeEmailError({ code: "ETIMEDOUT" }) }), 20_000); })]);
-  } catch (error) {
-    result = { ok: false, code: null, reason: describeEmailError(error) };
-  }
+  const result = await verifyEmailTransport();
   emailHealth = { checkedAt: Date.now(), result };
   return result;
 };
 export const resetEmailHealth = () => { emailHealth = { checkedAt: 0, result: null }; };
-// A real send just succeeded, so email is healthy right now (clears the admin banner immediately).
-export const markEmailHealthy = () => { emailHealth = { checkedAt: Date.now(), result: { ok: true, provider: emailProvider() } }; };
+// A real send just succeeded, so email is healthy right now.
+export const markEmailHealthy = () => { emailHealth = { checkedAt: Date.now(), result: { ok: true, provider: "brevo" } }; };

@@ -8,15 +8,16 @@ import registrationRoutes from "./routes/registrationRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import { seedAdmin } from "./utils/seedAdmin.js";
-import { verifyEmailTransport } from "./services/emailService.js";
+import { logEmailConfiguration, verifyEmailTransport } from "./services/emailService.js";
 
 const app = express();
 
-// CLIENT_URL / FRONTEND_URL may each hold one or more comma-separated origins.
-const allowedOrigins = [process.env.CLIENT_URL, process.env.FRONTEND_URL]
+// Production frontends are always allowed; CLIENT_URL / FRONTEND_URL add more (comma-separated), e.g. localhost for development.
+const PRODUCTION_ORIGINS = ["https://dexathon.in", "https://www.dexathon.in", "https://dexathonwebsite2026.vercel.app"];
+const allowedOrigins = [...new Set([...PRODUCTION_ORIGINS, ...[process.env.CLIENT_URL, process.env.FRONTEND_URL]
   .flatMap((value) => (value || "").split(","))
   .map((origin) => origin.trim().replace(/\/+$/, ""))
-  .filter(Boolean);
+  .filter(Boolean)])];
 
 app.use(cors({
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.includes(origin)),
@@ -48,6 +49,7 @@ mongoose
   .connect(process.env.MONGO_URI || process.env.MONGODB_URI)
   .then(async () => {
     await seedAdmin();
+    logEmailConfiguration();
     verifyEmailTransport();
     const port = process.env.PORT || 5000;
     app.listen(port, "0.0.0.0", () => console.log(`DEXATHON API running on port ${port}. Allowed origins: ${allowedOrigins.join(", ") || "(none)"}`));

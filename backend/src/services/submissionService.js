@@ -43,7 +43,7 @@ export const isWellFormedToken = (token) => typeof token === "string" && /^[A-Za
 // The public site URL used in emails: SITE_URL if set, otherwise the first https origin allowed for CORS.
 // Public site used in every email link. Never a local/dev address: SITE_URL if set, else the first https origin
 // allowed for CORS, else the deployed DEXATHON site.
-const DEPLOYED_SITE_URL = "https://sist-website-frontend.vercel.app";
+const DEPLOYED_SITE_URL = "https://dexathon.in";
 export const getSiteUrl = () => {
   if (process.env.SITE_URL) return process.env.SITE_URL.trim().replace(/\/+$/, "");
   const httpsOrigin = [process.env.CLIENT_URL, process.env.FRONTEND_URL]

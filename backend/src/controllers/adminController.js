@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import Registration from "../models/Registration.js";
 import { adminProfile } from "../services/adminAccess.js";
-import { describeEmailError, getEmailHealth, markEmailHealthy, resetEmailHealth, sendPaymentConfirmationEmail } from "../services/emailService.js";
+import { describeEmailError, emailProvider, getEmailHealth, markEmailHealthy, resetEmailHealth, sendPaymentConfirmationEmail, sendTestEmail } from "../services/emailService.js";
 
 export const login = async (request, response) => {
   const username = typeof request.body.username === "string" ? request.body.username.trim() : "";
@@ -105,7 +105,7 @@ export const getColleges = async (_request, response) => {
 const PAYMENT_FIELDS = {
   teamId: 1, teamName: 1, projectTheme: 1, college: 1, "leader.name": 1, "leader.email": 1, createdAt: 1,
   "payment.status": 1, "payment.amount": 1, "payment.transactionId": 1, "payment.paidAt": 1, "payment.confirmedAt": 1, "payment.confirmedBy": 1,
-  "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1, "payment.confirmationEmailError": 1,
+  "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1, "payment.confirmationEmailError": 1, "payment.confirmationEmailMessageId": 1,
 };
 
 // Shows the real error only while developing; production gets the plain message.
@@ -211,33 +211,30 @@ export const updateRegistration = async (request, response) => {
   return response.json({ success: true, message: "Team details updated successfully.", registration: toListItem(registration) });
 };
 
-// ---------- Payment confirmation: fast database update, confirmation email in the background ----------
+// ---------- Payment confirmation: save the verification, then send the email through Brevo and record the real result ----------
 
 const EMAIL_SENDING_TIMEOUT_MS = 2 * 60 * 1000;
 
-// Sends the confirmation email after the HTTP response has gone out, then records Sent/Failed on the payment.
-const sendConfirmationEmailInBackground = (registrationId) => {
-  setImmediate(async () => {
-    let sent = false;
-    let recipient = null;
-    let failure = "The email could not be sent. Please try again.";
-    try {
-      const registration = await Registration.findById(registrationId);
-      recipient = registration?.leader?.email || null;
-      console.log(`Starting payment confirmation email for ${registrationId} to ${recipient || "missing recipient"}.`);
-      sent = await sendPaymentConfirmationEmail(registration);
-      console.log(`Payment confirmation email ${sent ? "sent" : "not accepted"} for ${registrationId}.`);
-      if (!sent) failure = "The email server did not accept the message. Please try again.";
-    } catch (error) {
-      failure = describeEmailError(error);
-      console.error("Confirmation Email Error:", { registrationId: String(registrationId), recipient, code: error.code || null, responseCode: error.responseCode || null, message: error.message, reason: failure });
-    }
-    if (sent) markEmailHealthy(); else resetEmailHealth();
-    await Registration.updateOne({ _id: registrationId }, sent
-      ? { $set: { "payment.confirmationEmailStatus": "Sent", "payment.confirmationEmailSentAt": new Date() }, $unset: { "payment.confirmationEmailError": "" } }
-      : { $set: { "payment.confirmationEmailStatus": "Failed", "payment.confirmationEmailError": failure } }).catch((error) => console.error("Unable to record confirmation email status:", error.message));
-  });
+// Sends the payment confirmation email for an already-verified payment and stores the real outcome:
+// "Sent" (+ Brevo message ID) only after Brevo accepted it, otherwise "Failed" with the reason.
+// The payment verification itself is never changed here.
+const sendConfirmationEmailNow = async (registrationId) => {
+  let result = { sent: false, messageId: null, error: "The email could not be sent. Please try again." };
+  try {
+    const registration = await Registration.findById(registrationId);
+    const { messageId } = await sendPaymentConfirmationEmail(registration);
+    result = { sent: true, messageId, error: null };
+  } catch (error) {
+    result.error = describeEmailError(error); // full details are logged by the email service (EMAIL_SEND_FAILED)
+  }
+  if (result.sent) markEmailHealthy(); else resetEmailHealth();
+  const updated = await Registration.findOneAndUpdate({ _id: registrationId }, result.sent
+    ? { $set: { "payment.confirmationEmailStatus": "Sent", "payment.confirmationEmailSentAt": new Date(), "payment.confirmationEmailMessageId": result.messageId }, $unset: { "payment.confirmationEmailError": "" } }
+    : { $set: { "payment.confirmationEmailStatus": "Failed", "payment.confirmationEmailError": result.error } },
+  { returnDocument: "after", projection: PAYMENT_FIELDS, lean: true }).catch((error) => { console.error("Unable to record confirmation email status:", error.message); return null; });
+  return { ...result, registration: updated };
 };
+
 
 // A "Sending" status that never finished (e.g. the server restarted mid-send) is reported as Failed so it can be resent.
 const effectiveEmailStatus = (payment) => (payment?.confirmationEmailStatus === "Sending" && payment.confirmationEmailAttemptAt && Date.now() - new Date(payment.confirmationEmailAttemptAt).getTime() > EMAIL_SENDING_TIMEOUT_MS
@@ -255,7 +252,7 @@ export const confirmPayment = async (request, response) => {
   const confirmed = await Registration.findOneAndUpdate(
     { _id: request.params.id, "payment.confirmedAt": null, "payment.transactionId": { $nin: [null, ""] } },
     { $set: { "payment.status": "Successful", "payment.confirmedAt": now, "payment.confirmedBy": request.admin.username, "payment.confirmationEmailStatus": "Sending", "payment.confirmationEmailAttemptAt": now } },
-    { new: true, projection: PAYMENT_FIELDS, lean: true },
+    { returnDocument: "after", projection: PAYMENT_FIELDS, lean: true },
   );
 
   if (!confirmed) {
@@ -265,9 +262,19 @@ export const confirmPayment = async (request, response) => {
     return response.status(400).json({ message: "A transaction ID is required before confirming payment." });
   }
 
-  console.log(`Payment confirmed successfully for ${confirmed._id}.`);
-  response.json({ success: true, paymentConfirmed: true, emailStatus: "Sending", message: "Payment confirmed successfully. Sending the confirmation email…", registration: paymentRow(confirmed) });
-  sendConfirmationEmailInBackground(confirmed._id);
+  console.log(`Payment confirmed successfully for ${confirmed._id} (status ${confirmed.payment?.status}).`);
+  // 1) The verified payment (read back from MongoDB) is returned immediately; it never depends on the email.
+  response.json({
+    success: true,
+    paymentConfirmed: true,
+    emailSent: false,
+    emailStatus: "Sending",
+    provider: emailProvider(),
+    message: "Payment verified successfully. Sending the confirmation email…",
+    registration: paymentRow(confirmed),
+  });
+  // 2) Then the confirmation email goes through Brevo; its real result (Sent / Failed) is stored and polled by the admin page.
+  sendConfirmationEmailNow(confirmed._id).catch((error) => console.error("Confirmation email task error:", error.message));
 };
 
 export const resendPaymentConfirmationEmail = async (request, response) => {
@@ -280,7 +287,7 @@ export const resendPaymentConfirmationEmail = async (request, response) => {
       $or: [{ "payment.confirmationEmailStatus": { $ne: "Sending" } }, { "payment.confirmationEmailAttemptAt": { $lt: new Date(now.getTime() - EMAIL_SENDING_TIMEOUT_MS) } }],
     },
     { $set: { "payment.confirmationEmailStatus": "Sending", "payment.confirmationEmailAttemptAt": now } },
-    { new: true, projection: PAYMENT_FIELDS, lean: true },
+    { returnDocument: "after", projection: PAYMENT_FIELDS, lean: true },
   );
   if (!queued) {
     const existing = await Registration.findById(request.params.id, PAYMENT_FIELDS).lean();
@@ -288,8 +295,9 @@ export const resendPaymentConfirmationEmail = async (request, response) => {
     if (!existing.payment?.confirmedAt) return response.status(400).json({ message: "Confirm the payment before sending its confirmation email." });
     return response.status(409).json({ message: "The confirmation email is already being sent.", registration: paymentRow(existing) });
   }
-  response.json({ success: true, paymentConfirmed: true, emailStatus: "Sending", message: "Sending the confirmation email…", registration: paymentRow(queued) });
-  sendConfirmationEmailInBackground(queued._id);
+  // Resend only retries the email; the payment itself is not touched.
+  response.json({ success: true, paymentConfirmed: true, emailSent: false, emailStatus: "Sending", provider: emailProvider(), message: "Sending the confirmation email…", registration: paymentRow(queued) });
+  sendConfirmationEmailNow(queued._id).catch((error) => console.error("Confirmation email task error:", error.message));
 };
 
 // Lightweight poll target for one row's email status (used only while that row shows "Sending").
@@ -298,7 +306,21 @@ export const getPaymentEmailStatus = async (request, response) => {
   const row = await Registration.findById(request.params.id, { "payment.confirmationEmailStatus": 1, "payment.confirmationEmailSentAt": 1, "payment.confirmationEmailAttemptAt": 1, "payment.confirmationEmailError": 1 }).lean();
   if (!row) return response.status(404).json({ message: "Registration not found." });
   const status = effectiveEmailStatus(row.payment);
-  return response.json({ confirmationEmailStatus: status, confirmationEmailSentAt: row.payment?.confirmationEmailSentAt || null, confirmationEmailError: status === "Failed" ? row.payment?.confirmationEmailError || "The email could not be sent. Please try again." : null });
+  return response.json({ confirmationEmailStatus: status, emailSent: status === "Sent", provider: emailProvider(), confirmationEmailSentAt: row.payment?.confirmationEmailSentAt || null, confirmationEmailError: status === "Failed" ? row.payment?.confirmationEmailError || "The email could not be sent. Please try again." : null });
+};
+
+// Admin-only delivery test (Vercel → Render → Brevo → inbox). Returns Brevo's real result; never the API key.
+export const sendAdminTestEmail = async (request, response) => {
+  const to = typeof request.body?.to === "string" ? request.body.to.trim() : "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) return response.status(400).json({ success: false, emailSent: false, provider: emailProvider(), error: "Enter a valid recipient email address." });
+  try {
+    const { messageId } = await sendTestEmail(to);
+    markEmailHealthy();
+    return response.json({ success: true, emailSent: true, provider: emailProvider(), messageId, message: `Test email sent to ${to}.` });
+  } catch (error) {
+    resetEmailHealth();
+    return response.status(502).json({ success: false, emailSent: false, provider: emailProvider(), error: describeEmailError(error) });
+  }
 };
 
 // Is the sender email account working right now? (Payment History shows a banner when it is not.)

@@ -171,12 +171,20 @@ export default function PaymentHistory() {
         setSummary((current) => ({ ...current, successful: current.successful + 1, pending: wasFailed ? current.pending : current.pending - 1, failed: wasFailed ? current.failed - 1 : current.failed, amount: current.amount + (Number(target.payment?.amount) || 0) }));
       }
       setConfirmTarget(null);
-      if (response.data.registration?.payment?.confirmationEmailStatus === "Sending") {
+      // The backend waits for Brevo and returns the real email result (Sent / Failed) with the verified payment.
+      const emailPayment = response.data.registration?.payment;
+      const emailStatus = emailPayment?.confirmationEmailStatus;
+      if (response.data.alreadyConfirmed) {
+        setMessage({ ok: true, text: "Payment was already verified." });
+      } else if (emailStatus === "Sent" || emailStatus === "Failed") {
+        intents.current.set(target._id, { kind: "confirm", teamName: target.teamName, email: target.leader?.email });
+        reportEmailResult(target._id, emailPayment);
+      } else if (emailStatus === "Sending") {
         intents.current.set(target._id, { kind: "confirm", teamName: target.teamName, email: target.leader?.email });
         setMessage({ ok: true, lines: ["✓ Payment verified successfully.", "Sending the confirmation email…"] });
         watchEmail(target._id);
       } else {
-        setMessage({ ok: true, text: response.data.alreadyConfirmed ? "Payment was already verified." : "✓ Payment verified successfully." });
+        setMessage({ ok: true, text: "✓ Payment verified successfully." });
       }
     } catch (error) {
       if (error.response?.status === 401) { logout(); return; }
@@ -193,15 +201,23 @@ export default function PaymentHistory() {
       const response = await axios.post(`${apiUrl}/admin/payments/${row._id}/resend-email`, {}, { headers });
       replacePayment(response.data.registration);
       intents.current.set(row._id, { kind: "resend", teamName: row.teamName, email: row.leader?.email });
-      setMessage({ ok: true, text: `${text(row.teamName, "Team")}: sending the confirmation email…` });
-      watchEmail(row._id);
+      const emailPayment = response.data.registration?.payment;
+      if (emailPayment?.confirmationEmailStatus === "Sending") { setMessage({ ok: true, text: `${text(row.teamName, "Team")}: sending the confirmation email…` }); watchEmail(row._id); }
+      else reportEmailResult(row._id, emailPayment || {});
     } catch (error) {
       if (error.response?.status === 401) { logout(); return; }
+      const failedPayment = error.response?.data?.registration?.payment;
       if (error.response?.data?.registration) replacePayment(error.response.data.registration);
       else replacePayment({ _id: row._id, payment: { confirmationEmailStatus: row.payment?.confirmationEmailStatus } });
-      setMessage({ ok: false, text: error.response?.data?.message || "Unable to resend the confirmation email. Please try again." });
+      if (failedPayment?.confirmationEmailStatus === "Failed") {
+        // Brevo did not accept the email: show the real reason (the payment stays verified).
+        intents.current.set(row._id, { kind: "resend", teamName: row.teamName, email: row.leader?.email });
+        reportEmailResult(row._id, failedPayment);
+      } else {
+        setMessage({ ok: false, text: error.response?.data?.message || "Unable to resend the confirmation email. Please try again." });
+      }
     }
-  }, [headers, replacePayment, watchEmail, logout]);
+  }, [headers, replacePayment, watchEmail, reportEmailResult, logout]);
 
   const openConfirm = useCallback((row) => setConfirmTarget(row), []);
   const refresh = () => { loadPayments(); };
