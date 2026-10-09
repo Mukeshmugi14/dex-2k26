@@ -3,6 +3,7 @@
 //   EMAIL_USER      the Gmail address that sends the emails
 //   EMAIL_PASSWORD  a Gmail App Password for that account (Google Account → Security → App passwords)
 import { promises as dns } from "node:dns";
+import net from "node:net";
 import nodemailer from "nodemailer";
 
 const SMTP_HOST = "smtp.gmail.com";
@@ -68,8 +69,26 @@ export const verifySmtp = async () => {
   return true;
 };
 
-// Connection-level failures (not login or recipient errors) are usually a brief network drop.
-const CONNECTION_ERRORS = new Set(["ETIMEDOUT", "ECONNECTION", "ESOCKET", "ECONNREFUSED", "ECONNRESET", "EDNS"]);
+// Connection-level failures (not login or recipient errors).
+export const CONNECTION_ERRORS = new Set(["ETIMEDOUT", "ECONNECTION", "ESOCKET", "ECONNREFUSED", "ECONNRESET", "EDNS"]);
+
+// Network check run when Gmail cannot be reached: can this server open a TCP connection to Gmail SMTP
+// (ports 465 and 587), and to an ordinary HTTPS site for comparison? Shows whether the host blocks SMTP.
+const canConnect = (host, port, timeoutMs = 8_000) => new Promise((resolve) => {
+  const socket = net.connect({ host, port });
+  const done = (result) => { clearTimeout(timer); socket.destroy(); resolve(result); };
+  const timer = setTimeout(() => done("timeout"), timeoutMs);
+  socket.once("connect", () => done("open"));
+  socket.once("error", (error) => done(error.code || "error"));
+});
+let lastProbe = null;
+export const lastSmtpProbe = () => lastProbe;
+export const probeSmtpPorts = async () => {
+  const host = await smtpAddress();
+  const [smtp465, smtp587, https443] = await Promise.all([canConnect(host, 465), canConnect(host, 587), canConnect("www.google.com", 443)]);
+  lastProbe = { smtp465, smtp587, https443, smtpBlocked: smtp465 !== "open" && smtp587 !== "open" && https443 === "open", checkedAt: new Date().toISOString() };
+  return lastProbe;
+};
 
 // Sends one email. Resolves only when Gmail accepted the recipient and returns the SMTP message ID.
 export const sendWithSmtp = async ({ to, subject, html, text, attachments }) => {
@@ -85,8 +104,8 @@ export const sendWithSmtp = async ({ to, subject, html, text, attachments }) => 
   try {
     result = await (await getMailer()).sendMail(message);
   } catch (error) {
-    if (!CONNECTION_ERRORS.has(error.code)) throw error;
-    // One retry on a fresh connection after a short pause.
+    // Never retry a connection the host is known to block; otherwise one retry covers a brief network drop.
+    if (!CONNECTION_ERRORS.has(error.code) || lastProbe?.smtpBlocked) throw error;
     await new Promise((resolve) => setTimeout(resolve, 2_000));
     ipv4.resolvedAt = 0;
     mailer?.close();

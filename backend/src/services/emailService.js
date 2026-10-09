@@ -5,7 +5,7 @@ import { buildSelectionEmail } from "../templates/resultEmail.js";
 import { buildRoundResultEmail } from "../templates/roundResultEmail.js";
 import { buildRoundUpdateEmail } from "../templates/roundUpdateEmail.js";
 import { getTeamLoginUrl, getTeamPortalPassword } from "./submissionService.js";
-import { sendWithSmtp, smtpConfigured, smtpUser, verifySmtp } from "./smtpTransport.js";
+import { CONNECTION_ERRORS, lastSmtpProbe, probeSmtpPorts, sendWithSmtp, smtpConfigured, smtpUser, verifySmtp } from "./smtpTransport.js";
 
 // Team Head Portal login details included in team emails (the email address itself comes from each team record).
 const portalAccess = () => ({ loginUrl: getTeamLoginUrl(), password: getTeamPortalPassword() });
@@ -27,6 +27,7 @@ const sendEmail = async ({ type, to, subject, html, text, attachments }) => {
     console.log(`EMAIL_SEND_SUCCESS type=${type} to=${to} messageId=${messageId || "n/a"}`);
     return { sent: true, messageId };
   } catch (error) {
+    if (CONNECTION_ERRORS.has(error.code)) await probeSmtpPorts().catch(() => null);
     console.error(`EMAIL_SEND_FAILED type=${type} to=${to} code=${error.code || "-"} status=${error.responseCode ?? "-"} reason="${describeEmailError(error)}"`);
     throw error;
   }
@@ -104,7 +105,12 @@ export const describeEmailError = (error) => {
     ? "Email is not configured: EMAIL_USER must be a Gmail address."
     : "Email is not configured: set EMAIL_USER and EMAIL_PASSWORD in the backend environment.";
   if (code === "EAUTH" || response === 535 || response === 534) return "Gmail rejected the sender login (EMAIL_USER / EMAIL_PASSWORD). Use a Gmail App Password (2-Step Verification must be on), not the normal Gmail password.";
-  if (["ETIMEDOUT", "ECONNECTION", "ESOCKET", "ECONNREFUSED", "ECONNRESET", "EDNS"].includes(code)) return "Could not connect to Gmail SMTP (smtp.gmail.com:465). The server's host may block outbound SMTP connections.";
+  if (CONNECTION_ERRORS.has(code)) {
+    const probe = lastSmtpProbe();
+    if (probe?.smtpBlocked) return `The server's hosting provider blocks outbound SMTP: Gmail ports 465 (${probe.smtp465}) and 587 (${probe.smtp587}) are unreachable while HTTPS works. Gmail SMTP cannot send from this host until the hosting plan allows outbound SMTP.`;
+    if (probe && probe.https443 !== "open") return "This server has no working internet connection right now (HTTPS also failed). Try again shortly.";
+    return "Could not connect to Gmail SMTP (smtp.gmail.com:465). The connection dropped; please try again.";
+  }
   if (code === "EENVELOPE" || response === 550 || response === 553) return "Gmail rejected the recipient email address. Check the Team Head email.";
   if (response === 421 || response === 454 || /rate|limit|too many/i.test(text)) return "Gmail sending limit reached. Please try again later.";
   if (response >= 400 && response < 500) return "Gmail had a temporary error. Please try again.";
@@ -126,8 +132,9 @@ export const verifyEmailTransport = async () => {
     console.log("Email ready (Gmail SMTP)");
     return { ok: true, provider: emailProvider() };
   } catch (error) {
-    console.error(`Email check failed (Gmail SMTP): ${error.code || ""} ${error.responseCode || ""} ${describeEmailError(error)}`);
-    return { ok: false, provider: emailProvider(), code: error.code || null, reason: describeEmailError(error) };
+    const network = CONNECTION_ERRORS.has(error.code) ? await probeSmtpPorts().catch(() => null) : null;
+    console.error(`Email check failed (Gmail SMTP): ${error.code || ""} ${error.responseCode || ""} ${describeEmailError(error)}${network ? ` ports=${JSON.stringify(network)}` : ""}`);
+    return { ok: false, provider: emailProvider(), code: error.code || null, reason: describeEmailError(error), ...(network ? { network } : {}) };
   }
 };
 
