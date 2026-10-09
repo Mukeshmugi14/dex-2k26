@@ -24,8 +24,8 @@ export const seedAdmin = async () => {
   await repairEmailIndex();
   await Admin.updateMany({ role: { $exists: false } }, { $set: { role: "SUPER_ADMIN", active: true } });
 
-  const username = process.env.ADMIN_USERNAME;
-  const password = process.env.ADMIN_PASSWORD;
+  const username = process.env.ADMIN_USERNAME || process.env.admin_username;
+  const password = process.env.ADMIN_PASSWORD || process.env.admin_password;
   if (!username || !password) return;
 
   const existingAdmin = await Admin.findOne({ username });

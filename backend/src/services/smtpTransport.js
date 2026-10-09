@@ -3,16 +3,16 @@ import nodemailer from "nodemailer";
 const SMTP_HOST = "smtp.gmail.com";
 
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
-export const smtpUser = () => (process.env.EMAIL_USER || "").trim();
-const smtpPassword = () => (process.env.EMAIL_PASSWORD || "").replace(/\s+/g, "");
+export const smtpUser = () => (process.env.EMAIL_USER || process.env.email_user || "").trim();
+const smtpPassword = () => (process.env.EMAIL_PASSWORD || process.env.email_password || "").replace(/\s+/g, "");
 export const smtpConfigured = () => Boolean(smtpUser() && smtpPassword());
 export const smtpSender = () => ({ email: smtpUser(), name: "DEXATHON 2026" });
 
 const smtpError = (message, code) => Object.assign(new Error(message), { code, responseCode: null });
 
 export const assertSmtpConfigured = () => {
-  if (!smtpConfigured()) throw smtpError("Email is not configured. Set EMAIL_USER and EMAIL_PASSWORD in the backend environment.", "ESMTPCONFIG");
-  if (!isEmail(smtpUser())) throw smtpError("Email is not configured. EMAIL_USER must be a Gmail address.", "ESMTPCONFIG");
+  if (!smtpConfigured()) throw smtpError("Email is not configured. Set EMAIL_USER/email_user and EMAIL_PASSWORD/email_password.", "ESMTPCONFIG");
+  if (!isEmail(smtpUser())) throw smtpError("Email is not configured. EMAIL_USER/email_user must be a valid Gmail address.", "ESMTPCONFIG");
 };
 
 let mailer = null;

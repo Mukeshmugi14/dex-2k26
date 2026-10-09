@@ -15,7 +15,7 @@ export const login = async (request, response) => {
   }
   Admin.updateOne({ _id: admin._id }, { $set: { lastLoginAt: new Date() } }).catch(() => {});
   const profile = adminProfile(admin);
-  return response.json({ success: true, token: jwt.sign({ id: admin.id, username: admin.username, role: profile.role }, process.env.JWT_SECRET, { expiresIn: "8h" }), admin: profile });
+  return response.json({ success: true, token: jwt.sign({ id: admin.id, username: admin.username, role: profile.role }, process.env.JWT_SECRET || process.env.jwt_secret || "dexathon-jwt-secret", { expiresIn: "8h" }), admin: profile });
 };
 
 export const getMe = (request, response) => response.json({ admin: adminProfile({ _id: request.admin.id, ...request.admin }) });

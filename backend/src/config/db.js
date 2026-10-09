@@ -8,9 +8,14 @@ export const connectDB = async () => {
     return;
   }
 
-  const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+  const uri =
+    process.env.MONGO_URI ||
+    process.env.MONGODB_URI ||
+    process.env.mongo_uri ||
+    process.env.mongodb_uri;
+
   if (!uri) {
-    console.warn("MongoDB connection warning: Neither MONGO_URI nor MONGODB_URI environment variable is set.");
+    console.warn("MongoDB connection warning: Neither MONGO_URI nor mongo_uri environment variable is set.");
     return;
   }
 
