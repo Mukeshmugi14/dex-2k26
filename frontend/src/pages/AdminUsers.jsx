@@ -11,7 +11,7 @@ import { clearAdminSession, getAdminProfile, getAdminToken, ROLE_LABELS } from "
 
 const ROLE_HELP = {
   SUPER_ADMIN: "Full access to every section",
-  PAYMENT_ADMIN: "Payment History, confirmation & Payment Settings",
+  PAYMENT_ADMIN: "Team Lists, Google Sheets import & team emails",
   TEAM_ADMIN: "Dashboard, registrations & teams",
   ROUND_ADMIN: "Round Status & Round Selection",
   PDF_ADMIN: "PDF submissions & evaluation",

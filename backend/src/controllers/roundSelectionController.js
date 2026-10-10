@@ -48,9 +48,9 @@ const summarize = (views) => ({
   pending: views.filter((v) => v.overall === "PENDING").length,
 });
 
-// All payment-confirmed teams (the teams that take part in the rounds).
+// All registered/imported teams (the teams that take part in the rounds).
 export const listRoundSelection = async (_request, response) => {
-  const teams = await Registration.find({ "payment.confirmedAt": { $exists: true, $ne: null } }, LIST_FIELDS).sort({ teamName: 1 }).lean();
+  const teams = await Registration.find({}, LIST_FIELDS).sort({ teamName: 1 }).lean();
   const views = teams.map(toView);
   return response.json({ teams: views, summary: summarize(views) });
 };
@@ -102,7 +102,7 @@ const sendResultEmailOnce = async (teamId, round) => {
   return { attempted: true, sent };
 };
 
-const loadTeam = async (id) => (mongoose.isValidObjectId(id) ? Registration.findOne({ _id: id, "payment.confirmedAt": { $exists: true, $ne: null } }) : null);
+const loadTeam = async (id) => (mongoose.isValidObjectId(id) ? Registration.findById(id) : null);
 
 export const decideRound = async (request, response) => {
   const team = await loadTeam(request.params.id);

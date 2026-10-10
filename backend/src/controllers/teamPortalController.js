@@ -6,43 +6,65 @@ import { currentRound, readRounds, ROUND_INFO } from "../services/roundService.j
 import { deriveSubmissionStatus, getTeamPortalPassword, openPdfStream } from "../services/submissionService.js";
 import { PROTOTYPE_CATEGORIES, prototypeView, validatePrototypeUrl } from "../services/prototypeService.js";
 
-const INVALID_LOGIN = { success: false, message: "Invalid email or password." };
-const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+import { findTeamByIdentifier, passwordMatches } from "../services/teamIdService.js";
 
-// Constant-time comparison against the general Team Head password (configurable on the server).
-const passwordMatches = (password) => {
-  const expected = crypto.createHash("sha256").update(getTeamPortalPassword()).digest();
-  const given = crypto.createHash("sha256").update(typeof password === "string" ? password : "").digest();
-  return crypto.timingSafeEqual(expected, given);
-};
-
-// Only teams whose payment has been confirmed can sign in; the most recently confirmed team wins if an email is reused.
-const findTeamByHeadEmail = (email) => Registration.findOne({
-  "leader.email": { $regex: `^\\s*${escapeRegex(email)}\\s*$`, $options: "i" },
-  "payment.confirmedAt": { $exists: true, $ne: null },
-}).sort({ "payment.confirmedAt": -1 });
+const INVALID_LOGIN = { success: false, message: "Invalid User ID (Team ID) or password." };
 
 export const teamLogin = async (request, response) => {
-  const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
-  const passwordOk = passwordMatches(request.body.password);
-  if (!email || !/^\S+@\S+\.\S+$/.test(email)) return response.status(401).json(INVALID_LOGIN);
-  const team = await findTeamByHeadEmail(email);
-  if (!team || !passwordOk) return response.status(401).json(INVALID_LOGIN);
-  return response.json({ success: true, token: signTeamToken(team._id), teamHead: team.leader?.name || "" });
+  const identifier = typeof request.body.userId === "string" && request.body.userId.trim()
+    ? request.body.userId.trim()
+    : typeof request.body.teamId === "string" && request.body.teamId.trim()
+    ? request.body.teamId.trim()
+    : typeof request.body.teamName === "string" && request.body.teamName.trim()
+    ? request.body.teamName.trim()
+    : typeof request.body.email === "string" && request.body.email.trim()
+    ? request.body.email.trim()
+    : "";
+
+  const password = typeof request.body.password === "string" ? request.body.password : "";
+  if (!identifier || !password) return response.status(401).json(INVALID_LOGIN);
+
+  const passwordOk = passwordMatches(password);
+  if (!passwordOk) return response.status(401).json(INVALID_LOGIN);
+
+  const team = await findTeamByIdentifier(identifier);
+  if (!team) return response.status(401).json({ success: false, message: "Team not found. Check your Team ID." });
+
+  return response.json({
+    success: true,
+    token: signTeamToken(team._id),
+    teamId: team.teamId,
+    teamHead: team.leader?.name || "",
+    teamName: team.teamName,
+  });
 };
 
 const loadOwnTeam = async (request) => {
   if (!mongoose.isValidObjectId(request.teamRegistrationId)) return null;
-  const team = await Registration.findById(request.teamRegistrationId).select("-teamLogo");
-  return team?.payment?.confirmedAt ? team : null;
+  return Registration.findById(request.teamRegistrationId);
 };
 
 const cleanMembers = (members = []) => {
   const seen = new Set();
-  return members
-    .map((member) => (typeof member?.name === "string" ? member.name.trim() : ""))
-    .filter((name) => name && !["undefined", "null"].includes(name.toLowerCase()))
-    .filter((name) => { const key = name.toLowerCase(); if (seen.has(key)) return false; seen.add(key); return true; });
+  const cleaned = [];
+  for (const member of members) {
+    const name = typeof member === "string" ? member.trim() : typeof member?.name === "string" ? member.name.trim() : "";
+    if (!name || ["undefined", "null"].includes(name.toLowerCase())) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    cleaned.push({
+      name,
+      college: member?.college || "",
+      year: member?.year || "",
+      department: member?.department || "",
+      phone: member?.phone || "",
+      email: member?.email || "",
+      studentId: member?.studentId || "",
+    });
+  }
+  return cleaned;
 };
 
 // Everything the Team Head may see about their own team — nothing else.
@@ -53,9 +75,23 @@ export const getOwnTeam = async (request, response) => {
   const current = currentRound(rounds);
   const evaluation = team.evaluation || {};
   const released = Boolean(team.rounds?.scoreReleased) && Number.isFinite(evaluation.totalScore);
+  const members = cleanMembers(team.members);
+  const teamSize = team.teamSize || (members.length + 1);
+
   return response.json({
     success: true,
-    team: { teamName: team.teamName, teamHead: team.leader?.name || "", teamHeadEmail: team.leader?.email || "", college: team.college || team.collegeName || "", projectTheme: team.projectTheme || "Not selected", members: cleanMembers(team.members) },
+    team: {
+      teamName: team.teamName,
+      teamHead: team.leader?.name || "",
+      teamHeadEmail: team.leader?.email || "",
+      teamHeadPhone: team.leader?.phone || "",
+      college: team.college || team.collegeName || "",
+      department: team.department || "",
+      year: team.year || "",
+      projectTheme: team.projectTheme || "Not selected",
+      teamSize,
+      members,
+    },
     submission: team.pdfSubmission?.fileId
       ? { submitted: true, fileName: team.pdfSubmission.fileName, fileSize: team.pdfSubmission.fileSize, submittedAt: team.pdfSubmission.submittedAt, status: deriveSubmissionStatus(team) }
       : { submitted: false },
@@ -88,7 +124,7 @@ export const submitPrototype = async (request, response) => {
   );
   if (!result.modifiedCount) return response.status(409).json({ success: false, alreadySubmitted: true, message: "Your team has already submitted its Round 2 prototype." });
 
-  const updated = await Registration.findById(team._id).select("-teamLogo");
+  const updated = await Registration.findById(team._id);
   console.log(`Round 2 prototype submitted for ${team.teamId} (${category}).`);
   return response.status(201).json({ success: true, message: "Round 2 prototype submitted successfully.", prototype: prototypeView(updated, readRounds(updated)) });
 };

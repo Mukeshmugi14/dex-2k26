@@ -25,9 +25,6 @@
 /* Team cards */
 .team-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
 .team-card{display:flex;flex-direction:column;gap:16px;padding:20px;border:1px solid #ffffff15;border-radius:10px;background:#0e1a2b}
-.team-card-logo,.team-logo-frame{display:grid;place-items:center;width:96px;aspect-ratio:1;margin:0 auto;padding:6px;border:1px solid #55caff33;border-radius:8px;background:#07111f;overflow:hidden}
-.team-card-logo img,.team-logo-frame img{width:100%;height:100%;object-fit:contain}
-.team-card-logo span,.team-logo-frame span{color:#5f7488;font:10px monospace;letter-spacing:.1em}
 .team-card dl{display:grid;gap:12px;margin:0}
 .team-card dt{color:#55caff;font:10px monospace;letter-spacing:.12em;text-transform:uppercase}
 .team-card dd{margin:4px 0 0;color:#e8f0f8;font-size:14px;line-height:1.4}
@@ -51,11 +48,6 @@
 .edit-team-close{display:grid;place-items:center;width:34px;height:34px;border:1px solid #ffffff22;border-radius:6px;background:transparent;color:#cad8e6;cursor:pointer}
 .edit-team-body{display:grid;gap:20px;padding:20px 22px;overflow-y:auto}
 .edit-team-label,.edit-team-field>span{color:#cad8e6;font-size:12px;font-weight:700}
-.edit-team-logo{display:grid;gap:10px}
-.edit-team-logo-row{display:flex;align-items:center;gap:16px}
-.edit-team-logo-row .team-logo-frame{flex-shrink:0;margin:0}
-.edit-team-logo-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
-.edit-team-logo-actions small{flex-basis:100%;color:#91a4b9;font-size:12px;overflow-wrap:anywhere}
 .edit-team-modal button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 15px;border:0;border-radius:6px;background:#ff7432;color:#07101a;font-size:13px;font-weight:800;cursor:pointer}
 .edit-team-modal button.ghost{border:1px solid #55caff44;background:transparent;color:#cad8e6}
 .edit-team-modal button:disabled{opacity:.6;cursor:not-allowed}
@@ -84,8 +76,6 @@
   .team-card-grid{grid-template-columns:1fr}
   .edit-team-overlay{padding:0;place-items:end stretch}
   .edit-team-modal{width:100%;max-height:100dvh;border-radius:12px 12px 0 0}
-  .edit-team-grid{grid-template-columns:1fr}
-  .edit-team-logo-row{flex-direction:column;align-items:flex-start}
   .edit-team-modal>footer>div{display:grid;grid-template-columns:1fr 1fr}
 }
 

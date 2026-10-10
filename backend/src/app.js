@@ -3,7 +3,6 @@ import cors from "cors";
 import express from "express";
 import { connectDB } from "./config/db.js";
 import adminRoutes from "./routes/adminRoutes.js";
-import paymentRoutes from "./routes/paymentRoutes.js";
 import registrationRoutes from "./routes/registrationRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
@@ -54,17 +53,6 @@ app.get("/api/health", (_req, res) =>
 );
 
 app.use("/api/registrations", registrationRoutes);
-app.use("/api/payment", paymentRoutes);
-app.get("/api/payment-settings", (req, res, next) =>
-  import("./controllers/paymentSettingsController.js")
-    .then(({ getPaymentSettings }) => getPaymentSettings(req, res))
-    .catch(next)
-);
-app.get("/api/payment-settings/qr", (req, res, next) =>
-  import("./controllers/paymentSettingsController.js")
-    .then(({ getPaymentQr }) => getPaymentQr(req, res))
-    .catch(next)
-);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/admin", adminRoutes);

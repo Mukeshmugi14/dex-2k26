@@ -51,7 +51,7 @@ export const receivePdf = async (request, response, next) => {
 // so a logged-in team can only upload against its own record.
 export const receiveOwnPdf = async (request, response, next) => {
   const registration = await Registration.findById(request.teamRegistrationId);
-  if (!registration?.payment?.confirmedAt) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
+  if (!registration) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
   if (registration.pdfSubmission?.fileId) return response.status(409).json(ALREADY_SUBMITTED);
   request.registration = registration;
   upload(request, response, (error) => {

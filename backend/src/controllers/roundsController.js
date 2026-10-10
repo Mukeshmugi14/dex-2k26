@@ -18,9 +18,9 @@ const toView = (team) => {
   };
 };
 
-// Teams that completed payment (the ones who can use the Team Head Portal).
+// All registered/imported teams.
 export const listRounds = async (_request, response) => {
-  const teams = await Registration.find({ "payment.confirmedAt": { $exists: true, $ne: null } }, LIST_FIELDS).sort({ "payment.confirmedAt": -1 }).lean();
+  const teams = await Registration.find({}, LIST_FIELDS).sort({ createdAt: -1 }).lean();
   return response.json({ teams: teams.map(toView), allowed: ALLOWED_ROUND_STATUSES });
 };
 
@@ -53,7 +53,7 @@ export const sendRoundEmailOnce = async (teamId) => {
 export const updateRounds = async (request, response) => {
   if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ success: false, message: "Team not found." });
   const team = await Registration.findById(request.params.id);
-  if (!team?.payment?.confirmedAt) return response.status(404).json({ success: false, message: "Team not found." });
+  if (!team) return response.status(404).json({ success: false, message: "Team not found." });
 
   const errors = {};
   const requested = {};
@@ -82,7 +82,7 @@ export const updateRounds = async (request, response) => {
 export const resendRoundEmail = async (request, response) => {
   if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ success: false, message: "Team not found." });
   const team = await Registration.findById(request.params.id);
-  if (!team?.payment?.confirmedAt) return response.status(404).json({ success: false, message: "Team not found." });
+  if (!team) return response.status(404).json({ success: false, message: "Team not found." });
   const email = await sendRoundEmailOnce(team._id);
   const updated = await Registration.findById(team._id);
   if (email.upToDate) return response.json({ success: true, message: "The team already has an email for its current round status.", team: toView(updated) });
