@@ -59,13 +59,14 @@ export const renderFooter = (escapedEmail) => `  <!-- Footer -->
 // Pass raw (unescaped) values; this escapes them.
 export const renderPortalCredentials = ({ teamId, teamName, email, password, loginUrl }, { padding = "20px 40px 0" } = {}) => {
   const userId = teamId || "DEX26001";
+  const actualLoginUrl = loginUrl || "https://dexathon.vercel.app/team-login";
   const e = {
     userId: escapeHtml(userId),
     teamId: escapeHtml(teamId || userId),
     teamName: escapeHtml(teamName || ""),
     email: escapeHtml(email || ""),
     password: escapeHtml(password || "Dexathon@2026"),
-    loginUrl: escapeHtml(loginUrl || "")
+    loginUrl: escapeHtml(actualLoginUrl)
   };
   const field = (title, value, mono = false) => `<tr><td style="padding:0 0 12px;">
           <div style="font-family:${FONT};font-size:10px;line-height:14px;letter-spacing:2px;font-weight:700;color:#8fb4ff;text-transform:uppercase;padding-bottom:5px;">${title}</div>
@@ -96,7 +97,7 @@ Access your team dashboard using your credentials below:
 LOGIN CREDENTIALS
 User ID (Team ID): ${teamId || "DEX26001"}
 Password: ${password || "Dexathon@2026"}
-Login Portal: ${loginUrl}`;
+Login Portal: ${loginUrl || "https://dexathon.vercel.app/team-login"}`;
 
 const detailCell = (title, value, extra = "") => `<td class="stack" valign="top" style="padding:16px 0 0;${extra}">${label(title)}<div style="font-family:${FONT};font-size:15px;line-height:22px;font-weight:700;color:${INK};padding-top:3px;">${value}</div></td>`;
 

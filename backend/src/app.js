@@ -12,6 +12,7 @@ const app = express();
 const PRODUCTION_ORIGINS = [
   "https://dexathon.in",
   "https://www.dexathon.in",
+  "https://dexathon.vercel.app",
   "https://dexathonwebsite2026.vercel.app",
 ];
 

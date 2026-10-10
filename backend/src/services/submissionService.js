@@ -54,7 +54,11 @@ export const getSiteUrl = () => {
 };
 
 // Team Head Portal access shared by the login check and the emails.
-export const getTeamLoginUrl = () => `${getSiteUrl()}/team-login`;
+export const getTeamLoginUrl = () => {
+  if (process.env.TEAM_LOGIN_URL) return process.env.TEAM_LOGIN_URL.trim().replace(/\/+$/, "");
+  if (process.env.SITE_URL) return `${process.env.SITE_URL.trim().replace(/\/+$/, "")}/team-login`;
+  return "https://dexathon.vercel.app/team-login";
+};
 export const getTeamPortalPassword = () => process.env.TEAM_PORTAL_PASSWORD || "Dexathon@2026";
 
 export const buildSubmissionUrl = (token) => `${getSiteUrl()}/submit-document/${token}`;
