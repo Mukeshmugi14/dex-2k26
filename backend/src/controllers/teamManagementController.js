@@ -75,7 +75,7 @@ export const bulkUpdateTeams = async (request, response) => {
   if (request.body.notify === true) {
     for (const id of roundChanged) {
       const team = teams.find((item) => String(item._id) === String(id));
-      if (!team.payment?.confirmedAt) continue;
+      if (!team) continue;
       const result = await sendRoundEmailOnce(id);
       if (result.sent) emailed += 1;
       else if (result.attempted) failed += 1;

@@ -31,12 +31,20 @@ export const clearAdminSession = () => {
   } catch { /* storage unavailable */ }
 };
 
-export const canAccessSection = (section) => Boolean(getAdminProfile()?.sections?.includes(section));
+export const canAccessSection = (section) => {
+  const profile = getAdminProfile();
+  if (!profile) return false;
+  if (profile.role === "SUPER_ADMIN") return true;
+  const sections = profile.sections || [];
+  if (sections.includes(section)) return true;
+  if (section === "teamLists" && (sections.includes("payments") || sections.includes("teams"))) return true;
+  return false;
+};
 export const adminHome = () => getAdminProfile()?.home || "/admin/dashboard";
 
 export const ROLE_LABELS = {
   SUPER_ADMIN: "General Admin",
-  PAYMENT_ADMIN: "Payment Admin",
+  PAYMENT_ADMIN: "Team Lists Admin",
   TEAM_ADMIN: "Team Admin",
   ROUND_ADMIN: "Round Admin",
   PDF_ADMIN: "PDF Admin",

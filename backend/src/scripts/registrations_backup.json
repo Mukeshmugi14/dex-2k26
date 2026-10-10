@@ -1,0 +1,1569 @@
+[
+  {
+    "_id": "6ac608f86d2fea3e6d89c147",
+    "teamId": "DEX26001",
+    "registrationNumber": "REG-001",
+    "teamName": "Leo Coders",
+    "projectTheme": "HEALTHCARE",
+    "college": "Panimalar Engineering College",
+    "collegeType": "other",
+    "collegeName": "Panimalar Engineering College",
+    "department": "Electrical and electronics engineering ",
+    "year": "Fourth Year",
+    "leader": {
+      "name": "Kathirvel S ",
+      "email": "kathirselvam05@gmail.com",
+      "phone": "6381272552"
+    },
+    "members": [
+      {
+        "name": "Kawin T",
+        "email": "kawin0275@gmail.com",
+        "phone": "9551630758"
+      },
+      {
+        "name": "Kaamalesh K",
+        "email": "kaamalesh0926@gmail.com",
+        "phone": "8015421620"
+      },
+      {
+        "name": "Sivarama Krishnan K",
+        "email": "sivaramakrishnan.kumaran@gmail.com",
+        "phone": "9840127483"
+      },
+      {
+        "name": "Rohith A",
+        "email": "arohith389@gmail.com",
+        "phone": "7550121705"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-07T08:55:20.831Z",
+    "updatedAt": "2026-10-07T08:55:20.831Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac710dc91ff5a9a97d40d17",
+    "teamId": "DEX26002",
+    "registrationNumber": "REG-002",
+    "teamName": "Cryptix",
+    "projectTheme": "SUSTAINABILITY DEVELOPMENT",
+    "college": "Dhaanish Chennai College of Engineering",
+    "collegeType": "other",
+    "collegeName": "Dhaanish Chennai College of Engineering",
+    "department": "Computer Science",
+    "year": "Second Year",
+    "leader": {
+      "name": "Keerthana Roy S",
+      "email": "skeerthanaroy02@gmail.com",
+      "phone": "9944226102"
+    },
+    "members": [
+      {
+        "name": "Keerthana Roy. S",
+        "email": "skeerthanaroy02@gmail.com",
+        "phone": "9944226102"
+      },
+      {
+        "name": "Keerthana R",
+        "email": "keerthanar142008@gmail.com",
+        "phone": "8124311523"
+      },
+      {
+        "name": "Kajasri B",
+        "email": "kajasribalamurugan@gmail.com",
+        "phone": "93615 43550"
+      },
+      {
+        "name": "Mohamed Al Ameen M",
+        "email": "mohamedalameen37@gmail.com",
+        "phone": "7397 573 358"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-08T03:41:16.313Z",
+    "updatedAt": "2026-10-08T03:41:16.313Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac73b2291ff5a9a97d40d18",
+    "teamId": "DEX26003",
+    "registrationNumber": "REG-003",
+    "teamName": "Idea flux",
+    "projectTheme": "OPEN INNOVATION",
+    "college": "Sathyabama Institute of Science and Technology",
+    "collegeType": "sathyabama",
+    "collegeName": "Sathyabama Institute of Science and Technology",
+    "department": "MCA",
+    "year": "First Year",
+    "leader": {
+      "name": "Bavadharani S",
+      "email": "bavadharani1901@gmail.com",
+      "phone": "7010870994"
+    },
+    "members": [
+      {
+        "name": "Anjalibabu",
+        "email": "anjalivrab@gmail.com",
+        "phone": "9600170350"
+      },
+      {
+        "name": "Monika R",
+        "email": "monikaramamoorthi215@gmail.com",
+        "phone": "9080318001"
+      },
+      {
+        "name": "Pooja  A",
+        "email": "im.arpooja@gmail.com",
+        "phone": "8438181983"
+      },
+      {
+        "name": "Karthika S",
+        "email": "karthikababu0104@gmail.com",
+        "phone": "7558132592"
+      },
+      {
+        "name": "Antony Britto M",
+        "email": "antonybrittomic@gmail.com",
+        "phone": "9344532263"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-08T06:41:38.775Z",
+    "updatedAt": "2026-10-09T07:22:24.844Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac758cb91ff5a9a97d40d1c",
+    "teamId": "DEX26004",
+    "registrationNumber": "REG-004",
+    "teamName": "Phoenix Thozha ",
+    "projectTheme": "BLOCKCHAIN & CYBERSECURITY",
+    "college": "Sathyabama Institute of Science and Technology",
+    "collegeType": "sathyabama",
+    "collegeName": "Sathyabama Institute of Science and Technology",
+    "department": "Information technology ",
+    "year": "Second Year",
+    "leader": {
+      "name": "Priyadharshan",
+      "email": "priyadharshan250305@gmail.com",
+      "phone": "9080677809"
+    },
+    "members": [
+      {
+        "name": "Priyadharshan P",
+        "email": "priyadharshan250305@gmail.com",
+        "phone": "9080677809"
+      },
+      {
+        "name": "Tamizhvanan",
+        "email": "tamizhvananjan2008@gmail.com",
+        "phone": "9092740444"
+      },
+      {
+        "name": "Sasikumar M",
+        "email": "sasikumar.m639@gmail.com",
+        "phone": "9042434160"
+      },
+      {
+        "name": "Shanmathi S",
+        "email": "shanmathis499@gmail.com",
+        "phone": "8903563926"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-08T08:48:11.060Z",
+    "updatedAt": "2026-10-08T08:48:11.060Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac79795186eb16154c86e9a",
+    "teamId": "DEX26005",
+    "registrationNumber": "REG-005",
+    "teamName": "ASTRA",
+    "projectTheme": "AI & MACHINE LEARNING",
+    "college": "Government College of Engineering & Research Avasari kh",
+    "collegeType": "other",
+    "collegeName": "Government College of Engineering & Research Avasari kh",
+    "department": "Computer Engineering ",
+    "year": "Third Year",
+    "leader": {
+      "name": "Kale Shreya Suresh ",
+      "email": "kaleshreya681@gmail.com",
+      "phone": "8468818198"
+    },
+    "members": [
+      {
+        "name": "Kale Shreya Suresh",
+        "email": "kaleshreya681@gmail.com",
+        "phone": "8468818198"
+      },
+      {
+        "name": "Jamadade Sakshi Santosh",
+        "email": "sakshijamadade06@gmail.com",
+        "phone": "8411874225"
+      },
+      {
+        "name": "Kulkarni Aditya Sameer",
+        "email": "adityak3618@gmail.com",
+        "phone": "9881425451"
+      },
+      {
+        "name": "Sawant Tejas Nagesh",
+        "email": "tsawant360@gmail.com",
+        "phone": "9325424600"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-08T13:16:05.341Z",
+    "updatedAt": "2026-10-08T13:16:05.341Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac7a996186eb16154c86e9c",
+    "teamId": "DEX26006",
+    "registrationNumber": "REG-006",
+    "teamName": "Triple Threat",
+    "projectTheme": "OPEN INNOVATION",
+    "college": "St.joseph's college of engineering",
+    "collegeType": "other",
+    "collegeName": "St.joseph's college of engineering",
+    "department": "electronics and communication engineering (ECE)",
+    "year": "First Year",
+    "leader": {
+      "name": "Padma Charan GS",
+      "email": "padmacharan2666@gmail.com",
+      "phone": "8838964389"
+    },
+    "members": [
+      {
+        "name": "Padma Charan GS",
+        "email": "padmacharan2666@gmail.com",
+        "phone": "8838964389"
+      },
+      {
+        "name": "nanda kishore s",
+        "email": "nandakishores501@gmail.com",
+        "phone": "8072244973"
+      },
+      {
+        "name": "Nixson S",
+        "email": "nixson246@gmail.com",
+        "phone": "9442429026"
+      },
+      {
+        "name": "Rithik",
+        "email": "nandafan175@gmail.com",
+        "phone": "9962671293"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-08T14:32:54.952Z",
+    "updatedAt": "2026-10-08T14:32:54.952Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac7bae4186eb16154c86e9e",
+    "teamId": "DEX26007",
+    "registrationNumber": "REG-007",
+    "teamName": "Bug Buster",
+    "projectTheme": "OPEN INNOVATION",
+    "college": "Panimalar Engineering College",
+    "collegeType": "other",
+    "collegeName": "Panimalar Engineering College",
+    "department": "Artificial Intelligence and Machine Learning",
+    "year": "First Year",
+    "leader": {
+      "name": "M A SANJAY RAJ ",
+      "email": "xsanjayofficial@gmail.com",
+      "phone": "6383107387"
+    },
+    "members": [
+      {
+        "name": "M A SANJAY RAJ",
+        "email": "xsanjayofficial@gmail.com",
+        "phone": "6383107387"
+      },
+      {
+        "name": "Vignesh H",
+        "email": "vigneshharidoss.pec@gmail.com",
+        "phone": "7845311764"
+      },
+      {
+        "name": "G Mukeshan",
+        "email": "ganapathimukesh180328@gmail.com",
+        "phone": "9940050998"
+      },
+      {
+        "name": "Rithesh K ",
+        "email": "krithesh2009@gmail.com",
+        "phone": "9345342566"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Successful",
+      "confirmationEmailStatus": "Sent",
+      "transactionId": "628137012622",
+      "upiId": "jerushaeby-1@okicici",
+      "confirmationEmailAttemptAt": "2026-10-09T08:13:26.533Z",
+      "confirmedAt": "2026-10-08T16:41:31.003Z",
+      "confirmedBy": "admin",
+      "confirmationEmailMessageId": "<84b1e827-dc96-16dc-4f6b-223f9eac238b@gmail.com>",
+      "confirmationEmailSentAt": "2026-10-09T08:13:34.991Z"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-08T15:46:44.777Z",
+    "updatedAt": "2026-10-09T08:13:34.991Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac7d2ba186eb16154c86e9f",
+    "teamId": "DEX26008",
+    "registrationNumber": "REG-008",
+    "teamName": "Flip Flop Force",
+    "projectTheme": "AI & MACHINE LEARNING",
+    "college": "Government College of Engineering, Erode",
+    "collegeType": "other",
+    "collegeName": "Government College of Engineering, Erode",
+    "department": "Electronics and Communication ",
+    "year": "Third Year",
+    "leader": {
+      "name": "Prime R S",
+      "email": "rsprime265@gmail.com",
+      "phone": "9080996730"
+    },
+    "members": [
+      {
+        "name": "Prime R S",
+        "email": "rsprime265@gmail.com",
+        "phone": "9080996730"
+      },
+      {
+        "name": "Sudarsanam R",
+        "email": "sudarsanam2006@gmail.com",
+        "phone": "9442321025"
+      },
+      {
+        "name": "Sugumar K",
+        "email": "sugumarkailasamathani@gmail.com",
+        "phone": "7339449766"
+      },
+      {
+        "name": "Sathish Babu S",
+        "email": "sathishsrinivasan9597@gmail.com",
+        "phone": "9361657429"
+      },
+      {
+        "name": "Sriram T",
+        "email": "kksthala1@gmail.com",
+        "phone": "7010330667"
+      },
+      {
+        "name": "Mounakishor S",
+        "email": "mounakishore08@gmail.com",
+        "phone": "8667208015"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-08T17:28:26.590Z",
+    "updatedAt": "2026-10-08T17:28:26.590Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac8dd9cc90e36442d191c7c",
+    "teamId": "DEX26009",
+    "registrationNumber": "REG-009",
+    "teamName": "Neural nomad",
+    "projectTheme": "SUSTAINABILITY DEVELOPMENT",
+    "college": "Bharath university",
+    "collegeType": "other",
+    "collegeName": "Bharath university",
+    "department": "Computer science in AI and ML",
+    "year": "Second Year",
+    "leader": {
+      "name": "A Dhasthageer",
+      "email": "dasthudasthu177@gmail.com",
+      "phone": "7207400120"
+    },
+    "members": [
+      {
+        "name": "A Dhasthageer",
+        "email": "dasthudasthu177@gmail.com",
+        "phone": "7207400120"
+      },
+      {
+        "name": "Mrithika sree R",
+        "email": "mrithikasree2008@gmail.com",
+        "phone": "7200468828"
+      },
+      {
+        "name": "Sathya narayanan.A ",
+        "email": "gurusathya839@email.com",
+        "phone": "9361432055"
+      },
+      {
+        "name": "Neme: Bhuvaneshwari M",
+        "email": "bhuvanamozhi7@gmail.com",
+        "phone": "9150818210"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-09T12:27:08.817Z",
+    "updatedAt": "2026-10-09T12:27:08.817Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac8e51ec90e36442d191c7d",
+    "teamId": "DEX26010",
+    "registrationNumber": "REG-010",
+    "teamName": "AgentVerse",
+    "projectTheme": "FINTECH & EDTECH",
+    "college": "SRM Institute of Science and Technology",
+    "collegeType": "other",
+    "collegeName": "SRM Institute of Science and Technology",
+    "department": "Computer Science core",
+    "year": "Second Year",
+    "leader": {
+      "name": "Mohammed Faizan Ansari ",
+      "email": "ma2230@srmist.edu.in",
+      "phone": "7470438725"
+    },
+    "members": [
+      {
+        "name": "Mohammed Faizan Ansari ",
+        "email": "ma2230@srmist.edu.in",
+        "phone": "7470438725"
+      },
+      {
+        "name": "Tanish bagrecha ",
+        "email": "tb7063@srmist.edu.in",
+        "phone": "9998924476"
+      },
+      {
+        "name": "Prayag Priyadarshan Dash",
+        "email": "pd6330@srmist.edu.in",
+        "phone": "7608921654"
+      },
+      {
+        "name": "Suryansh Gupta",
+        "email": "sg1022@srmist.edu.in",
+        "phone": "8887550697"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Successful",
+      "confirmationEmailStatus": "Sent",
+      "transactionId": "T2610091829322974057731",
+      "upiId": "jerushaeby-1@okicici",
+      "confirmationEmailAttemptAt": "2026-10-09T14:02:38.966Z",
+      "confirmedAt": "2026-10-09T14:02:38.966Z",
+      "confirmedBy": "admin",
+      "confirmationEmailMessageId": "<36f9bd32-8aac-dada-ea54-38e33967fa26@gmail.com>",
+      "confirmationEmailSentAt": "2026-10-09T14:02:44.852Z"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-09T12:59:10.035Z",
+    "updatedAt": "2026-10-09T14:02:44.852Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac8ff08c90e36442d191c7f",
+    "teamId": "DEX26011",
+    "registrationNumber": "REG-011",
+    "teamName": "NexYouth",
+    "projectTheme": "FINTECH & EDTECH",
+    "college": "Presidency Unversity",
+    "collegeType": "other",
+    "collegeName": "Presidency Unversity",
+    "department": "Computer science and engineering ",
+    "year": "Third Year",
+    "leader": {
+      "name": "Jayanth D R",
+      "email": "jayanthgowda1406@gmail.com",
+      "phone": "7406282982"
+    },
+    "members": [
+      {
+        "name": "Jayanth D R",
+        "email": "jayanthgowda1406@gmail.com",
+        "phone": "7406282982"
+      },
+      {
+        "name": "N Pradeep",
+        "email": "p51557848@gmail.com",
+        "phone": "8970788206"
+      },
+      {
+        "name": "Rakshith Kumar B",
+        "email": "rakshithkumarb089@gmail.com",
+        "phone": "7676628334"
+      },
+      {
+        "name": "Nisha Shindha",
+        "email": "shindhenisha38@gmail.com",
+        "phone": "7204925226"
+      },
+      {
+        "name": "Prajwal sp",
+        "email": "jj0651057@gmail.com",
+        "phone": "8147019873"
+      },
+      {
+        "name": "Dindukurthi Mukesh",
+        "email": "rakshithkumab01718@gmail.com",
+        "phone": "8019300729"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-09T14:49:44.542Z",
+    "updatedAt": "2026-10-09T14:49:44.542Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac90581c90e36442d191c80",
+    "teamId": "DEX26012",
+    "registrationNumber": "REG-012",
+    "teamName": "Sabo",
+    "projectTheme": "FINTECH & EDTECH",
+    "college": "Saveeth school of engineering",
+    "collegeType": "other",
+    "collegeName": "Saveeth school of engineering",
+    "department": "B.tech",
+    "year": "Second Year",
+    "leader": {
+      "name": "Sabo",
+      "email": "sanabd@sn.com",
+      "phone": "8438585695"
+    },
+    "members": [
+      {
+        "name": "Sandip Bohara",
+        "email": "sanabd@sn.com",
+        "phone": "8938585695"
+      },
+      {
+        "name": "Sadip Bohara",
+        "email": "sabogehwl26@gmail.com",
+        "phone": "8638585695"
+      },
+      {
+        "name": "Salndip Bohara",
+        "email": "abogewl26@gmail.com",
+        "phone": "9438585695"
+      },
+      {
+        "name": "Pandip Bohara",
+        "email": "sbogewl26@gmail.com",
+        "phone": "8438585695"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-09T15:17:21.581Z",
+    "updatedAt": "2026-10-09T15:17:21.581Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac9251f960e584ff2449c8b",
+    "teamId": "DEX26013",
+    "registrationNumber": "REG-013",
+    "teamName": "Nexovara",
+    "projectTheme": "HEALTHCARE",
+    "college": "St.Joseph College Of Engineering,OMR",
+    "collegeType": "other",
+    "collegeName": "St.Joseph College Of Engineering,OMR",
+    "department": "Airitificial Intelligence And Data Science",
+    "year": "First Year",
+    "leader": {
+      "name": "Shivani.M",
+      "email": "shivanimurthi09@gmail.com",
+      "phone": "8778810195"
+    },
+    "members": [
+      {
+        "name": "Shivani.M",
+        "email": "shivanimurthi09@gmail.com",
+        "phone": "8778810195"
+      },
+      {
+        "name": "Stuart Cassiel.A",
+        "email": "stuartkodies2008@gmail.com",
+        "phone": "9442970152"
+      },
+      {
+        "name": "yuvaraj.J",
+        "email": "yuvasankar2008@gmail.com",
+        "phone": "7358258947"
+      },
+      {
+        "name": "Vithula Prasath",
+        "email": "avithula@gmail.com",
+        "phone": "7305929890"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Successful",
+      "confirmationEmailStatus": "Failed",
+      "transactionId": "664891062987",
+      "upiId": "jerushaeby-1@okicici",
+      "confirmationEmailAttemptAt": "2026-10-10T00:20:03.466Z",
+      "confirmedAt": "2026-10-10T00:20:03.466Z",
+      "confirmedBy": "admin",
+      "confirmationEmailError": "Resend is not configured: set RESEND_API_KEY in the backend environment (Render → Environment)."
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-09T17:32:15.246Z",
+    "updatedAt": "2026-10-10T00:20:04.062Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac9b8340ea2e6b7c4d2762c",
+    "teamId": "DEX26014",
+    "registrationNumber": "REG-014",
+    "teamName": "Raw Matrix",
+    "projectTheme": "AI & MACHINE LEARNING",
+    "college": "R.M.K Engineering college",
+    "collegeType": "other",
+    "collegeName": "R.M.K Engineering college",
+    "department": "Artificial Intelligence and Data Science",
+    "year": "Third Year",
+    "leader": {
+      "name": "Kallathur Rishitha Reddy",
+      "email": "rishitha2006@gmail.com",
+      "phone": "9059588685"
+    },
+    "members": [
+      {
+        "name": "Kallathur Rishitha Reddy",
+        "email": "rishitha2006@gmail.com",
+        "phone": "9059588685"
+      },
+      {
+        "name": "Kalathuru Chethana",
+        "email": "chethanakalathuru@gmail.com",
+        "phone": "8019044535"
+      },
+      {
+        "name": "Kaza Venkata Sai Akshaya Lakshmi",
+        "email": "akshayakaza07@gmail.com",
+        "phone": "8919960661"
+      },
+      {
+        "name": "Mannepalli Yeswanth",
+        "email": "mannepalliyeswanth741@gmail.com",
+        "phone": "6374348485"
+      },
+      {
+        "name": "Hari Preeth P",
+        "email": "psrk2057@gmail.com",
+        "phone": "6301865775"
+      },
+      {
+        "name": "M Banu Prakash Raju",
+        "email": "rajubhanuprakash595@gmail.com",
+        "phone": "9025728348"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Awaiting Verification",
+      "confirmationEmailStatus": "Not Sent",
+      "transactionId": "T2610100930285747745694",
+      "upiId": "jerushaeby-1@okicici"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-10T03:59:48.798Z",
+    "updatedAt": "2026-10-10T04:01:12.551Z",
+    "__v": 0
+  },
+  {
+    "_id": "6aca2b0e5e217d1b357fd273",
+    "teamId": "DEX26015",
+    "registrationNumber": "REG-015",
+    "teamName": "Elite.html",
+    "projectTheme": "OPEN INNOVATION",
+    "college": "St. Joseph's College of Engineering",
+    "collegeType": "other",
+    "collegeName": "St. Joseph's College of Engineering",
+    "department": "Computer Science ",
+    "year": "First Year",
+    "leader": {
+      "name": "Aswin AS Jaenif",
+      "email": "aswinjaenif@gmail.com",
+      "phone": "8015850580"
+    },
+    "members": [
+      {
+        "name": "Anshel N H",
+        "email": "anahelnh24@gmail.com",
+        "phone": "6379224028"
+      },
+      {
+        "name": "Anbiah Riyan Fernado",
+        "email": "riyanfernando0210@gmail.com",
+        "phone": "9840405316"
+      },
+      {
+        "name": "Asvethaa R D",
+        "email": "asvethaard@gmail.com",
+        "phone": "9787856022"
+      },
+      {
+        "name": "Amoga T S",
+        "email": "amogaathirunavukkarasu@gmail.com",
+        "phone": "6369970267"
+      },
+      {
+        "name": "Akshara K",
+        "email": "kakshara132009@gmail.com",
+        "phone": "7540004955"
+      },
+      {
+        "name": "Aswin AS Jaenif ",
+        "email": "aswinjaenif@gmail.com",
+        "phone": "8015050580"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Successful",
+      "confirmationEmailStatus": "Failed",
+      "transactionId": "8015050580@fam",
+      "upiId": "jerushaeby-1@okicici",
+      "confirmationEmailAttemptAt": "2026-10-10T14:08:37.641Z",
+      "confirmedAt": "2026-10-10T14:08:37.641Z",
+      "confirmedBy": "admin",
+      "confirmationEmailError": "Resend is not configured: set RESEND_API_KEY in the backend environment (Render → Environment)."
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-10T12:09:50.500Z",
+    "updatedAt": "2026-10-10T14:08:38.142Z",
+    "__v": 0
+  },
+  {
+    "_id": "6aca3d3a5e217d1b357fd274",
+    "teamId": "DEX26016",
+    "registrationNumber": "REG-016",
+    "teamName": "HACK MATES",
+    "projectTheme": "OPEN INNOVATION",
+    "college": "Sathyabama Institute of Science and Technology",
+    "collegeType": "sathyabama",
+    "collegeName": "Sathyabama Institute of Science and Technology",
+    "department": "Electronics and communication engineering",
+    "year": "First Year",
+    "leader": {
+      "name": "Sanjay Adithiya A K",
+      "email": "sanjay.cric07@gmail.com",
+      "phone": "9344696910"
+    },
+    "members": [
+      {
+        "name": "Sanjay adithiya A K",
+        "email": "sanjay.cric07@gmail.com",
+        "phone": "9344696910"
+      },
+      {
+        "name": "Adlin",
+        "email": "adlinancy87@gmail.com",
+        "phone": "9952235745"
+      },
+      {
+        "name": "Jeniliya sankar krishnan",
+        "email": "saijeni123@gmail.com",
+        "phone": "9677670662"
+      },
+      {
+        "name": "Sharni ",
+        "email": "sharnirajeshkanna@gmail.com",
+        "phone": "8807595163"
+      },
+      {
+        "name": "Saranya",
+        "email": "saranyasenthilmohan08@gmail.com",
+        "phone": "6385051221"
+      },
+      {
+        "name": "Abdul Saleem",
+        "email": "yenjolly13@gmail.com",
+        "phone": "80728 88709"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-10T13:27:22.042Z",
+    "updatedAt": "2026-10-10T13:27:22.042Z",
+    "__v": 0
+  },
+  {
+    "_id": "6aca3eb85e217d1b357fd275",
+    "teamId": "DEX26017",
+    "registrationNumber": "REG-017",
+    "teamName": "HACK MATES",
+    "projectTheme": "OPEN INNOVATION",
+    "college": "Sathyabama Institute of Science and Technology",
+    "collegeType": "sathyabama",
+    "collegeName": "Sathyabama Institute of Science and Technology",
+    "department": "ECE",
+    "year": "First Year",
+    "leader": {
+      "name": "Sanjay adithiya",
+      "email": "sanjay.cric07@gmail.com",
+      "phone": "9344696910"
+    },
+    "members": [
+      {
+        "name": "Sanjay adithiya ",
+        "email": "sanjay.cric07@gmail.com",
+        "phone": "9344696910"
+      },
+      {
+        "name": "Jeniliya sankar krishnan ",
+        "email": "saijeni123@gmail.com",
+        "phone": "9677670662"
+      },
+      {
+        "name": "Sharni ",
+        "email": "sharnirajeshkanna@gmail.com",
+        "phone": "8807595163"
+      },
+      {
+        "name": "Saranya ",
+        "email": "saranyasenthilmohan08@gmail.com",
+        "phone": "6385051221"
+      },
+      {
+        "name": "M S Adlin",
+        "email": "adlinancy87@gmail.com",
+        "phone": "9952235745"
+      },
+      {
+        "name": "Abdul saleem",
+        "email": "yenjolly13@gmail.com",
+        "phone": "80728 88709"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Successful",
+      "confirmationEmailStatus": "Failed",
+      "transactionId": "664910751942",
+      "upiId": "jerushaeby-1@okicici",
+      "confirmationEmailAttemptAt": "2026-10-10T13:38:04.395Z",
+      "confirmedAt": "2026-10-10T13:38:04.395Z",
+      "confirmedBy": "admin",
+      "confirmationEmailError": "Resend is not configured: set RESEND_API_KEY in the backend environment (Render → Environment)."
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-10T13:33:44.518Z",
+    "updatedAt": "2026-10-10T13:38:04.925Z",
+    "__v": 0
+  },
+  {
+    "_id": "6aca5d39c543e5955a331292",
+    "teamId": "DX2026-703326894",
+    "registrationNumber": "REG-703326843",
+    "teamName": "Fresh Stack",
+    "projectTheme": "HEALTHCARE",
+    "college": "Sathyabama Institute of Science and Technology",
+    "collegeType": "sathyabama",
+    "collegeName": "Sathyabama Institute of Science and Technology",
+    "department": "Electronic and Communication Engineering ",
+    "year": "First Year",
+    "leader": {
+      "name": "JOSIKA M R",
+      "email": "josikamr@gmail.com",
+      "phone": "9940525343"
+    },
+    "members": [
+      {
+        "name": "JOSIKA M R",
+        "email": "josikamr@gmail.com",
+        "phone": "9940525343"
+      },
+      {
+        "name": "OVIYA S",
+        "email": "oviyasathyanarayanan@gmail.com",
+        "phone": "7397708943"
+      },
+      {
+        "name": "DEEPIKA P",
+        "email": "deepzzzz98@gmail.com",
+        "phone": "8148265121"
+      },
+      {
+        "name": "MISHA S",
+        "email": "mishasara3@gmail.com",
+        "phone": "6369303417"
+      },
+      {
+        "name": "RUBIKA M",
+        "email": "rubymugundhan@gmail.com",
+        "phone": "8056695792"
+      },
+      {
+        "name": "PREETHI R",
+        "email": "preethirethinakumar01@gmail.com",
+        "phone": "7305040705"
+      }
+    ],
+    "payment": {
+      "amount": 300,
+      "status": "Pending",
+      "confirmationEmailStatus": "Not Sent"
+    },
+    "pdfSubmission": {
+      "status": "Pending"
+    },
+    "evaluation": {
+      "result": "Pending"
+    },
+    "selectionEmailSent": false,
+    "selectionEmailStatus": "Not Sent",
+    "rounds": {
+      "round1": "PENDING",
+      "round2": "UPCOMING",
+      "round3": "UPCOMING",
+      "scoreReleased": false
+    },
+    "roundResults": {
+      "round1": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round2": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      },
+      "round3": {
+        "status": "PENDING",
+        "emailSent": false,
+        "emailStatus": "Not Sent"
+      }
+    },
+    "roundEmail": {
+      "status": "Not Sent"
+    },
+    "createdAt": "2026-10-10T15:43:53.286Z",
+    "updatedAt": "2026-10-10T15:43:53.286Z",
+    "__v": 0
+  }
+]

@@ -22,10 +22,10 @@ const toAdminView = (registration) => {
 
 const findRegistration = async (id) => (mongoose.isValidObjectId(id) ? Registration.findById(id) : null);
 
-// Teams that have received a submission link (payment confirmed) or have already submitted a PDF.
+// All registered/imported teams and their submission/evaluation state.
 export const listSubmissions = async (_request, response) => {
   const [registrations, settings] = await Promise.all([
-    Registration.find({ $or: [{ "payment.confirmedAt": { $exists: true, $ne: null } }, { "pdfSubmission.fileId": { $exists: true, $ne: null } }] }, LIST_FIELDS).sort({ "pdfSubmission.submittedAt": -1, createdAt: -1 }).lean(),
+    Registration.find({}, LIST_FIELDS).sort({ "pdfSubmission.submittedAt": -1, createdAt: -1 }).lean(),
     getSettings(),
   ]);
   return response.json({ teams: registrations.map(toAdminView), settings: settingsView(settings) });

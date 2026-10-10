@@ -55,7 +55,7 @@ export const getSiteUrl = () => {
 
 // Team Head Portal access shared by the login check and the emails.
 export const getTeamLoginUrl = () => `${getSiteUrl()}/team-login`;
-export const getTeamPortalPassword = () => process.env.TEAM_PORTAL_PASSWORD || "DEXATHON2026";
+export const getTeamPortalPassword = () => process.env.TEAM_PORTAL_PASSWORD || "Dexathon@2026";
 
 export const buildSubmissionUrl = (token) => `${getSiteUrl()}/submit-document/${token}`;
 

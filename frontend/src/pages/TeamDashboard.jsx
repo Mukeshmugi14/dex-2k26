@@ -227,7 +227,7 @@ export default function TeamDashboard() {
           <h1>Round {current.round}</h1>
         </div>
         <strong className={statusClass(current.status)}>{currentInfo.mark} {currentInfo.label}</strong>
-        <TeamRunners count={team.members.length} stopped={notSelected} />
+        <TeamRunners count={team.teamSize || ((team.members || []).length + 1)} stopped={notSelected} />
         <button type="button" className="team-refresh" onClick={load} disabled={refreshing} aria-label="Refresh status"><RefreshCw size={15} className={refreshing ? "spin" : ""} /></button>
         {notSelected ? <p className="team-current-message">Thank you for participating in DEXATHON 2026.<br />Your team was not selected for the next round.</p> : null}
       </section>
@@ -240,9 +240,14 @@ export default function TeamDashboard() {
           <h2>Team Details</h2>
           <dl className="team-details">
             <div><dt>Team Name</dt><dd>{team.teamName}</dd></div>
+            <div><dt>Team Size</dt><dd><b>{team.teamSize || ((team.members || []).length + 1)}</b> ({team.teamHead ? `1 Head + ${(team.members || []).length} Members` : `${(team.members || []).length} Members`})</dd></div>
             <div><dt>Team Head</dt><dd>{team.teamHead}</dd></div>
             <div><dt>Team Head Email</dt><dd className="break">{team.teamHeadEmail}</dd></div>
+            {team.teamHeadPhone ? <div><dt>Team Head Phone</dt><dd>{team.teamHeadPhone}</dd></div> : null}
             <div><dt>College</dt><dd>{team.college}</dd></div>
+            {team.department || team.year ? (
+              <div><dt>Department & Year</dt><dd>{team.department || "—"} {team.year ? `(${team.year})` : ""}</dd></div>
+            ) : null}
             <div><dt>Selected Project Theme</dt><dd className="team-theme-value">{team.projectTheme}</dd></div>
             <div><dt>Round 1 Status</dt><dd>{roundOne ? <span className={statusClass(roundOne.status)}>{roundOneInfo.mark} {roundOneInfo.label}</span> : "—"}</dd></div>
             <div><dt>Round 1 PDF Submission Status</dt><dd>{submission.submitted ? <span className="team-pill ok">✓ PDF Submitted</span> : <span className="team-pill open">● Submission Open</span>}</dd></div>
@@ -251,8 +256,31 @@ export default function TeamDashboard() {
         </section>
 
         <section className="team-card team-area-members">
-          <h2><Users size={17} /> Team Members</h2>
-          {team.members.length ? <ol className="team-members">{team.members.map((name, index) => <li key={name}><b>{String(index + 1).padStart(2, "0")}.</b> {name}</li>)}</ol> : <p className="team-muted">No team members are recorded.</p>}
+          <h2><Users size={17} /> Team Members ({(team.members || []).length})</h2>
+          {team.members && team.members.length ? (
+            <ol className="team-members">
+              {team.members.map((member, index) => {
+                const name = typeof member === "string" ? member : member?.name || "Member";
+                const college = typeof member === "object" ? member?.college : "";
+                const phone = typeof member === "object" ? member?.phone : "";
+                return (
+                  <li key={index}>
+                    <b>{String(index + 1).padStart(2, "0")}.</b>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontWeight: 600 }}>{name}</span>
+                      {college || phone ? (
+                        <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 400 }}>
+                          {college} {phone ? (college ? `• ${phone}` : phone) : ""}
+                        </span>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          ) : (
+            <p className="team-muted">No team members are recorded.</p>
+          )}
         </section>
 
         <section className="team-card team-area-pdf">

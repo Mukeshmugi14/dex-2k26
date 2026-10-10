@@ -1,6 +1,6 @@
 // Central email service. Every transactional email is sent through Gmail SMTP from this backend.
 // There is no other provider: the browser never sends email and never sees the Gmail credentials.
-import { buildPaymentConfirmationEmail, POSTER_CID, POSTER_IMAGE_PATH } from "../templates/paymentConfirmationEmail.js";
+import { buildPaymentConfirmationEmail, buildTeamConfirmationEmail, POSTER_CID, POSTER_IMAGE_PATH } from "../templates/paymentConfirmationEmail.js";
 import { buildSelectionEmail } from "../templates/resultEmail.js";
 import { buildRoundResultEmail } from "../templates/roundResultEmail.js";
 import { buildRoundUpdateEmail } from "../templates/roundUpdateEmail.js";
@@ -31,6 +31,32 @@ const sendEmail = async ({ type, to, subject, html, text, attachments }) => {
     console.error(`EMAIL_SEND_FAILED type=${type} to=${to} code=${error.code || "-"} status=${error.responseCode ?? "-"} reason="${describeEmailError(error)}"`);
     throw error;
   }
+};
+
+// Preview team registration confirmation email without sending
+export const previewTeamConfirmationEmail = (registration) => {
+  const to = registration?.leader?.email?.trim() || "";
+  const { html, text } = buildTeamConfirmationEmail(registration, { portal: portalAccess() });
+  return {
+    to,
+    subject: "DEXATHON 2026 — Registration Confirmed ✓",
+    html,
+    text,
+  };
+};
+
+// Send team registration confirmation email (reusing existing email template with dynamic team variables)
+export const sendTeamConfirmationEmail = async (registration) => {
+  const to = getRecipientEmail(registration);
+  const { html, text } = buildTeamConfirmationEmail(registration, { portal: portalAccess() });
+  return sendEmail({
+    type: "team-registration-confirmation",
+    to,
+    subject: "DEXATHON 2026 — Registration Confirmed ✓",
+    html,
+    text,
+    attachments: [{ filename: "dexathon-2026-poster.jpg", path: POSTER_IMAGE_PATH, cid: POSTER_CID }],
+  });
 };
 
 // Payment confirmation (admin verified the payment). Resolves { sent, messageId } only after Gmail accepted it.

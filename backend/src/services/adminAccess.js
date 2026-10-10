@@ -1,18 +1,18 @@
 // Which admin roles may use which admin section. SUPER_ADMIN (General Admin) may use everything.
 export const SECTION_ROLES = {
   dashboard: ["TEAM_ADMIN"],
+  teamLists: ["TEAM_ADMIN", "PAYMENT_ADMIN"],
   teams: ["TEAM_ADMIN"],
-  payments: ["PAYMENT_ADMIN"],
   pdf: ["PDF_ADMIN"],
   rounds: ["ROUND_ADMIN"],
-  paymentSettings: ["PAYMENT_ADMIN"],
+  payments: ["PAYMENT_ADMIN", "TEAM_ADMIN"], // compatibility
   users: [],
 };
 
 export const ROLE_HOME = {
   SUPER_ADMIN: "/admin/dashboard",
-  PAYMENT_ADMIN: "/admin/payment-history",
-  TEAM_ADMIN: "/admin/teams",
+  PAYMENT_ADMIN: "/admin/team-lists",
+  TEAM_ADMIN: "/admin/team-lists",
   ROUND_ADMIN: "/admin/round-selection",
   PDF_ADMIN: "/admin/pdf-submissions",
 };

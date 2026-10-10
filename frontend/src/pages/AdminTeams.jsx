@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ImageUp, Pencil, RotateCcw, Trash2, X } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
@@ -8,9 +8,6 @@ import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
 const PAGE_SIZE = 20;
-// Logos are served as cacheable images (not embedded in the list JSON); the version busts the cache after edits.
-const logoUrl = (team) => `${API_URL}/registrations/${team._id}/logo?v=${new Date(team.updatedAt || 0).getTime()}`;
-import { resizeLogo } from "../utils/resizeLogo";
 
 const isEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
 const pad = (index) => String(index + 1).padStart(2, "0");
@@ -41,11 +38,9 @@ function Field({ label, error, children }) {
 
 function EditTeamModal({ team, headers, onClose, onSaved }) {
   const [form, setForm] = useState(() => toForm(team));
-  const [logo, setLogo] = useState(null);
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
-  const fileRef = useRef(null);
   const firstFieldRef = useRef(null);
 
   useEffect(() => {
@@ -66,13 +61,6 @@ function EditTeamModal({ team, headers, onClose, onSaved }) {
     setForm((current) => ({ ...current, members: current.members.map((name, memberIndex) => (memberIndex === index ? value : name)) }));
     setErrors((current) => ({ ...current, [`member-${index}`]: "" }));
   };
-  const chooseLogo = (file) => {
-    if (!file) return;
-    if (!/image\/(png|jpeg)/.test(file.type) || file.size > 2 * 1024 * 1024) { setErrors((current) => ({ ...current, logo: "Choose a PNG or JPG image up to 2 MB." })); return; }
-    resizeLogo(file)
-      .then((src) => { setLogo({ name: file.name, src }); setErrors((current) => ({ ...current, logo: "" })); })
-      .catch(() => setErrors((current) => ({ ...current, logo: "That image could not be read." })));
-  };
 
   const save = async (event) => {
     event.preventDefault();
@@ -88,7 +76,6 @@ function EditTeamModal({ team, headers, onClose, onSaved }) {
         leader: { name: form.leaderName.trim(), email: form.leaderEmail.trim(), phone: form.leaderPhone.trim() },
         college: form.college.trim(),
         members,
-        ...(logo ? { logo: logo.src } : {}),
       }, { headers });
       onSaved(response.data.registration, response.data.message);
     } catch (requestError) {
@@ -98,8 +85,6 @@ function EditTeamModal({ team, headers, onClose, onSaved }) {
     }
   };
 
-  const currentLogo = logo?.src || (team.hasLogo ? logoUrl(team) : null);
-
   return <div className="edit-team-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) onClose(); }}>
     <form className="edit-team-modal" role="dialog" aria-modal="true" aria-labelledby="edit-team-title" onSubmit={save} noValidate>
       <header>
@@ -108,20 +93,6 @@ function EditTeamModal({ team, headers, onClose, onSaved }) {
       </header>
 
       <div className="edit-team-body">
-        <section className="edit-team-logo">
-          <span className="edit-team-label">Team Logo</span>
-          <div className="edit-team-logo-row">
-            <div className="team-logo-frame">{currentLogo ? <img src={currentLogo} alt="Team logo" /> : <span>NO LOGO</span>}</div>
-            <div className="edit-team-logo-actions">
-              <input ref={fileRef} type="file" accept="image/png,image/jpeg" hidden onChange={(event) => { chooseLogo(event.target.files[0]); event.target.value = ""; }} />
-              <button type="button" onClick={() => fileRef.current?.click()}><ImageUp size={15} /> {currentLogo ? "Change Logo" : "Upload Logo"}</button>
-              {logo ? <button type="button" className="ghost" onClick={() => setLogo(null)}><RotateCcw size={14} /> Keep current</button> : null}
-              <small>{logo ? `New: ${logo.name}` : "PNG or JPG, up to 2 MB. Leave unchanged to keep the current logo."}</small>
-              {errors.logo ? <small className="error">{errors.logo}</small> : null}
-            </div>
-          </div>
-        </section>
-
         <div className="edit-team-grid">
           <Field label="Team Name" error={errors.teamName}><input ref={firstFieldRef} value={form.teamName} onChange={(event) => update("teamName", event.target.value)} /></Field>
           <Field label="Team Head Name" error={errors.leaderName}><input value={form.leaderName} onChange={(event) => update("leaderName", event.target.value)} /></Field>
@@ -401,7 +372,6 @@ export default function AdminTeams() {
         : !visibleTeams.length ? <p className="admin-teams-state">{debouncedSearch || collegeFilter !== "all" ? "No teams match your search." : "No teams have registered yet."}</p>
           : <section className="team-card-grid">{visibleTeams.map((team) => <article className={`team-card ${selected.has(team._id) ? "is-selected" : ""}`} key={team._id}>
             <label className="tm-card-check"><input type="checkbox" checked={selected.has(team._id)} onChange={() => toggleOne(team._id)} aria-label={`Select ${team.teamName}`} /><span>{selected.has(team._id) ? "Selected" : "Select"}</span></label>
-            <div className="team-card-logo">{team.hasLogo ? <img src={logoUrl(team)} alt={`${team.teamName} logo`} loading="lazy" decoding="async" width="84" height="84" /> : <span>NO LOGO</span>}</div>
             <dl>
               <div className="team-card-name"><dt>Team Name</dt><dd>{team.teamName}</dd></div>
               <div><dt>Team Head</dt><dd>{team.leader?.name}</dd></div>

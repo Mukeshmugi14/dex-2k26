@@ -14,8 +14,21 @@ const roundResultSchema = new mongoose.Schema({
   emailSentAt: Date,
   emailAttemptAt: Date,
 }, { _id: false });
-const memberSchema = new mongoose.Schema({ name: String, email: String, phone: String, studentId: String }, { _id: false });
-const registrationSchema = new mongoose.Schema({ teamId: { type: String, unique: true }, registrationNumber: { type: String, unique: true }, teamName: String, projectTheme: { type: String, enum: PROJECT_THEMES }, teamLogo: String, college: String, collegeType: { type: String, enum: ["sathyabama", "other"] }, collegeName: String, department: String, year: String, leader: { name: String, email: String, phone: String }, members: [memberSchema], mentor: { name: String, email: String, phone: String }, payment: { status: { type: String, enum: ["Pending", "Awaiting Verification", "Successful", "Failed", "Refunded"], default: "Pending" }, amount: { type: Number, default: 300 }, orderId: String, paymentId: String, transactionId: String, upiId: String, paidAt: Date, confirmedAt: Date, confirmedBy: String, confirmationEmailStatus: { type: String, enum: ["Not Sent", "Sending", "Sent", "Failed"], default: "Not Sent" }, confirmationEmailSentAt: Date, confirmationEmailAttemptAt: Date, confirmationEmailError: String, confirmationEmailMessageId: String },
+const memberSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  phone: String,
+  studentId: String,
+  college: String,
+  year: String,
+  department: String,
+}, { _id: false });
+const registrationSchema = new mongoose.Schema({
+  teamId: { type: String, unique: true },
+  registrationNumber: { type: String, unique: true },
+  teamName: String,
+  teamSize: { type: Number, default: 0 },
+  projectTheme: { type: String, enum: PROJECT_THEMES }, college: String, collegeType: { type: String, enum: ["sathyabama", "other"] }, collegeName: String, department: String, year: String, leader: { name: String, email: String, phone: String }, members: [memberSchema], mentor: { name: String, email: String, phone: String }, payment: { status: { type: String, enum: ["Pending", "Awaiting Verification", "Successful", "Failed", "Refunded"], default: "Pending" }, amount: { type: Number, default: 300 }, orderId: String, paymentId: String, transactionId: String, upiId: String, paidAt: Date, confirmedAt: Date, confirmedBy: String, confirmationEmailStatus: { type: String, enum: ["Not Sent", "Sending", "Sent", "Failed"], default: "Not Sent" }, confirmationEmailSentAt: Date, confirmationEmailAttemptAt: Date, confirmationEmailError: String, confirmationEmailMessageId: String },
   // Second-round PDF submission. The file lives in the "submissions" GridFS bucket; only a hash of the team's secret link token is stored.
   pdfSubmission: {
     tokenHash: { type: String, index: true, select: false },
@@ -71,6 +84,15 @@ const registrationSchema = new mongoose.Schema({ teamId: { type: String, unique:
     sentAt: Date,
     attemptAt: Date,
   },
+  registrationEmail: {
+    status: { type: String, enum: ["Not Sent", "Sending", "Sent", "Failed"], default: "Not Sent" },
+    sentAt: Date,
+    attemptAt: Date,
+    error: String,
+    messageId: String,
+  },
+  importSource: { type: String, default: "MANUAL" },
+  importedAt: Date,
 }, { timestamps: true });
 
 // Never send submission-link secrets in any API response.
@@ -84,9 +106,9 @@ export const stripLinkSecrets = (_doc, ret) => {
 };
 registrationSchema.set("toJSON", { transform: stripLinkSecrets });
 
-// Indexes for the admin lists (sorted by newest, filtered by payment state).
+// Indexes for admin lists and team lookups
 registrationSchema.index({ createdAt: -1 });
-registrationSchema.index({ "payment.status": 1, createdAt: -1 });
-registrationSchema.index({ "payment.confirmedAt": -1 });
+registrationSchema.index({ "leader.email": 1 });
+registrationSchema.index({ "registrationEmail.status": 1 });
 
 export default mongoose.model("Registration", registrationSchema);
