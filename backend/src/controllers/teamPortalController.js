@@ -6,29 +6,20 @@ import { currentRound, readRounds, ROUND_INFO } from "../services/roundService.j
 import { deriveSubmissionStatus, getTeamPortalPassword, openPdfStream } from "../services/submissionService.js";
 import { PROTOTYPE_CATEGORIES, prototypeView, validatePrototypeUrl } from "../services/prototypeService.js";
 
-import { findTeamByIdentifier, passwordMatches } from "../services/teamIdService.js";
+import { findTeamByLeaderCredentials } from "../services/teamIdService.js";
 
-const INVALID_LOGIN = { success: false, message: "Invalid User ID (Team ID) or password." };
+const INVALID_LOGIN = { success: false, message: "Invalid Team Head email or Team ID. Please check and try again." };
 
+// Team Head email is the login; that team's existing Team ID is the password.
 export const teamLogin = async (request, response) => {
-  const identifier = typeof request.body.userId === "string" && request.body.userId.trim()
-    ? request.body.userId.trim()
-    : typeof request.body.teamId === "string" && request.body.teamId.trim()
-    ? request.body.teamId.trim()
-    : typeof request.body.teamName === "string" && request.body.teamName.trim()
-    ? request.body.teamName.trim()
-    : typeof request.body.email === "string" && request.body.email.trim()
-    ? request.body.email.trim()
-    : "";
+  const email = typeof request.body.email === "string" ? request.body.email.trim() : "";
+  const password = typeof request.body.password === "string" ? request.body.password.trim() : "";
+  if (!email || !password) {
+    return response.status(400).json({ success: false, message: "Please enter your Team Head email and Team ID." });
+  }
 
-  const password = typeof request.body.password === "string" ? request.body.password : "";
-  if (!identifier || !password) return response.status(401).json(INVALID_LOGIN);
-
-  const passwordOk = passwordMatches(password);
-  if (!passwordOk) return response.status(401).json(INVALID_LOGIN);
-
-  const team = await findTeamByIdentifier(identifier);
-  if (!team) return response.status(401).json({ success: false, message: "Team not found. Check your Team ID." });
+  const team = await findTeamByLeaderCredentials(email, password);
+  if (!team) return response.status(401).json(INVALID_LOGIN);
 
   return response.json({
     success: true,

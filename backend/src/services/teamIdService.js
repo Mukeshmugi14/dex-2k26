@@ -1,5 +1,5 @@
+import crypto from "crypto";
 import Registration from "../models/Registration.js";
-import { getTeamPortalPassword } from "./submissionService.js";
 
 const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -35,103 +35,28 @@ export const getNextSequentialTeamId = async () => {
 };
 
 /**
- * Checks if the provided password matches the portal password (default Dexathon@2026)
+ * Constant-time check of a submitted Team ID against the team's stored Team ID (trimmed, case-insensitive).
+ * Both values are hashed first so the comparison never leaks length or position of a mismatch.
  */
-export const passwordMatches = (password) => {
-  const given = typeof password === "string" ? password.trim() : "";
-  if (!given) return false;
-  const expected = getTeamPortalPassword();
-  
-  if (given === expected || given === "Dexathon@2026" || given === "DEXATHON2026") return true;
-  if (given.toLowerCase() === expected.toLowerCase()) return true;
-  if (given.toLowerCase() === "dexathon@2026") return true;
-  if (given.toLowerCase() === "dexathon2026") return true;
-  if (given.toLowerCase() === "dexathon@26") return true;
-  if (given.toLowerCase() === "dexathon26") return true;
-  return false;
+const teamIdMatches = (given, stored) => {
+  const digest = (value) => crypto.createHash("sha256").update(String(value || "").trim().toUpperCase()).digest();
+  const equal = crypto.timingSafeEqual(digest(given), digest(stored));
+  return equal && String(stored || "").trim() !== "";
 };
 
 /**
- * Robust team resolution: finds team by Team ID (e.g. DEX26001, DEX2601, 01, 1),
- * Registration Number, Team Name, or Leader Email.
+ * Team Login: the Team Head email identifies the team and that team's existing Team ID is the password.
+ * Returns the matching registration, or null if the email is not a registered Team Head
+ * or the Team ID does not belong to that email's team.
  */
-export const findTeamByIdentifier = async (identifier) => {
-  const term = typeof identifier === "string" ? identifier.trim() : "";
-  if (!term) return null;
+export const findTeamByLeaderCredentials = async (email, teamId) => {
+  const cleanEmail = typeof email === "string" ? email.trim() : "";
+  const cleanTeamId = typeof teamId === "string" ? teamId.trim() : "";
+  if (!cleanEmail || !cleanTeamId) return null;
 
-  // 1. Direct exact match (case-insensitive) across all identifier fields
-  const escaped = escapeRegex(term);
-  let team = await Registration.findOne({
-    $or: [
-      { teamId: { $regex: `^\\s*${escaped}\\s*$`, $options: "i" } },
-      { registrationNumber: { $regex: `^\\s*${escaped}\\s*$`, $options: "i" } },
-      { teamName: { $regex: `^\\s*${escaped}\\s*$`, $options: "i" } },
-      { "leader.email": { $regex: `^\\s*${escaped}\\s*$`, $options: "i" } },
-    ],
+  const candidates = await Registration.find({
+    "leader.email": { $regex: `^\\s*${escapeRegex(cleanEmail)}\\s*$`, $options: "i" },
   }).sort({ createdAt: -1 });
 
-  if (team) return team;
-
-  // Dedicated organizer demo alias for dexathon2k26@gmail.com
-  if (term.toLowerCase() === "dexathon2k26@gmail.com" || term.toLowerCase() === "dexathon2k26") {
-    const demoTeam = await Registration.findOne({ teamId: "DEX26001" });
-    if (demoTeam) return demoTeam;
-  }
-
-  // 2. Normalized (strip spaces, dashes, underscores)
-  const cleanTerm = term.replace(/[\s\-_]/g, "");
-  if (cleanTerm) {
-    const escapedClean = escapeRegex(cleanTerm);
-    team = await Registration.findOne({
-      $or: [
-        { teamId: { $regex: `^\\s*${escapedClean}\\s*$`, $options: "i" } },
-        { registrationNumber: { $regex: `^\\s*${escapedClean}\\s*$`, $options: "i" } },
-      ],
-    }).sort({ createdAt: -1 });
-
-    if (team) return team;
-  }
-
-  // 3. Number extraction (handles DEX2601, DEX26001, DEX261, 01, 001, 1, REG-1, etc.)
-  // Handles inputs like "DEX2601", "DEX26001", "DEX-01", "01", "1", "REG-01", "REG001", "DEX26 1", "dex2602"
-  const numMatch = term.match(/^(?:dex(?:athon)?(?:26|2026)?|reg)?[\s\-_]*0*(\d+)$/i);
-  if (numMatch) {
-    const num = parseInt(numMatch[1], 10);
-    if (!isNaN(num) && num > 0) {
-      const padded3 = String(num).padStart(3, "0");
-      const padded2 = String(num).padStart(2, "0");
-      const padded4 = String(num).padStart(4, "0");
-      const rawNum = String(num);
-
-      const candidateTeamIds = [
-        new RegExp(`^DEX260*${rawNum}$`, "i"),
-        `DEX26${padded3}`,
-        `DEX26${padded2}`,
-        `DEX26${rawNum}`,
-        `DEX26${padded4}`,
-      ];
-
-      const candidateRegs = [
-        new RegExp(`^REG-?0*${rawNum}$`, "i"),
-        `REG-${padded3}`,
-        `REG-${padded2}`,
-        `REG-${rawNum}`,
-      ];
-
-      team = await Registration.findOne({
-        $or: [
-          { teamId: { $in: candidateTeamIds } },
-          { registrationNumber: { $in: candidateRegs } },
-        ],
-      }).sort({ createdAt: -1 });
-
-      if (team) return team;
-    }
-  }
-
-  // 4. Fuzzy / partial team name match
-  const escapedFuzzy = escapeRegex(term.replace(/\s+/g, " ").trim());
-  return Registration.findOne({
-    teamName: { $regex: escapedFuzzy, $options: "i" },
-  }).sort({ createdAt: -1 });
+  return candidates.find((team) => teamIdMatches(cleanTeamId, team.teamId)) || null;
 };
