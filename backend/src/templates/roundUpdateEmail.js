@@ -9,7 +9,7 @@ export const buildRoundUpdateEmail = (registration, rounds, portal) => {
   const d = { teamName: registration.teamName?.trim() || "", leaderName: registration.leader?.name?.trim() || "Team Head", leaderEmail: registration.leader?.email?.trim() || "" };
   const e = Object.fromEntries(Object.entries(d).map(([key, value]) => [key, escapeHtml(value)]));
   const visibleRounds = notSelected ? ROUND_KEYS.slice(0, ROUND_KEYS.findIndex((key) => rounds[key] === "NOT_SELECTED") + 1) : ROUND_KEYS;
-  const portalAccess = { email: d.leaderEmail, password: portal.password, loginUrl: portal.loginUrl };
+  const portalAccess = portal;
   const statusLine = (key) => `ROUND ${ROUND_INFO[key].number} — ${STATUS_LABELS[rounds[key]].toUpperCase()}`;
 
   const roundRows = visibleRounds.map((key) => `<tr><td style="padding:11px 0;border-bottom:1px solid ${LINE};font-family:${FONT};font-size:14px;font-weight:700;color:${INK};">ROUND ${ROUND_INFO[key].number}<div style="font-weight:400;font-size:12px;color:${MUTED};padding-top:2px;">${ROUND_INFO[key].title}</div></td>

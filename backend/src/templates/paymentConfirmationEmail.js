@@ -57,14 +57,14 @@ export const renderFooter = (escapedEmail) => `  <!-- Footer -->
 
 // Team Head Portal "Login Credentials" card, shared by the confirmation and round-update emails.
 // Pass raw (unescaped) values; this escapes them.
-export const renderPortalCredentials = ({ teamId, teamName, email, password, loginUrl }, { padding = "20px 40px 0" } = {}) => {
-  const userId = teamId || "DEX26001";
+// Every value comes from the recipient team's own record (see portalAccess in emailService) — no shared defaults.
+export const renderPortalCredentials = ({ teamId, teamName, leaderName, email, password, loginUrl }, { padding = "20px 40px 0" } = {}) => {
   const e = {
-    userId: escapeHtml(userId),
-    teamId: escapeHtml(teamId || userId),
+    userId: escapeHtml(teamId || ""),
     teamName: escapeHtml(teamName || ""),
+    leaderName: escapeHtml(leaderName || ""),
     email: escapeHtml(email || ""),
-    password: escapeHtml(password || "Dexathon@2026"),
+    password: escapeHtml(password || ""),
     loginUrl: escapeHtml(loginUrl || "")
   };
   const field = (title, value, mono = false) => `<tr><td style="padding:0 0 12px;">
@@ -78,9 +78,13 @@ export const renderPortalCredentials = ({ teamId, teamName, email, password, log
         <div style="font-family:${FONT};font-size:13px;line-height:20px;color:#b8c7dc;padding:6px 0 18px;">Access your team dashboard, submit documents, and view round progress using your credentials below:</div>
         <div style="font-family:${FONT};font-size:11px;line-height:14px;letter-spacing:2px;font-weight:800;color:${ORANGE};padding-bottom:12px;">LOGIN CREDENTIALS</div>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          ${e.teamName ? field("Team Name", e.teamName) : ""}
+          ${e.leaderName ? field("Team Head Name", e.leaderName) : ""}
+          ${field("Team Head Email (Login Email)", e.email)}
           ${field("User ID (Team ID)", e.userId, true)}
-          ${field("Password", e.password, true)}
+          ${field("Initial Password", e.password, true)}
         </table>
+        <div style="font-family:${FONT};font-size:12px;line-height:18px;color:#b8c7dc;padding:0 0 12px;">On the login page, enter your Team Head Email and use your Team ID as the password.</div>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:6px;"><tr>
           <td bgcolor="${ORANGE}" style="background:${ORANGE};"><a href="${e.loginUrl}" target="_blank" style="display:inline-block;padding:13px 26px;font-family:${FONT};font-size:13px;font-weight:800;letter-spacing:2px;color:#ffffff;text-decoration:none;">LOGIN TO TEAM PORTAL &rarr;</a></td>
         </tr></table>
@@ -90,19 +94,22 @@ export const renderPortalCredentials = ({ teamId, teamName, email, password, log
   </td></tr>`;
 };
 
-export const portalCredentialsText = ({ teamId, teamName, email, password, loginUrl }) => `TEAM LOGIN PORTAL
+export const portalCredentialsText = ({ teamId, teamName, leaderName, email, password, loginUrl }) => `TEAM LOGIN PORTAL
 Access your team dashboard using your credentials below:
 
 LOGIN CREDENTIALS
-User ID (Team ID): ${teamId || "DEX26001"}
-Password: ${password || "Dexathon@2026"}
-Login Portal: ${loginUrl}`;
+${teamName ? `Team Name: ${teamName}\n` : ""}${leaderName ? `Team Head Name: ${leaderName}\n` : ""}Team Head Email (Login Email): ${email}
+User ID (Team ID): ${teamId}
+Initial Password: ${password}
+Login Portal: ${loginUrl}
+
+On the login page, enter your Team Head Email and use your Team ID as the password.`;
 
 const detailCell = (title, value, extra = "") => `<td class="stack" valign="top" style="padding:16px 0 0;${extra}">${label(title)}<div style="font-family:${FONT};font-size:15px;line-height:22px;font-weight:700;color:${INK};padding-top:3px;">${value}</div></td>`;
 
 export const buildPaymentConfirmationEmail = (registration, { portal = null } = {}) => {
   const d = getDetails(registration);
-  const portalAccess = portal ? { teamId: d.teamId, teamName: d.teamName, email: d.leaderEmail, password: portal.password || "Dexathon@2026", loginUrl: portal.loginUrl } : null;
+  const portalAccess = portal;
   const e = Object.fromEntries(Object.entries(d).map(([key, value]) => [key, escapeHtml(value)]));
 
   const html = `<!DOCTYPE html>
@@ -325,7 +332,7 @@ export const buildTeamConfirmationEmail = (registration, { portal = null } = {})
     : [];
   const registeredAt = formatDate(registration.importedAt || registration.createdAt || new Date());
 
-  const portalAccess = portal ? { teamId, teamName, email: leaderEmail, password: portal.password || "Dexathon@2026", loginUrl: portal.loginUrl } : null;
+  const portalAccess = portal;
   const e = {
     leaderName: escapeHtml(leaderName),
     leaderEmail: escapeHtml(leaderEmail),

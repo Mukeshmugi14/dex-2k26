@@ -42,7 +42,7 @@ export const buildRoundResultEmail = (registration, round, decision, portal) => 
   const e = Object.fromEntries(Object.entries(d).map(([key, value]) => [key, escapeHtml(value)]));
   const accent = selected ? ORANGE : BLUE;
   const row = (title, value) => `<tr><td style="padding:11px 0;border-bottom:1px solid ${LINE};">${label(title)}<div style="font-family:${FONT};font-size:15px;line-height:22px;font-weight:700;color:${INK};padding-top:3px;">${value}</div></td></tr>`;
-  const portalAccess = { email: d.leaderEmail, password: portal.password, loginUrl: portal.loginUrl };
+  const portalAccess = portal;
 
   const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>DEXATHON 2026 — ${w.heading}</title>

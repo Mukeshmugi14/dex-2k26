@@ -4,11 +4,24 @@ import { buildPaymentConfirmationEmail, buildTeamConfirmationEmail, POSTER_CID, 
 import { buildSelectionEmail } from "../templates/resultEmail.js";
 import { buildRoundResultEmail } from "../templates/roundResultEmail.js";
 import { buildRoundUpdateEmail } from "../templates/roundUpdateEmail.js";
-import { getTeamLoginUrl, getTeamPortalPassword } from "./submissionService.js";
+import { getTeamLoginUrl } from "./submissionService.js";
 import { CONNECTION_ERRORS, lastSmtpProbe, probeSmtpPorts, sendWithSmtp, smtpConfigured, smtpUser, verifySmtp } from "./smtpTransport.js";
 
-// Team Head Portal login details included in team emails (the email address itself comes from each team record).
-const portalAccess = () => ({ loginUrl: getTeamLoginUrl(), password: getTeamPortalPassword() });
+// Team Login Portal credentials for ONE team, read from that team's own record:
+// login = Team Head email, User ID = the team's Team ID, initial password = that same Team ID
+// (the login check compares against the stored Team ID, so no password is stored separately).
+const portalAccess = (registration) => {
+  const teamId = String(registration?.teamId || "").trim();
+  if (!teamId) throw Object.assign(new Error("This team has no Team ID yet."), { code: "ENOTEAMID" });
+  return {
+    teamId,
+    teamName: registration.teamName?.trim() || "",
+    leaderName: registration.leader?.name?.trim() || "",
+    email: registration.leader?.email?.trim() || "",
+    password: teamId,
+    loginUrl: getTeamLoginUrl(),
+  };
+};
 
 export const emailProvider = () => "gmail-smtp";
 
@@ -36,7 +49,7 @@ const sendEmail = async ({ type, to, subject, html, text, attachments }) => {
 // Preview team registration confirmation email without sending
 export const previewTeamConfirmationEmail = (registration) => {
   const to = registration?.leader?.email?.trim() || "";
-  const { html, text } = buildTeamConfirmationEmail(registration, { portal: portalAccess() });
+  const { html, text } = buildTeamConfirmationEmail(registration, { portal: portalAccess(registration) });
   return {
     to,
     subject: "DEXATHON 2026 — Registration Confirmed ✓",
@@ -48,7 +61,7 @@ export const previewTeamConfirmationEmail = (registration) => {
 // Send team registration confirmation email (reusing existing email template with dynamic team variables)
 export const sendTeamConfirmationEmail = async (registration) => {
   const to = getRecipientEmail(registration);
-  const { html, text } = buildTeamConfirmationEmail(registration, { portal: portalAccess() });
+  const { html, text } = buildTeamConfirmationEmail(registration, { portal: portalAccess(registration) });
   return sendEmail({
     type: "team-registration-confirmation",
     to,
@@ -62,7 +75,7 @@ export const sendTeamConfirmationEmail = async (registration) => {
 // Payment confirmation (admin verified the payment). Resolves { sent, messageId } only after Gmail accepted it.
 export const sendPaymentConfirmationEmail = async (registration) => {
   const to = getRecipientEmail(registration);
-  const { html, text } = buildPaymentConfirmationEmail(registration, { portal: portalAccess() });
+  const { html, text } = buildPaymentConfirmationEmail(registration, { portal: portalAccess(registration) });
   return sendEmail({
     type: "payment-confirmation",
     to,
@@ -98,14 +111,14 @@ export const sendSelectionEmail = async (registration) => {
 // Round progress update. Returns true only when Gmail accepted it.
 export const sendRoundUpdateEmail = async (registration, rounds) => {
   const to = getRecipientEmail(registration);
-  const { subject, html, text } = buildRoundUpdateEmail(registration, rounds, portalAccess());
+  const { subject, html, text } = buildRoundUpdateEmail(registration, rounds, portalAccess(registration));
   return (await sendEmail({ type: "round-update", to, subject, html, text })).sent;
 };
 
 // Round result (SELECTED / REJECTED for one round). Returns true only when Gmail accepted it.
 export const sendRoundResultEmail = async (registration, round, decision) => {
   const to = getRecipientEmail(registration);
-  const { subject, html, text } = buildRoundResultEmail(registration, round, decision, portalAccess());
+  const { subject, html, text } = buildRoundResultEmail(registration, round, decision, portalAccess(registration));
   return (await sendEmail({ type: `round${round}-${String(decision).toLowerCase()}`, to, subject, html, text })).sent;
 };
 export const sendRound1SelectionEmail = (registration) => sendRoundResultEmail(registration, 1, "SELECTED");
@@ -127,6 +140,7 @@ export const describeEmailError = (error) => {
   const response = Number(error?.responseCode) || 0;
   const text = String(error?.message || "");
   if (code === "ENORECIPIENT") return "This team has no Team Head email address.";
+  if (code === "ENOTEAMID") return "This team has no Team ID, so its login credentials cannot be sent.";
   if (code === "ESMTPCONFIG") return /Gmail address/.test(text)
     ? "Email is not configured: EMAIL_USER must be a Gmail address."
     : "Email is not configured: set EMAIL_USER and EMAIL_PASSWORD in the backend environment.";
