@@ -132,6 +132,12 @@
 .team-portal .team-upload-actions{display:flex;flex-wrap:wrap;gap:0 10px}
 .team-portal .team-upload-action{background:var(--tp-orange)}.team-portal .team-upload-action:hover{background:#ff7d33}
 .team-portal .team-action:disabled{opacity:.6;cursor:not-allowed}
+.team-portal .team-action-secondary{background:#fff;color:var(--tp-ink);box-shadow:inset 0 0 0 1.5px var(--tp-line)}.team-portal .team-action-secondary:hover{background:#f4f6fa}
+.team-portal .team-action-danger{background:#fff;color:#d92d20;box-shadow:inset 0 0 0 1.5px #f3c3be}.team-portal .team-action-danger:hover{background:#fef3f2}
+.team-portal .team-action-secondary:disabled,.team-portal .team-action-danger:disabled{background:#f4f6fa;color:#98a2b3;box-shadow:inset 0 0 0 1.5px var(--tp-line)}
+.team-portal .team-area-round2>.team-upload-actions>.team-r2-action{margin-top:14px}
+.team-portal .team-edit-note{display:block;margin-top:12px;color:var(--tp-muted);font-size:12px}
+.team-portal .team-edit-closed{margin:12px 0 0;padding:10px 12px;border-radius:8px;background:#fff6ed;color:#9a3412;font-size:13px;font-weight:600;line-height:1.45}
 .team-portal .team-upload-progress{position:relative;height:30px;margin-top:14px;overflow:hidden;border-radius:8px;background:#eef2f8}
 .team-portal .team-upload-progress i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,var(--tp-blue),#5fa2ff);transition:width .2s}
 .team-portal .team-upload-progress span{position:relative;display:grid;place-items:center;height:100%;color:var(--tp-ink);font-size:12px;font-weight:800}

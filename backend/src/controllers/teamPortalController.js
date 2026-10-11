@@ -4,7 +4,7 @@ import Registration from "../models/Registration.js";
 import { signTeamToken } from "../middleware/teamAuthMiddleware.js";
 import { currentRound, readRounds, ROUND_INFO } from "../services/roundService.js";
 import { deriveSubmissionStatus, getTeamPortalPassword, openPdfStream } from "../services/submissionService.js";
-import { PROTOTYPE_CATEGORIES, prototypeView, validatePrototypeUrl } from "../services/prototypeService.js";
+import { getRound2EditDeadline, PROTOTYPE_CATEGORIES, prototypeView, ROUND2_EDIT_CLOSED_MESSAGE, validatePrototypeUrl } from "../services/prototypeService.js";
 
 import { findTeamByLeaderCredentials } from "../services/teamIdService.js";
 
@@ -118,6 +118,53 @@ export const submitPrototype = async (request, response) => {
   const updated = await Registration.findById(team._id);
   console.log(`Round 2 prototype submitted for ${team.teamId} (${category}).`);
   return response.status(201).json({ success: true, message: "Round 2 prototype submitted successfully.", prototype: prototypeView(updated, readRounds(updated)) });
+};
+
+// Round 2 edit/delete: only the logged-in team's own submission, and only until the edit deadline (server time).
+const loadEditablePrototype = async (request, response) => {
+  const team = await loadOwnTeam(request);
+  if (!team) { response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." }); return null; }
+  const view = prototypeView(team, readRounds(team));
+  if (!view.submitted) { response.status(404).json({ success: false, message: "Your team has not submitted a Round 2 prototype yet." }); return null; }
+  if (!view.eligible) { response.status(403).json({ success: false, message: "Round 2 submission is not available for your team." }); return null; }
+  if (Date.now() > getRound2EditDeadline().getTime()) { response.status(403).json({ success: false, editClosed: true, message: ROUND2_EDIT_CLOSED_MESSAGE }); return null; }
+  return team;
+};
+
+export const updatePrototype = async (request, response) => {
+  const team = await loadEditablePrototype(request, response);
+  if (!team) return;
+
+  const category = typeof request.body.category === "string" ? request.body.category.trim().toUpperCase() : "";
+  if (!PROTOTYPE_CATEGORIES.includes(category)) return response.status(400).json({ success: false, message: "Please choose Software or Hardware." });
+  const { url, error } = validatePrototypeUrl(category, request.body.url);
+  if (error) return response.status(400).json({ success: false, message: error });
+
+  // Atomic: only updates the submission this request saw, so a parallel delete is never silently undone.
+  const result = await Registration.updateOne(
+    { _id: team._id, "prototypeSubmission.url": team.prototypeSubmission.url },
+    { $set: { "prototypeSubmission.category": category, "prototypeSubmission.url": url, "prototypeSubmission.submittedAt": new Date() } },
+  );
+  if (!result.matchedCount) return response.status(409).json({ success: false, message: "Your Round 2 submission changed. Please refresh and try again." });
+
+  const updated = await Registration.findById(team._id);
+  console.log(`Round 2 prototype updated for ${team.teamId} (${category}).`);
+  return response.json({ success: true, message: "Round 2 prototype updated successfully.", prototype: prototypeView(updated, readRounds(updated)) });
+};
+
+export const deletePrototype = async (request, response) => {
+  const team = await loadEditablePrototype(request, response);
+  if (!team) return;
+
+  const result = await Registration.updateOne(
+    { _id: team._id, "prototypeSubmission.url": team.prototypeSubmission.url },
+    { $unset: { "prototypeSubmission.category": "", "prototypeSubmission.url": "", "prototypeSubmission.submittedAt": "" } },
+  );
+  if (!result.modifiedCount) return response.status(409).json({ success: false, message: "Your Round 2 submission changed. Please refresh and try again." });
+
+  const updated = await Registration.findById(team._id);
+  console.log(`Round 2 prototype deleted for ${team.teamId}.`);
+  return response.json({ success: true, message: "Round 2 prototype submission deleted.", prototype: prototypeView(updated, readRounds(updated)) });
 };
 
 export const streamOwnPdf = async (request, response) => {

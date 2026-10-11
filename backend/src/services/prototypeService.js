@@ -9,6 +9,15 @@ export const getRound2Deadline = () => {
   return Number.isNaN(configured.getTime()) ? new Date(DEFAULT_DEADLINE) : configured;
 };
 
+// Teams may edit or delete a submitted prototype until 25 Oct 2026, 11:59 PM IST; from 26 Oct 12:00 AM IST it is locked.
+// Override with ROUND2_EDIT_DEADLINE (ISO date with offset) if it moves.
+const DEFAULT_EDIT_DEADLINE = "2026-10-25T23:59:59.999+05:30";
+export const getRound2EditDeadline = () => {
+  const configured = new Date(process.env.ROUND2_EDIT_DEADLINE || DEFAULT_EDIT_DEADLINE);
+  return Number.isNaN(configured.getTime()) ? new Date(DEFAULT_EDIT_DEADLINE) : configured;
+};
+export const ROUND2_EDIT_CLOSED_MESSAGE = "The Round 2 submission editing deadline (25 October 2026, 11:59 PM IST) has passed. Your submission can no longer be edited or deleted.";
+
 const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "www.youtu.be"]);
 const isYouTubeVideo = (url) => {
   const host = url.hostname.toLowerCase();
@@ -42,7 +51,10 @@ export const prototypeView = (registration, rounds) => {
   const eligible = rounds.round1 !== "NOT_SELECTED";
   const open = eligible && Date.now() <= deadline.getTime();
   const submitted = Boolean(submission.url);
+  const editDeadline = getRound2EditDeadline();
   return {
+    editable: submitted && eligible && Date.now() <= editDeadline.getTime(),
+    editDeadline,
     submitted,
     category: submission.category || null,
     url: submission.url || null,

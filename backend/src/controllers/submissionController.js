@@ -61,6 +61,62 @@ export const receiveOwnPdf = async (request, response, next) => {
   });
 };
 
+// Round 1 Edit: the logged-in team replaces its own existing PDF (same PDF-only / 15 MB rules as the first upload).
+export const receiveOwnPdfReplacement = async (request, response, next) => {
+  const registration = await Registration.findById(request.teamRegistrationId);
+  if (!registration) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
+  if (!registration.pdfSubmission?.fileId) return response.status(404).json({ success: false, message: "Your team has not submitted a PDF yet." });
+  request.registration = registration;
+  upload(request, response, (error) => {
+    if (!error) return next();
+    if (error.code === "LIMIT_FILE_SIZE") return response.status(413).json({ success: false, message: FILE_TOO_LARGE_MESSAGE });
+    return response.status(400).json({ success: false, message: error.code ? "Upload a single PDF file." : error.message });
+  });
+};
+
+export const replaceOwnPdf = async (request, response) => {
+  const { registration, file } = request;
+  if (!file) return response.status(400).json({ success: false, message: "Choose a PDF file to upload." });
+  if (!isPdfBuffer(file.buffer)) return response.status(400).json({ success: false, message: INVALID_PDF_MESSAGE });
+
+  const previousFileId = registration.pdfSubmission.fileId;
+  const fileName = safePdfFileName(file.originalname);
+  const fileId = await storePdf(file.buffer, fileName, registration._id);
+
+  // Atomic: swap only the file this request saw, so a parallel edit/delete never leaves two submissions.
+  const result = await Registration.updateOne(
+    { _id: registration._id, "pdfSubmission.fileId": previousFileId },
+    { $set: { "pdfSubmission.fileId": fileId, "pdfSubmission.fileName": fileName, "pdfSubmission.fileSize": file.size, "pdfSubmission.submittedAt": new Date(), "pdfSubmission.status": "Submitted" } },
+  );
+  if (!result.modifiedCount) {
+    await deletePdf(fileId);
+    return response.status(409).json({ success: false, message: "Your PDF submission changed. Please refresh and try again." });
+  }
+  await deletePdf(previousFileId);
+
+  const updated = await Registration.findById(registration._id);
+  console.log(`PDF submission replaced for ${registration._id} (${file.size} bytes).`);
+  return response.json({ success: true, message: "Round 1 PDF updated successfully.", ...toPublicView(updated), status: deriveSubmissionStatus(updated) });
+};
+
+// Round 1 Delete: removes the logged-in team's own PDF so it can upload again.
+export const deleteOwnPdf = async (request, response) => {
+  const registration = await Registration.findById(request.teamRegistrationId);
+  if (!registration) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
+  const fileId = registration.pdfSubmission?.fileId;
+  if (!fileId) return response.status(404).json({ success: false, message: "Your team has not submitted a PDF yet." });
+
+  const result = await Registration.updateOne(
+    { _id: registration._id, "pdfSubmission.fileId": fileId },
+    { $set: { "pdfSubmission.status": "Pending" }, $unset: { "pdfSubmission.fileId": "", "pdfSubmission.fileName": "", "pdfSubmission.fileSize": "", "pdfSubmission.submittedAt": "" } },
+  );
+  if (!result.modifiedCount) return response.status(409).json({ success: false, message: "Your PDF submission changed. Please refresh and try again." });
+  await deletePdf(fileId);
+
+  console.log(`PDF submission deleted for ${registration._id}.`);
+  return response.json({ success: true, message: "Round 1 PDF submission deleted." });
+};
+
 export const submitPdf = async (request, response) => {
   const { registration, file } = request;
   if (!file) return response.status(400).json({ success: false, message: "Choose a PDF file to upload." });

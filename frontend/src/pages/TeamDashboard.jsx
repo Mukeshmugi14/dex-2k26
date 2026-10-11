@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Check, Circle, Clock3, Cpu, ExternalLink, Eye, FileText, Link2, LogOut, Monitor, RefreshCw, Rocket, Upload, Users, X } from "lucide-react";
+import { Check, Circle, Clock3, Cpu, ExternalLink, Eye, FileText, Link2, LogOut, Monitor, Pencil, RefreshCw, Rocket, Trash2, Upload, Users, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TeamPortal.css";
@@ -111,6 +111,12 @@ export default function TeamDashboard() {
   const [prototypeError, setPrototypeError] = useState("");
   const [prototypeSaving, setPrototypeSaving] = useState(false);
   const [prototypeJustSubmitted, setPrototypeJustSubmitted] = useState(false);
+  const [pdfEditing, setPdfEditing] = useState(false);
+  const [pdfDeleting, setPdfDeleting] = useState(false);
+  const [pdfNotice, setPdfNotice] = useState("");
+  const [prototypeEditing, setPrototypeEditing] = useState(false);
+  const [prototypeDeleting, setPrototypeDeleting] = useState(false);
+  const [prototypeNotice, setPrototypeNotice] = useState("");
   const fileInputRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
@@ -168,19 +174,38 @@ export default function TeamDashboard() {
 
   const uploadPdf = async () => {
     if (!selectedPdf || uploading) return;
-    setUploading(true); setUploadProgress(0); setPdfError("");
+    setUploading(true); setUploadProgress(0); setPdfError(""); setPdfNotice("");
     try {
       const formData = new FormData();
       formData.append("pdf", selectedPdf);
-      await axios.post(`${API_URL}/team/me/pdf`, formData, { headers: { Authorization: `Bearer ${getTeamToken()}` }, onUploadProgress: (event) => { if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100)); } });
+      // Edit replaces the existing PDF; otherwise this is the first submission.
+      await axios({ method: pdfEditing ? "put" : "post", url: `${API_URL}/team/me/pdf`, data: formData, headers: { Authorization: `Bearer ${getTeamToken()}` }, onUploadProgress: (event) => { if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100)); } });
       setSelectedPdf(null);
-      setJustSubmitted(true);
+      if (pdfEditing) { setPdfEditing(false); setJustSubmitted(false); setPdfNotice("✓ Round 1 PDF Updated Successfully"); } else setJustSubmitted(true);
       await load();
     } catch (requestError) {
       if (requestError.response?.status === 401) { logout(); return; }
-      if (requestError.response?.status === 409) { setSelectedPdf(null); await load(); }
+      if ([404, 409].includes(requestError.response?.status)) { setSelectedPdf(null); setPdfEditing(false); await load(); }
       setPdfError(requestError.response?.data?.message || "Unable to upload your PDF. Please check your connection and try again.");
     } finally { setUploading(false); }
+  };
+
+  const startPdfEdit = () => { setPdfEditing(true); setSelectedPdf(null); setPdfError(""); setPdfNotice(""); fileInputRef.current?.click(); };
+  const cancelPdfEdit = () => { setPdfEditing(false); setSelectedPdf(null); setPdfError(""); };
+
+  const deleteSubmittedPdf = async () => {
+    if (pdfDeleting || !window.confirm("Delete your Round 1 PDF submission? You will need to upload a PDF again.")) return;
+    setPdfDeleting(true); setPdfError(""); setPdfNotice("");
+    try {
+      await axios.delete(`${API_URL}/team/me/pdf`, { headers: { Authorization: `Bearer ${getTeamToken()}` } });
+      setJustSubmitted(false); setPdfEditing(false); setSelectedPdf(null);
+      setPdfNotice("Round 1 PDF submission deleted.");
+      await load();
+    } catch (requestError) {
+      if (requestError.response?.status === 401) { logout(); return; }
+      if ([404, 409].includes(requestError.response?.status)) await load();
+      setPdfError(requestError.response?.data?.message || "Unable to delete your PDF. Please try again.");
+    } finally { setPdfDeleting(false); }
   };
 
   const choosePrototypeType = (type) => { setPrototypeType(type); setPrototypeUrl(""); setPrototypeError(""); };
@@ -189,17 +214,46 @@ export default function TeamDashboard() {
     event.preventDefault();
     if (prototypeSaving) return;
     if (!prototypeUrl.trim()) { setPrototypeError(`Please enter your ${PROTOTYPE_TYPES[prototypeType].field.toLowerCase()}.`); return; }
-    setPrototypeSaving(true); setPrototypeError("");
+    setPrototypeSaving(true); setPrototypeError(""); setPrototypeNotice("");
     try {
-      await axios.post(`${API_URL}/team/me/prototype`, { category: prototypeType, url: prototypeUrl.trim() }, { headers: { Authorization: `Bearer ${getTeamToken()}` } });
-      setPrototypeJustSubmitted(true);
+      const body = { category: prototypeType, url: prototypeUrl.trim() };
+      const headers = { Authorization: `Bearer ${getTeamToken()}` };
+      if (prototypeEditing) {
+        await axios.put(`${API_URL}/team/me/prototype`, body, { headers });
+        setPrototypeEditing(false); setPrototypeJustSubmitted(false); setPrototypeType("");
+        setPrototypeNotice("✓ Round 2 Prototype Updated Successfully");
+      } else {
+        await axios.post(`${API_URL}/team/me/prototype`, body, { headers });
+        setPrototypeJustSubmitted(true);
+      }
       setPrototypeUrl("");
       await load();
     } catch (requestError) {
       if (requestError.response?.status === 401) { logout(); return; }
-      if ([403, 409].includes(requestError.response?.status)) await load();
+      if ([403, 404, 409].includes(requestError.response?.status)) { if (prototypeEditing && requestError.response?.status !== 409) setPrototypeEditing(false); await load(); }
       setPrototypeError(requestError.response?.data?.message || "Unable to submit your prototype. Please check your connection and try again.");
     } finally { setPrototypeSaving(false); }
+  };
+
+  const startPrototypeEdit = () => {
+    setPrototypeEditing(true); setPrototypeType(data.prototype.category || ""); setPrototypeUrl(data.prototype.url || "");
+    setPrototypeError(""); setPrototypeNotice("");
+  };
+  const cancelPrototypeEdit = () => { setPrototypeEditing(false); setPrototypeType(""); setPrototypeUrl(""); setPrototypeError(""); };
+
+  const deleteSubmittedPrototype = async () => {
+    if (prototypeDeleting || !window.confirm("Delete your Round 2 prototype submission?")) return;
+    setPrototypeDeleting(true); setPrototypeError(""); setPrototypeNotice("");
+    try {
+      await axios.delete(`${API_URL}/team/me/prototype`, { headers: { Authorization: `Bearer ${getTeamToken()}` } });
+      setPrototypeJustSubmitted(false); setPrototypeEditing(false); setPrototypeType(""); setPrototypeUrl("");
+      setPrototypeNotice("Round 2 prototype submission deleted.");
+      await load();
+    } catch (requestError) {
+      if (requestError.response?.status === 401) { logout(); return; }
+      if ([403, 404, 409].includes(requestError.response?.status)) await load();
+      setPrototypeError(requestError.response?.data?.message || "Unable to delete your prototype. Please try again.");
+    } finally { setPrototypeDeleting(false); }
   };
 
   const header = <header className="team-topbar">
@@ -213,6 +267,20 @@ export default function TeamDashboard() {
   const prototypeInfo = prototype?.category ? PROTOTYPE_TYPES[prototype.category] : null;
   const chosenType = PROTOTYPE_TYPES[prototypeType] || null;
   const prototypeStatus = !prototype ? null : prototype.submitted ? <span className="team-pill ok">✓ Submitted</span> : prototype.open ? <span className="team-pill open">● Submission Open</span> : <span className="team-pill closed">✕ Not Submitted</span>;
+  // Prototype type choice + link form, shared by a new submission and an edit.
+  const prototypeForm = <>
+    <div className="team-r2-choice" role="radiogroup" aria-label="Prototype type">
+      {Object.entries(PROTOTYPE_TYPES).map(([key, type]) => <button type="button" role="radio" aria-checked={prototypeType === key} className={prototypeType === key ? "is-active" : ""} key={key} onClick={() => choosePrototypeType(key)} disabled={prototypeSaving}><type.icon size={20} /><span><b>{type.label.toUpperCase()}</b><small>{type.hint}</small></span></button>)}
+    </div>
+    {chosenType ? <form className="team-r2-form" onSubmit={submitPrototype} noValidate>
+      <div className="team-r2-heading"><b>ROUND 2 — PROTOTYPE SUBMISSION</b><strong>{chosenType.title}</strong><small>{chosenType.help}</small></div>
+      <label><span>{chosenType.field}</span><input type="url" inputMode="url" autoComplete="url" placeholder={chosenType.placeholder} value={prototypeUrl} onChange={(event) => { setPrototypeUrl(event.target.value); setPrototypeError(""); }} disabled={prototypeSaving} /></label>
+      <div className="team-upload-actions">
+        <button type="submit" className="team-action team-r2-action" disabled={prototypeSaving || !prototypeUrl.trim()}>{prototypeSaving ? (prototypeEditing ? "Saving…" : "Submitting…") : prototypeEditing ? "SAVE CHANGES →" : chosenType.button}</button>
+        {prototypeEditing ? <button type="button" className="team-action team-action-secondary" onClick={cancelPrototypeEdit} disabled={prototypeSaving}><X size={16} /> Cancel</button> : null}
+      </div>
+    </form> : prototypeEditing ? <div className="team-upload-actions"><button type="button" className="team-action team-action-secondary" onClick={cancelPrototypeEdit}><X size={16} /> Cancel</button></div> : null}
+  </>;
   const currentInfo = STATUS[current.status] || STATUS.UPCOMING;
   const notSelected = current.status === "NOT_SELECTED";
   const roundOne = rounds.find((round) => round.number === 1);
@@ -292,13 +360,29 @@ export default function TeamDashboard() {
             <p>Download the official PPT template → Prepare your presentation → Convert to PDF → Upload PDF</p>
             <a href="/Dexathon-PPT-Template-2026.pptx" download>Download / View Official Template</a>
           </div>
+          <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" hidden onChange={(event) => choosePdf(event.target.files?.[0])} />
           {submission.submitted ? <>
             {justSubmitted ? <p className="team-pdf-success" role="status">✓ Round 1 PDF Submitted Successfully</p> : null}
+            {pdfNotice ? <p className="team-pdf-success" role="status">{pdfNotice}</p> : null}
             <div className="team-pdf-file"><FileText size={22} /><div><b>{submission.fileName}</b><span>{submission.fileSize ? `${formatSize(submission.fileSize)} · ` : ""}Submitted {formatDate(submission.submittedAt)}</span></div></div>
             <div className="team-pdf-status"><span>Round 1 PDF Status</span><span className="team-pill ok">✓ PDF Submitted</span></div>
-            <button type="button" className="team-action" onClick={viewPdf}><Eye size={16} /> View PDF</button>
+            {pdfEditing ? <>
+              <small className="team-edit-note">Replace your PDF · PDF format only · Maximum 15 MB</small>
+              {selectedPdf ? <div className="team-pdf-file"><FileText size={22} /><div><b>{selectedPdf.name}</b><span>{formatSize(selectedPdf.size)} · Ready to replace</span></div></div> : null}
+              {uploading ? <div className="team-upload-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}><i style={{ width: `${uploadProgress}%` }} /><span>Uploading… {uploadProgress}%</span></div> : null}
+              <div className="team-upload-actions">
+                <button type="button" className="team-action" onClick={() => fileInputRef.current?.click()} disabled={uploading}><Upload size={16} /> {selectedPdf ? "Choose Another PDF" : "Choose New PDF"}</button>
+                {selectedPdf ? <button type="button" className="team-action team-upload-action" onClick={uploadPdf} disabled={uploading}><Upload size={16} /> {uploading ? "Saving…" : "Save New PDF"}</button> : null}
+                <button type="button" className="team-action team-action-secondary" onClick={cancelPdfEdit} disabled={uploading}><X size={16} /> Cancel</button>
+              </div>
+            </> : <div className="team-upload-actions">
+              <button type="button" className="team-action" onClick={viewPdf}><Eye size={16} /> View PDF</button>
+              <button type="button" className="team-action team-action-secondary" onClick={startPdfEdit} disabled={pdfDeleting}><Pencil size={16} /> Edit</button>
+              <button type="button" className="team-action team-action-danger" onClick={deleteSubmittedPdf} disabled={pdfDeleting}><Trash2 size={16} /> {pdfDeleting ? "Deleting…" : "Delete"}</button>
+            </div>}
             {pdfError ? <p className="team-inline-error">{pdfError}</p> : null}
           </> : <>
+            {pdfNotice ? <p className="team-pdf-success" role="status">{pdfNotice}</p> : null}
             <div className="team-pdf-warning" role="note">
               <span>⚠️ ROUND 1 SUBMISSION — PDF ONLY — MAX 15 MB</span>
               <strong>ROUND 1 — PDF SUBMISSION</strong>
@@ -306,7 +390,6 @@ export default function TeamDashboard() {
               <small>Maximum File Size: 15 MB · PPT / PPTX files are not accepted</small>
             </div>
             <div className="team-pdf-status"><span>Round 1 PDF Status</span><span className="team-pill open">● Submission Open</span></div>
-            <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" hidden onChange={(event) => choosePdf(event.target.files?.[0])} />
             {selectedPdf ? <div className="team-pdf-file"><FileText size={22} /><div><b>{selectedPdf.name}</b><span>{formatSize(selectedPdf.size)} · Ready to submit</span></div></div> : null}
             {uploading ? <div className="team-upload-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}><i style={{ width: `${uploadProgress}%` }} /><span>Uploading… {uploadProgress}%</span></div> : null}
             <div className="team-upload-actions">
@@ -322,27 +405,35 @@ export default function TeamDashboard() {
           <span className="team-stage-badge is-round2">STAGE 2 · ROUND 2</span>
           <h2 id="team-round2-title"><Rocket size={17} /> Round 2 — Prototype Submission</h2>
           {!prototype ? <p className="team-muted">Round 2 prototype submission will be available soon.</p>
+            : prototype.submitted && prototypeEditing && prototype.editable ? <>
+              <p className="team-r2-intro">Edit your prototype submission. Changes allowed until <b>{formatDeadline(prototype.editDeadline)}</b>.</p>
+              {prototypeForm}
+              {prototypeError ? <p className="team-inline-error team-pdf-error" role="alert">{prototypeError}</p> : null}
+            </>
             : prototype.submitted ? <>
               {prototypeJustSubmitted ? <p className="team-pdf-success" role="status">✓ Round 2 Prototype Submitted Successfully</p> : null}
+              {prototypeNotice ? <p className="team-pdf-success" role="status">{prototypeNotice}</p> : null}
               <div className="team-r2-heading"><b>ROUND 2 — PROTOTYPE SUBMISSION</b><strong>{prototypeInfo?.title}</strong></div>
               <div className="team-r2-link"><Link2 size={20} /><div><b>{prototypeInfo?.field}</b><a href={prototype.url} target="_blank" rel="noopener noreferrer">{prototype.url}</a><span>Submitted {formatDate(prototype.submittedAt)}</span></div></div>
               <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
-              <a className="team-action team-r2-action" href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} /> {prototypeInfo?.view || "Open Link"}</a>
+              <div className="team-upload-actions">
+                <a className="team-action team-r2-action" href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} /> {prototypeInfo?.view || "Open Link"}</a>
+                <button type="button" className="team-action team-action-secondary" onClick={startPrototypeEdit} disabled={!prototype.editable || prototypeDeleting}><Pencil size={16} /> Edit</button>
+                <button type="button" className="team-action team-action-danger" onClick={deleteSubmittedPrototype} disabled={!prototype.editable || prototypeDeleting}><Trash2 size={16} /> {prototypeDeleting ? "Deleting…" : "Delete"}</button>
+              </div>
+              {prototype.editable
+                ? <small className="team-edit-note">You can edit or delete this submission until {formatDeadline(prototype.editDeadline)}.</small>
+                : <p className="team-edit-closed" role="note">The Round 2 submission editing deadline ({formatDeadline(prototype.editDeadline)}) has passed. Your submission can no longer be edited or deleted.</p>}
+              {prototypeError ? <p className="team-inline-error team-pdf-error" role="alert">{prototypeError}</p> : null}
             </>
             : !prototype.open ? <>
               <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
               <p className="team-muted">{prototype.eligible ? `Round 2 prototype submission closed on ${formatDeadline(prototype.deadline)}.` : "Round 2 submission is not available for your team."}</p>
             </>
             : <>
+              {prototypeNotice ? <p className="team-pdf-success" role="status">{prototypeNotice}</p> : null}
               <p className="team-r2-intro">Choose your prototype type. Submission closes on <b>{formatDeadline(prototype.deadline)}</b>.</p>
-              <div className="team-r2-choice" role="radiogroup" aria-label="Prototype type">
-                {Object.entries(PROTOTYPE_TYPES).map(([key, type]) => <button type="button" role="radio" aria-checked={prototypeType === key} className={prototypeType === key ? "is-active" : ""} key={key} onClick={() => choosePrototypeType(key)} disabled={prototypeSaving}><type.icon size={20} /><span><b>{type.label.toUpperCase()}</b><small>{type.hint}</small></span></button>)}
-              </div>
-              {chosenType ? <form className="team-r2-form" onSubmit={submitPrototype} noValidate>
-                <div className="team-r2-heading"><b>ROUND 2 — PROTOTYPE SUBMISSION</b><strong>{chosenType.title}</strong><small>{chosenType.help}</small></div>
-                <label><span>{chosenType.field}</span><input type="url" inputMode="url" autoComplete="url" placeholder={chosenType.placeholder} value={prototypeUrl} onChange={(event) => { setPrototypeUrl(event.target.value); setPrototypeError(""); }} disabled={prototypeSaving} /></label>
-                <button type="submit" className="team-action team-r2-action" disabled={prototypeSaving || !prototypeUrl.trim()}>{prototypeSaving ? "Submitting…" : chosenType.button}</button>
-              </form> : null}
+              {prototypeForm}
               <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
               {prototypeError ? <p className="team-inline-error team-pdf-error" role="alert">{prototypeError}</p> : null}
             </>}
