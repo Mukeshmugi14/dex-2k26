@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Check, Circle, Clock3, Cpu, ExternalLink, Eye, FileText, Link2, LogOut, Monitor, Pencil, RefreshCw, Rocket, Trash2, Upload, Users, X } from "lucide-react";
+import { Check, Circle, Clock3, Cpu, ExternalLink, Eye, FileText, Link2, LogOut, Monitor, Pencil, Plus, RefreshCw, Rocket, Trash2, Upload, Users, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TeamPortal.css";
@@ -31,10 +31,11 @@ const hasPdfSignature = async (file) => {
   try { return new TextDecoder().decode(await file.slice(0, 5).arrayBuffer()) === "%PDF-"; } catch { return true; }
 };
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }) : "");
-// Team details edit form: what the Team Head may change (email, Team ID and theme stay as registered).
+// Team details edit form: what the Team Head may change (the Team ID stays as registered).
 const TEAM_FIELDS = [
   { key: "teamName", label: "Team Name", required: true },
   { key: "teamHead", label: "Team Head Name", required: true },
+  { key: "teamHeadEmail", label: "Team Head Email (Login)", required: true, type: "email", hint: "This is your login email. If you change it, log in with the new email and your Team ID from now on." },
   { key: "teamHeadPhone", label: "Team Head Phone", required: true, type: "tel" },
   { key: "college", label: "College", required: true },
   { key: "department", label: "Department" },
@@ -49,10 +50,13 @@ const MEMBER_FIELDS = [
   { key: "year", label: "Year" },
   { key: "studentId", label: "Student ID / Register No." },
 ];
+const toMemberForm = (member = {}) => Object.fromEntries(MEMBER_FIELDS.map(({ key }) => [key, member?.[key] || ""]));
 const toDetailsForm = (team) => ({
   ...Object.fromEntries(TEAM_FIELDS.map(({ key }) => [key, team[key] || ""])),
-  members: (team.members || []).map((member) => Object.fromEntries(MEMBER_FIELDS.map(({ key }) => [key, member?.[key] || ""]))),
+  projectTheme: team.projectTheme && team.projectTheme !== "Not selected" ? team.projectTheme : "",
+  members: (team.members || []).map(toMemberForm),
 });
+const DEFAULT_MAX_MEMBERS = 6;
 const statusClass = (status) => `team-status team-status-${status.toLowerCase().replace("_", "-")}`;
 
 // One small runner per registered member, running together toward the next round.
@@ -290,15 +294,21 @@ export default function TeamDashboard() {
     setDetailsForm((form) => ({ ...form, members: form.members.map((member, i) => (i === index ? { ...member, [key]: value } : member)) }));
     setDetailsErrors((errors) => ({ ...errors, [`member-${index}-${key}`]: "" }));
   };
+  // New members are appended after the saved ones; only these unsaved rows can be removed again.
+  const addMember = () => { setDetailsForm((form) => ({ ...form, members: [...form.members, toMemberForm()] })); setDetailsError(""); };
+  const removeNewMember = (index) => {
+    setDetailsForm((form) => ({ ...form, members: form.members.filter((_, i) => i !== index) }));
+    setDetailsErrors({}); // error keys are per row position, which just shifted
+  };
 
   const saveDetails = async (event) => {
     event.preventDefault();
     if (detailsSaving) return;
     setDetailsSaving(true); setDetailsError(""); setDetailsErrors({});
     try {
-      await axios.put(`${API_URL}/team/me`, detailsForm, { headers: { Authorization: `Bearer ${getTeamToken()}` } });
+      const response = await axios.put(`${API_URL}/team/me`, detailsForm, { headers: { Authorization: `Bearer ${getTeamToken()}` } });
       setDetailsForm(null);
-      setDetailsNotice("✓ Team Details Updated Successfully");
+      setDetailsNotice(response.data?.emailChanged ? "✓ Team Details Updated. Your login email is now your new Team Head email." : "✓ Team Details Updated Successfully");
       await load();
     } catch (requestError) {
       const status = requestError.response?.status;
@@ -319,10 +329,13 @@ export default function TeamDashboard() {
 
   const { team, submission, rounds, current, evaluation, prototype, detailsEdit } = data;
   const detailsEditable = Boolean(detailsEdit?.editable);
+  const savedMemberCount = (team.members || []).length;
+  const maxMembers = Math.max(detailsEdit?.maxMembers || DEFAULT_MAX_MEMBERS, savedMemberCount);
   const editButton = detailsEditable ? <button type="button" className="team-edit-toggle" onClick={startDetailsEdit}><Pencil size={14} /> Edit</button> : null;
   const editField = (field, value, onChange, errorKey) => <label key={field.key}>
     <span>{field.label}{field.required ? " *" : ""}</span>
     <input type={field.type || "text"} value={value} maxLength={120} required={field.required} aria-invalid={Boolean(detailsErrors[errorKey])} onChange={(event) => onChange(event.target.value)} disabled={detailsSaving} />
+    {field.hint ? <em className="team-field-hint">{field.hint}</em> : null}
     {detailsErrors[errorKey] ? <small role="alert">{detailsErrors[errorKey]}</small> : null}
   </label>;
   const prototypeInfo = prototype?.category ? PROTOTYPE_TYPES[prototype.category] : null;
@@ -367,22 +380,33 @@ export default function TeamDashboard() {
       <div className="team-grid">
         {detailsForm && detailsEditable ? <section className="team-card team-area-edit" aria-labelledby="team-edit-title">
           <h2 id="team-edit-title"><Pencil size={17} /> Edit Team & Member Details</h2>
-          <p className="team-r2-intro">Changes allowed until <b>{formatDeadline(detailsEdit.deadline)}</b>. Team Head email, Team ID and project theme cannot be changed.</p>
+          <p className="team-r2-intro">Changes allowed until <b>{formatDeadline(detailsEdit.deadline)}</b>. Your Team ID cannot be changed.</p>
           <form className="team-details-form" onSubmit={saveDetails} noValidate>
             <fieldset>
               <legend>Team Details</legend>
               <div className="team-form-grid">
                 {TEAM_FIELDS.map((field) => editField(field, detailsForm[field.key], (value) => setTeamField(field.key, value), field.key))}
-                <label><span>Team Head Email (Login)</span><input type="email" value={team.teamHeadEmail} disabled readOnly /></label>
-                <label><span>Project Theme</span><input type="text" value={team.projectTheme} disabled readOnly /></label>
+                <label>
+                  <span>Project Theme *</span>
+                  <select value={detailsForm.projectTheme} required aria-invalid={Boolean(detailsErrors.projectTheme)} onChange={(event) => setTeamField("projectTheme", event.target.value)} disabled={detailsSaving}>
+                    <option value="">Select a theme</option>
+                    {(detailsEdit.themes || []).map((theme) => <option value={theme} key={theme}>{theme}</option>)}
+                  </select>
+                  {detailsErrors.projectTheme ? <small role="alert">{detailsErrors.projectTheme}</small> : null}
+                </label>
               </div>
             </fieldset>
             {detailsForm.members.map((member, index) => <fieldset key={index}>
-              <legend>Member {String(index + 1).padStart(2, "0")}</legend>
+              <legend>Member {String(index + 1).padStart(2, "0")}{index >= savedMemberCount ? " · New" : ""}</legend>
               <div className="team-form-grid">
                 {MEMBER_FIELDS.map((field) => editField(field, member[field.key], (value) => setMemberField(index, field.key, value), `member-${index}-${field.key}`))}
               </div>
+              {index >= savedMemberCount ? <button type="button" className="team-action team-action-danger team-member-remove" onClick={() => removeNewMember(index)} disabled={detailsSaving}><Trash2 size={15} /> Remove</button> : null}
             </fieldset>)}
+            <div className="team-member-add">
+              <button type="button" className="team-action team-action-secondary" onClick={addMember} disabled={detailsSaving || detailsForm.members.length >= maxMembers}><Plus size={16} /> Add Member</button>
+              <small>{detailsForm.members.length} of {maxMembers} members{detailsForm.members.length >= maxMembers ? " · team is full" : ""}. Saved members can be edited but not removed.</small>
+            </div>
             {detailsError ? <p className="team-inline-error team-pdf-error" role="alert">{detailsError}</p> : null}
             <div className="team-upload-actions">
               <button type="submit" className="team-action team-upload-action" disabled={detailsSaving}>{detailsSaving ? "Saving…" : "SAVE CHANGES →"}</button>
@@ -438,7 +462,7 @@ export default function TeamDashboard() {
               })}
             </ol>
           ) : (
-            <p className="team-muted">No team members are recorded.</p>
+            <p className="team-muted">No team members are recorded.{detailsEditable ? <> Click <b>Edit</b> to add your team members.</> : null}</p>
           )}
         </section>
         </>}
