@@ -22,10 +22,10 @@ export default function AdminProtectedRoute({ section, children }) {
     return () => { cancelled = true; };
   }, [token, allowed, pathname]);
 
-  if (!getAdminToken()) return <Navigate to="/admin/login" replace />;
+  if (!getAdminToken()) return <Navigate to="/devleader/login" replace />;
   if (!section || canAccessSection(section)) return children || <Outlet />;
   if (!checked) return null; // checking the latest role with the server
   const home = adminHome();
-  if (home === pathname) { clearAdminSession(); return <Navigate to="/admin/login" replace />; }
+  if (home === pathname) { clearAdminSession(); return <Navigate to="/devleader/login" replace />; }
   return <Navigate to={home} replace />;
 }

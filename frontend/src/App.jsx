@@ -29,9 +29,10 @@ function App() {
         <Route path="/submit-document/:token" element={<SubmitDocument />} />
 
         {/* Admin Authentication & Sections */}
-        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/devleader" element={<Navigate to="/devleader/login" replace />} />
+        <Route path="/devleader/login" element={<AdminLogin />} />
         <Route
-          path="/admin/dashboard"
+          path="/devleader/dashboard"
           element={
             <AdminProtectedRoute section="dashboard">
               <AdminDashboard />
@@ -39,7 +40,7 @@ function App() {
           }
         />
         <Route
-          path="/admin/team-lists"
+          path="/devleader/team-lists"
           element={
             <AdminProtectedRoute section="teamLists">
               <TeamLists />
@@ -47,9 +48,9 @@ function App() {
           }
         />
         {/* Backwards compatibility: redirect payment-history to team-lists */}
-        <Route path="/admin/payment-history" element={<Navigate to="/admin/team-lists" replace />} />
+        <Route path="/devleader/payment-history" element={<Navigate to="/devleader/team-lists" replace />} />
         <Route
-          path="/admin/teams"
+          path="/devleader/teams"
           element={
             <AdminProtectedRoute section="teams">
               <AdminTeams />
@@ -57,7 +58,7 @@ function App() {
           }
         />
         <Route
-          path="/admin/pdf-submissions"
+          path="/devleader/pdf-submissions"
           element={
             <AdminProtectedRoute section="pdf">
               <AdminPdfSubmissions />
@@ -65,7 +66,7 @@ function App() {
           }
         />
         <Route
-          path="/admin/rounds"
+          path="/devleader/rounds"
           element={
             <AdminProtectedRoute section="rounds">
               <AdminRounds />
@@ -73,7 +74,7 @@ function App() {
           }
         />
         <Route
-          path="/admin/round-selection"
+          path="/devleader/round-selection"
           element={
             <AdminProtectedRoute section="rounds">
               <AdminRoundSelection />
@@ -81,7 +82,7 @@ function App() {
           }
         />
         <Route
-          path="/admin/users"
+          path="/devleader/users"
           element={
             <AdminProtectedRoute section="users">
               <AdminUsers />

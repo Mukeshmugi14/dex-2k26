@@ -11,7 +11,7 @@ export const getAdminProfile = () => {
   if (!getAdminToken()) return null;
   try {
     // Sessions from before roles existed belonged to the General Admin.
-    return JSON.parse(read(PROFILE_KEY)) || { role: "SUPER_ADMIN", sections: ["dashboard", "teams", "payments", "pdf", "rounds", "paymentSettings", "users"], home: "/admin/dashboard" };
+    return JSON.parse(read(PROFILE_KEY)) || { role: "SUPER_ADMIN", sections: ["dashboard", "teams", "payments", "pdf", "rounds", "paymentSettings", "users"], home: "/devleader/dashboard" };
   } catch {
     return null;
   }
@@ -40,7 +40,8 @@ export const canAccessSection = (section) => {
   if (section === "teamLists" && (sections.includes("payments") || sections.includes("teams"))) return true;
   return false;
 };
-export const adminHome = () => getAdminProfile()?.home || "/admin/dashboard";
+// Admin pages live under /devleader; sessions saved before the move still hold an /admin/... home.
+export const adminHome = () => (getAdminProfile()?.home || "/devleader/dashboard").replace(/^\/admin\//, "/devleader/");
 
 export const ROLE_LABELS = {
   SUPER_ADMIN: "General Admin",
