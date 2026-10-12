@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TeamLists.css";
 import { API_URL } from "../config/api";
+import { clearAdminSession, getAdminToken } from "../config/adminSession";
 import useAutoRefresh from "../config/useAutoRefresh";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
@@ -74,12 +75,11 @@ export default function TeamLists() {
   const selectedTeam = (pickedTeam && teams.find((team) => team._id === pickedTeam._id)) || pickedTeam;
 
   const navigate = useNavigate();
-  const token = localStorage.getItem("dexathon_admin_token");
+  const token = getAdminToken();
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("dexathon_admin_token");
-    localStorage.removeItem("dexathon_admin_profile");
+    clearAdminSession();
     navigate("/devleader/login");
   }, [navigate]);
 

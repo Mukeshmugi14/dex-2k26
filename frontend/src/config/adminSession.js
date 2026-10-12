@@ -1,35 +1,22 @@
 // Admin session: the signed token plus the role profile returned by the server at login (never the password).
 // The server re-checks the role on every request; this copy only decides which pages/menu items to show.
-const TOKEN_KEY = "dexathon_admin_token";
-const PROFILE_KEY = "dexathon_admin_profile";
+// Kept in memory only, never in browser storage: every fresh open of a /devleader page (new tab, typed link,
+// refresh, reopened browser) asks for the password again. Moving between admin pages keeps the session.
+let session = null;
 
-const read = (key) => { try { return localStorage.getItem(key); } catch { return null; } };
+// Remove admin sessions that older versions saved in browser storage, so they can't skip the login.
+try {
+  localStorage.removeItem("dexathon_admin_token");
+  localStorage.removeItem("dexathon_admin_profile");
+} catch { /* storage unavailable */ }
 
-export const getAdminToken = () => read(TOKEN_KEY);
+export const getAdminToken = () => session?.token || null;
 
-export const getAdminProfile = () => {
-  if (!getAdminToken()) return null;
-  try {
-    // Sessions from before roles existed belonged to the General Admin.
-    return JSON.parse(read(PROFILE_KEY)) || { role: "SUPER_ADMIN", sections: ["dashboard", "teams", "payments", "pdf", "rounds", "paymentSettings", "users"], home: "/devleader/dashboard" };
-  } catch {
-    return null;
-  }
-};
+export const getAdminProfile = () => session?.profile || null;
 
-export const setAdminSession = (token, profile) => {
-  try {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-  } catch { /* storage unavailable */ }
-};
+export const setAdminSession = (token, profile) => { session = { token, profile }; };
 
-export const clearAdminSession = () => {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(PROFILE_KEY);
-  } catch { /* storage unavailable */ }
-};
+export const clearAdminSession = () => { session = null; };
 
 export const canAccessSection = (section) => {
   const profile = getAdminProfile();
@@ -40,7 +27,7 @@ export const canAccessSection = (section) => {
   if (section === "teamLists" && (sections.includes("payments") || sections.includes("teams"))) return true;
   return false;
 };
-// Admin pages live under /devleader; sessions saved before the move still hold an /admin/... home.
+// Admin pages live under /devleader; profiles from before the move may still hold an /admin/... home.
 export const adminHome = () => (getAdminProfile()?.home || "/devleader/dashboard").replace(/^\/admin\//, "/devleader/");
 
 export const ROLE_LABELS = {

@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 import "./AdminPrint.css";
 import { API_URL } from "../config/api";
+import { clearAdminSession, getAdminToken } from "../config/adminSession";
 import useAutoRefresh from "../config/useAutoRefresh";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
@@ -36,11 +37,10 @@ export default function AdminDashboard() {
   const [printing, setPrinting] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const token = localStorage.getItem("dexathon_admin_token");
+  const token = getAdminToken();
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
   const logout = useCallback(() => {
-    localStorage.removeItem("dexathon_admin_token");
-    localStorage.removeItem("dexathon_admin_profile");
+    clearAdminSession();
     navigate("/devleader/login");
   }, [navigate]);
   const handleError = useCallback((requestError, text) => {
