@@ -45,7 +45,7 @@ export default function PortalGateway() {
             <p>
               Import Google Sheets registrations, view team lists, send branded confirmation emails, evaluate PDF submissions, and configure round progression.
             </p>
-            <Link to="/admin/login" className="portal-card-btn">
+            <Link to="/devleader/login" className="portal-card-btn">
               Admin Sign In <ArrowRight size={16} />
             </Link>
           </article>

@@ -10,11 +10,11 @@ export const SECTION_ROLES = {
 };
 
 export const ROLE_HOME = {
-  SUPER_ADMIN: "/admin/dashboard",
-  PAYMENT_ADMIN: "/admin/team-lists",
-  TEAM_ADMIN: "/admin/team-lists",
-  ROUND_ADMIN: "/admin/round-selection",
-  PDF_ADMIN: "/admin/pdf-submissions",
+  SUPER_ADMIN: "/devleader/dashboard",
+  PAYMENT_ADMIN: "/devleader/team-lists",
+  TEAM_ADMIN: "/devleader/team-lists",
+  ROUND_ADMIN: "/devleader/round-selection",
+  PDF_ADMIN: "/devleader/pdf-submissions",
 };
 
 export const canAccess = (role, section) => role === "SUPER_ADMIN" || (SECTION_ROLES[section] || []).includes(role);

@@ -24,7 +24,7 @@ export default function AdminLogin() {
     try {
       const response = await axios.post(`${apiUrl}/admin/login`, { username, password });
       setAdminSession(response.data.token, response.data.admin);
-      navigate(response.data.admin?.home || "/admin/dashboard", { replace: true });
+      navigate(response.data.admin?.home || "/devleader/dashboard", { replace: true });
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Unable to sign in. Try again.");
     } finally {

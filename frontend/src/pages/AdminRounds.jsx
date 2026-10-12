@@ -6,6 +6,7 @@ import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import "./AdminRounds.css";
 import { API_URL } from "../config/api";
+import useAutoRefresh from "../config/useAutoRefresh";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, usePagedList } from "../components/AdminListParts";
 
@@ -107,18 +108,19 @@ export default function AdminRounds() {
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/admin/login"); }, [navigate]);
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/devleader/login"); }, [navigate]);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setLoadError("");
+  const load = useCallback(({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setLoadError(""); }
     axios.get(`${API_URL}/admin/rounds`, { headers })
       .then((response) => { setTeams(response.data.teams); setAllowed(response.data.allowed); })
-      .catch((error) => { if (error.response?.status === 401) logout(); else setLoadError(error.response?.data?.message || "Unable to load round status."); })
-      .finally(() => setLoading(false));
+      .catch((error) => { if (error.response?.status === 401) logout(); else if (!silent) setLoadError(error.response?.data?.message || "Unable to load round status."); })
+      .finally(() => { if (!silent) setLoading(false); });
   }, [headers, logout]);
 
-  useEffect(load, [load]);
+  useEffect(() => { load(); }, [load]);
+  // Team Portal edits show up here without a reload.
+  useAutoRefresh(load);
 
   const counts = useMemo(() => Object.fromEntries(FILTERS.map((status) => [status, status === "All" ? teams.length : teams.filter((team) => team.current.status === status).length])), [teams]);
   const visibleTeams = useMemo(() => {

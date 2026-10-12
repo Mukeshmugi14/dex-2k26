@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
 import { API_URL } from "../config/api";
+import useAutoRefresh from "../config/useAutoRefresh";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
@@ -250,12 +251,11 @@ export default function AdminTeams() {
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/admin/login"); }, [navigate]);
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/devleader/login"); }, [navigate]);
 
   // One page of teams at a time, searched and filtered by the server (logos load lazily per card).
-  const loadTeams = useCallback(() => {
-    setLoading(true);
-    setLoadError("");
+  const loadTeams = useCallback(({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setLoadError(""); }
     axios.get(`${API_URL}/admin/registrations`, { headers, params: { page, limit: PAGE_SIZE, search: debouncedSearch, college: collegeFilter } })
       .then((response) => {
         if (!response.data.items.length && response.data.total && page > 1) { setPage(response.data.pages); return; }
@@ -264,12 +264,14 @@ export default function AdminTeams() {
       })
       .catch((error) => {
         if (error.response?.status === 401) { logout(); return; }
-        setLoadError(error.response?.data?.message || "Unable to load teams.");
+        if (!silent) setLoadError(error.response?.data?.message || "Unable to load teams.");
       })
-      .finally(() => setLoading(false));
+      .finally(() => { if (!silent) setLoading(false); });
   }, [headers, page, debouncedSearch, collegeFilter, logout]);
 
   useEffect(() => { loadTeams(); }, [loadTeams]);
+  // Team Portal edits show up here without a reload; paused while an admin edit or delete dialog is open.
+  useAutoRefresh(loadTeams, { paused: Boolean(editing || bulkEditing || deleteTargets) });
   useEffect(() => { setPage(1); }, [debouncedSearch, collegeFilter]);
   // Selection is limited to what is on screen: changing page or filters clears it, so nothing unseen is edited or deleted.
   useEffect(() => { setSelected(new Set()); }, [page, debouncedSearch, collegeFilter]);

@@ -119,7 +119,7 @@ export default function AdminUsers() {
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
   const selfId = getAdminProfile()?.id;
 
-  const signOut = useCallback(() => { clearAdminSession(); navigate("/admin/login"); }, [navigate]);
+  const signOut = useCallback(() => { clearAdminSession(); navigate("/devleader/login"); }, [navigate]);
   const load = useCallback(() => {
     setLoading(true);
     setLoadError("");

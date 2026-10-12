@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
 import "./AdminPrint.css";
 import { API_URL } from "../config/api";
+import useAutoRefresh from "../config/useAutoRefresh";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
@@ -40,23 +41,27 @@ export default function AdminDashboard() {
   const logout = useCallback(() => {
     localStorage.removeItem("dexathon_admin_token");
     localStorage.removeItem("dexathon_admin_profile");
-    navigate("/admin/login");
+    navigate("/devleader/login");
   }, [navigate]);
   const handleError = useCallback((requestError, text) => {
     if (requestError.response?.status === 401) logout();
     else setError(text);
   }, [logout]);
 
-  useEffect(() => {
+  const loadStats = useCallback(({ silent = false } = {}) => {
     axios
       .get(`${apiUrl}/admin/dashboard`, { headers })
       .then((response) => setStats(response.data))
-      .catch((requestError) => handleError(requestError, "Unable to load dashboard summary."));
+      .catch((requestError) => { if (!silent || requestError.response?.status === 401) handleError(requestError, "Unable to load dashboard summary."); });
+  }, [headers, handleError]);
+
+  useEffect(() => {
+    loadStats();
     axios
       .get(`${apiUrl}/admin/colleges`, { headers })
       .then((response) => setColleges(response.data.colleges || []))
       .catch(() => {});
-  }, [headers, handleError]);
+  }, [headers, handleError, loadStats]);
 
   const filters = useMemo(
     () => ({
@@ -68,8 +73,8 @@ export default function AdminDashboard() {
     [collegeFilter, themeFilter, emailStatusFilter, debouncedSearch]
   );
 
-  const loadRows = useCallback(() => {
-    setLoadingRows(true);
+  const loadRows = useCallback(({ silent = false } = {}) => {
+    if (!silent) setLoadingRows(true);
     axios
       .get(`${apiUrl}/admin/registrations`, { headers, params: { ...filters, page, limit: PAGE_SIZE } })
       .then((response) => {
@@ -77,13 +82,16 @@ export default function AdminDashboard() {
         setPaging({ page: response.data.page, pages: response.data.pages, total: response.data.total });
         setError("");
       })
-      .catch((requestError) => handleError(requestError, "Unable to load registrations."))
-      .finally(() => setLoadingRows(false));
+      .catch((requestError) => { if (!silent || requestError.response?.status === 401) handleError(requestError, "Unable to load registrations."); })
+      .finally(() => { if (!silent) setLoadingRows(false); });
   }, [headers, filters, page, handleError]);
 
   useEffect(() => {
     loadRows();
   }, [loadRows]);
+  // Team Portal edits show up here without a reload.
+  const refreshAll = useCallback((options) => { loadStats(options); loadRows(options); }, [loadStats, loadRows]);
+  useAutoRefresh(refreshAll, { paused: printing });
   useEffect(() => {
     setPage(1);
   }, [filters]);
@@ -132,7 +140,7 @@ export default function AdminDashboard() {
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <button
             type="button"
-            onClick={() => navigate("/admin/team-lists")}
+            onClick={() => navigate("/devleader/team-lists")}
             style={{
               background: "linear-gradient(135deg, #ff5a1f, #ff7432)",
               color: "#ffffff",
@@ -244,7 +252,7 @@ export default function AdminDashboard() {
               Showing {paging.total} registered teams
             </p>
             <Link
-              to="/admin/team-lists"
+              to="/devleader/team-lists"
               style={{
                 fontSize: "12px",
                 color: "#ff7432",
@@ -334,7 +342,7 @@ export default function AdminDashboard() {
                       </td>
                       <td>
                         <Link
-                          to="/admin/team-lists"
+                          to="/devleader/team-lists"
                           style={{
                             display: "inline-block",
                             padding: "6px 10px",

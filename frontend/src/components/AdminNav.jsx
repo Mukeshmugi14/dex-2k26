@@ -3,20 +3,20 @@ import { clearAdminSession, getAdminProfile } from "../config/adminSession";
 
 // Every admin page shares this menu; it shows only the sections the signed-in admin may use.
 export const ADMIN_LINKS = [
-  ["/admin/dashboard", "Dashboard", "dashboard"],
-  ["/admin/team-lists", "Team Lists", "teamLists"],
-  ["/admin/teams", "Teams", "teams"],
-  ["/admin/pdf-submissions", "PDF Submissions", "pdf"],
-  ["/admin/rounds", "Round Status", "rounds"],
-  ["/admin/round-selection", "Round Selection", "rounds"],
-  ["/admin/users", "Admin Users", "users"],
+  ["/devleader/dashboard", "Dashboard", "dashboard"],
+  ["/devleader/team-lists", "Team Lists", "teamLists"],
+  ["/devleader/teams", "Teams", "teams"],
+  ["/devleader/pdf-submissions", "PDF Submissions", "pdf"],
+  ["/devleader/rounds", "Round Status", "rounds"],
+  ["/devleader/round-selection", "Round Selection", "rounds"],
+  ["/devleader/users", "Admin Users", "users"],
 ];
 
 export default function AdminNav() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const sections = getAdminProfile()?.sections || [];
-  const logout = () => { clearAdminSession(); navigate("/admin/login"); };
+  const logout = () => { clearAdminSession(); navigate("/devleader/login"); };
   const canSee = (section) => sections.includes(section) || (section === "teamLists" && (sections.includes("payments") || sections.includes("teams")));
 
   return <>

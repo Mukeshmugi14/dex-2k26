@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./TeamLists.css";
 import { API_URL } from "../config/api";
+import useAutoRefresh from "../config/useAutoRefresh";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
@@ -68,7 +69,9 @@ export default function TeamLists() {
   const [sendingEmailId, setSendingEmailId] = useState(null);
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [pickedTeam, setSelectedTeam] = useState(null);
+  // An open team detail / email preview shows the latest refreshed copy of that team.
+  const selectedTeam = (pickedTeam && teams.find((team) => team._id === pickedTeam._id)) || pickedTeam;
 
   const navigate = useNavigate();
   const token = localStorage.getItem("dexathon_admin_token");
@@ -77,12 +80,12 @@ export default function TeamLists() {
   const logout = useCallback(() => {
     localStorage.removeItem("dexathon_admin_token");
     localStorage.removeItem("dexathon_admin_profile");
-    navigate("/admin/login");
+    navigate("/devleader/login");
   }, [navigate]);
 
   // Load teams and statistics
-  const loadTeams = useCallback(async () => {
-    setLoading(true);
+  const loadTeams = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const response = await axios.get(`${apiUrl}/admin/team-lists`, {
         headers,
@@ -100,15 +103,17 @@ export default function TeamLists() {
       setPaging({ page: response.data.page, pages: response.data.pages, total: response.data.total });
     } catch (requestError) {
       if (requestError.response?.status === 401) logout();
-      else setFeedback({ type: "error", message: "Unable to load team lists. Please try again." });
+      else if (!silent) setFeedback({ type: "error", message: "Unable to load team lists. Please try again." });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [headers, page, pageSize, debouncedSearch, collegeFilter, themeFilter, emailStatusFilter, logout]);
 
   useEffect(() => {
     loadTeams();
   }, [loadTeams]);
+  // Team Portal edits show up here without a reload.
+  useAutoRefresh(loadTeams, { paused: importing });
 
   useEffect(() => {
     setPage(1);
