@@ -31,6 +31,28 @@ const hasPdfSignature = async (file) => {
   try { return new TextDecoder().decode(await file.slice(0, 5).arrayBuffer()) === "%PDF-"; } catch { return true; }
 };
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }) : "");
+// Team details edit form: what the Team Head may change (email, Team ID and theme stay as registered).
+const TEAM_FIELDS = [
+  { key: "teamName", label: "Team Name", required: true },
+  { key: "teamHead", label: "Team Head Name", required: true },
+  { key: "teamHeadPhone", label: "Team Head Phone", required: true, type: "tel" },
+  { key: "college", label: "College", required: true },
+  { key: "department", label: "Department" },
+  { key: "year", label: "Year" },
+];
+const MEMBER_FIELDS = [
+  { key: "name", label: "Name", required: true },
+  { key: "email", label: "Email", type: "email" },
+  { key: "phone", label: "Phone", type: "tel" },
+  { key: "college", label: "College" },
+  { key: "department", label: "Department" },
+  { key: "year", label: "Year" },
+  { key: "studentId", label: "Student ID / Register No." },
+];
+const toDetailsForm = (team) => ({
+  ...Object.fromEntries(TEAM_FIELDS.map(({ key }) => [key, team[key] || ""])),
+  members: (team.members || []).map((member) => Object.fromEntries(MEMBER_FIELDS.map(({ key }) => [key, member?.[key] || ""]))),
+});
 const statusClass = (status) => `team-status team-status-${status.toLowerCase().replace("_", "-")}`;
 
 // One small runner per registered member, running together toward the next round.
@@ -117,6 +139,11 @@ export default function TeamDashboard() {
   const [prototypeEditing, setPrototypeEditing] = useState(false);
   const [prototypeDeleting, setPrototypeDeleting] = useState(false);
   const [prototypeNotice, setPrototypeNotice] = useState("");
+  const [detailsForm, setDetailsForm] = useState(null);
+  const [detailsErrors, setDetailsErrors] = useState({});
+  const [detailsError, setDetailsError] = useState("");
+  const [detailsSaving, setDetailsSaving] = useState(false);
+  const [detailsNotice, setDetailsNotice] = useState("");
   const fileInputRef = useRef(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigate = useNavigate();
@@ -256,6 +283,33 @@ export default function TeamDashboard() {
     } finally { setPrototypeDeleting(false); }
   };
 
+  const startDetailsEdit = () => { setDetailsForm(toDetailsForm(data.team)); setDetailsErrors({}); setDetailsError(""); setDetailsNotice(""); };
+  const cancelDetailsEdit = () => { setDetailsForm(null); setDetailsErrors({}); setDetailsError(""); };
+  const setTeamField = (key, value) => { setDetailsForm((form) => ({ ...form, [key]: value })); setDetailsErrors((errors) => ({ ...errors, [key]: "" })); };
+  const setMemberField = (index, key, value) => {
+    setDetailsForm((form) => ({ ...form, members: form.members.map((member, i) => (i === index ? { ...member, [key]: value } : member)) }));
+    setDetailsErrors((errors) => ({ ...errors, [`member-${index}-${key}`]: "" }));
+  };
+
+  const saveDetails = async (event) => {
+    event.preventDefault();
+    if (detailsSaving) return;
+    setDetailsSaving(true); setDetailsError(""); setDetailsErrors({});
+    try {
+      await axios.put(`${API_URL}/team/me`, detailsForm, { headers: { Authorization: `Bearer ${getTeamToken()}` } });
+      setDetailsForm(null);
+      setDetailsNotice("✓ Team Details Updated Successfully");
+      await load();
+    } catch (requestError) {
+      const status = requestError.response?.status;
+      if (status === 401) { logout(); return; }
+      if (status === 400) setDetailsErrors(requestError.response.data?.errors || {});
+      if (status === 403) { setDetailsForm(null); await load(); }
+      if (status === 409) await load();
+      setDetailsError(requestError.response?.data?.message || "Unable to save your team details. Please check your connection and try again.");
+    } finally { setDetailsSaving(false); }
+  };
+
   const header = <header className="team-topbar">
     <div><span className="team-brand">DE<b>X</b>ATHON <em>2026</em></span><small>Team Head Portal</small></div>
     <div className="team-topbar-user">{data ? <span>{data.team.teamHead}</span> : null}<button type="button" onClick={logout}><LogOut size={15} /> Logout</button></div>
@@ -263,7 +317,14 @@ export default function TeamDashboard() {
 
   if (!data) return <main className="team-portal team-dash">{header}<div className="team-dash-inner"><p className="team-state">{error || "Loading your team dashboard..."}</p>{error ? <button type="button" className="team-retry" onClick={load}>Retry</button> : null}</div></main>;
 
-  const { team, submission, rounds, current, evaluation, prototype } = data;
+  const { team, submission, rounds, current, evaluation, prototype, detailsEdit } = data;
+  const detailsEditable = Boolean(detailsEdit?.editable);
+  const editButton = detailsEditable ? <button type="button" className="team-edit-toggle" onClick={startDetailsEdit}><Pencil size={14} /> Edit</button> : null;
+  const editField = (field, value, onChange, errorKey) => <label key={field.key}>
+    <span>{field.label}{field.required ? " *" : ""}</span>
+    <input type={field.type || "text"} value={value} maxLength={120} required={field.required} aria-invalid={Boolean(detailsErrors[errorKey])} onChange={(event) => onChange(event.target.value)} disabled={detailsSaving} />
+    {detailsErrors[errorKey] ? <small role="alert">{detailsErrors[errorKey]}</small> : null}
+  </label>;
   const prototypeInfo = prototype?.category ? PROTOTYPE_TYPES[prototype.category] : null;
   const chosenType = PROTOTYPE_TYPES[prototypeType] || null;
   const prototypeStatus = !prototype ? null : prototype.submitted ? <span className="team-pill ok">✓ Submitted</span> : prototype.open ? <span className="team-pill open">● Submission Open</span> : <span className="team-pill closed">✕ Not Submitted</span>;
@@ -304,8 +365,35 @@ export default function TeamDashboard() {
       <KeyDates />
 
       <div className="team-grid">
+        {detailsForm && detailsEditable ? <section className="team-card team-area-edit" aria-labelledby="team-edit-title">
+          <h2 id="team-edit-title"><Pencil size={17} /> Edit Team & Member Details</h2>
+          <p className="team-r2-intro">Changes allowed until <b>{formatDeadline(detailsEdit.deadline)}</b>. Team Head email, Team ID and project theme cannot be changed.</p>
+          <form className="team-details-form" onSubmit={saveDetails} noValidate>
+            <fieldset>
+              <legend>Team Details</legend>
+              <div className="team-form-grid">
+                {TEAM_FIELDS.map((field) => editField(field, detailsForm[field.key], (value) => setTeamField(field.key, value), field.key))}
+                <label><span>Team Head Email (Login)</span><input type="email" value={team.teamHeadEmail} disabled readOnly /></label>
+                <label><span>Project Theme</span><input type="text" value={team.projectTheme} disabled readOnly /></label>
+              </div>
+            </fieldset>
+            {detailsForm.members.map((member, index) => <fieldset key={index}>
+              <legend>Member {String(index + 1).padStart(2, "0")}</legend>
+              <div className="team-form-grid">
+                {MEMBER_FIELDS.map((field) => editField(field, member[field.key], (value) => setMemberField(index, field.key, value), `member-${index}-${field.key}`))}
+              </div>
+            </fieldset>)}
+            {detailsError ? <p className="team-inline-error team-pdf-error" role="alert">{detailsError}</p> : null}
+            <div className="team-upload-actions">
+              <button type="submit" className="team-action team-upload-action" disabled={detailsSaving}>{detailsSaving ? "Saving…" : "SAVE CHANGES →"}</button>
+              <button type="button" className="team-action team-action-secondary" onClick={cancelDetailsEdit} disabled={detailsSaving}><X size={16} /> Cancel</button>
+            </div>
+          </form>
+        </section> : <>
         <section className="team-card team-area-details">
-          <h2>Team Details</h2>
+          <h2>Team Details {editButton}</h2>
+          {detailsNotice ? <p className="team-pdf-success" role="status">{detailsNotice}</p> : null}
+          {detailsError ? <p className="team-inline-error team-pdf-error" role="alert">{detailsError}</p> : null}
           <dl className="team-details">
             <div><dt>Team Name</dt><dd>{team.teamName}</dd></div>
             <div><dt>Team Size</dt><dd><b>{team.teamSize || ((team.members || []).length + 1)}</b> ({team.teamHead ? `1 Head + ${(team.members || []).length} Members` : `${(team.members || []).length} Members`})</dd></div>
@@ -321,10 +409,13 @@ export default function TeamDashboard() {
             <div><dt>Round 1 PDF Submission Status</dt><dd>{submission.submitted ? <span className="team-pill ok">✓ PDF Submitted</span> : <span className="team-pill open">● Submission Open</span>}</dd></div>
             {prototypeStatus ? <div><dt>Round 2 Prototype Status</dt><dd>{prototypeStatus}</dd></div> : null}
           </dl>
+          {detailsEditable
+            ? <small className="team-edit-note">You can edit your team and member details until {formatDeadline(detailsEdit.deadline)}.</small>
+            : detailsEdit ? <p className="team-edit-closed" role="note">The team details editing deadline ({formatDeadline(detailsEdit.deadline)}) has passed. Team and member details can no longer be edited.</p> : null}
         </section>
 
         <section className="team-card team-area-members">
-          <h2><Users size={17} /> Team Members ({(team.members || []).length})</h2>
+          <h2><Users size={17} /> Team Members ({(team.members || []).length}) {editButton}</h2>
           {team.members && team.members.length ? (
             <ol className="team-members">
               {team.members.map((member, index) => {
@@ -350,6 +441,7 @@ export default function TeamDashboard() {
             <p className="team-muted">No team members are recorded.</p>
           )}
         </section>
+        </>}
 
         <section className="team-card team-area-pdf">
           <span className="team-stage-badge is-round1">STAGE 1 · ROUND 1</span>
