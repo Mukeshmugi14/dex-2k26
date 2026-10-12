@@ -6,6 +6,7 @@ import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import "./AdminRoundSelection.css";
 import { API_URL } from "../config/api";
+import useAutoRefresh from "../config/useAutoRefresh";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, usePagedList } from "../components/AdminListParts";
 
@@ -134,16 +135,17 @@ export default function AdminRoundSelection() {
   const token = localStorage.getItem("dexathon_admin_token");
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/admin/login"); }, [navigate]);
-  const load = useCallback(() => {
-    setLoading(true);
-    setLoadError("");
+  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/devleader/login"); }, [navigate]);
+  const load = useCallback(({ silent = false } = {}) => {
+    if (!silent) { setLoading(true); setLoadError(""); }
     axios.get(`${API_URL}/admin/round-selection`, { headers })
       .then((response) => setTeams(response.data.teams))
-      .catch((error) => { if (error.response?.status === 401) logout(); else setLoadError(error.response?.data?.message || "Unable to load teams."); })
-      .finally(() => setLoading(false));
+      .catch((error) => { if (error.response?.status === 401) logout(); else if (!silent) setLoadError(error.response?.data?.message || "Unable to load teams."); })
+      .finally(() => { if (!silent) setLoading(false); });
   }, [headers, logout]);
-  useEffect(load, [load]);
+  useEffect(() => { load(); }, [load]);
+  // Team Portal edits show up here without a reload. Paused while a dialog is open.
+  useAutoRefresh(load, { paused: Boolean(pending || busy) });
 
   const replaceTeam = (updated) => setTeams((current) => current.map((team) => (team._id === updated._id ? updated : team)));
   const summary = useMemo(() => summarize(teams), [teams]);
