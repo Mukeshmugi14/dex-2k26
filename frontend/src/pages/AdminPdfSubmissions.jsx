@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import { API_URL } from "../config/api";
+import { clearAdminSession, getAdminToken } from "../config/adminSession";
 import useAutoRefresh from "../config/useAutoRefresh";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, usePagedList } from "../components/AdminListParts";
@@ -164,10 +165,10 @@ export default function AdminPdfSubmissions() {
   const [message, setMessage] = useState("");
   const [retrying, setRetrying] = useState(null);
   const navigate = useNavigate();
-  const token = localStorage.getItem("dexathon_admin_token");
+  const token = getAdminToken();
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
-  const logout = useCallback(() => { localStorage.removeItem("dexathon_admin_token"); localStorage.removeItem("dexathon_admin_profile"); navigate("/devleader/login"); }, [navigate]);
+  const logout = useCallback(() => { clearAdminSession(); navigate("/devleader/login"); }, [navigate]);
 
   const load = useCallback(({ silent = false } = {}) => {
     if (!silent) { setLoading(true); setLoadError(""); }

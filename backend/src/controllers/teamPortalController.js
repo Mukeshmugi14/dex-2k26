@@ -1,13 +1,13 @@
 import crypto from "crypto";
 import mongoose from "mongoose";
-import Registration from "../models/Registration.js";
+import Registration, { PROJECT_THEMES } from "../models/Registration.js";
 import { signTeamToken } from "../middleware/teamAuthMiddleware.js";
 import { currentRound, readRounds, ROUND_INFO } from "../services/roundService.js";
 import { deriveSubmissionStatus, getTeamPortalPassword, openPdfStream } from "../services/submissionService.js";
 import { getRound2EditDeadline, PROTOTYPE_CATEGORIES, prototypeView, ROUND2_EDIT_CLOSED_MESSAGE, validatePrototypeUrl } from "../services/prototypeService.js";
 
 import { findTeamByLeaderCredentials } from "../services/teamIdService.js";
-import { getTeamDetailsEditDeadline, TEAM_DETAILS_EDIT_CLOSED_MESSAGE, teamDetailsEditable, validateTeamDetails } from "../services/teamDetailsService.js";
+import { getTeamDetailsEditDeadline, MAX_TEAM_MEMBERS, TEAM_DETAILS_EDIT_CLOSED_MESSAGE, teamDetailsEditable, validateTeamDetails } from "../services/teamDetailsService.js";
 import { setCollege } from "./adminController.js";
 
 const INVALID_LOGIN = { success: false, message: "Invalid Team Head email or Team ID. Please check and try again." };
@@ -85,7 +85,7 @@ export const getOwnTeam = async (request, response) => {
       teamSize,
       members,
     },
-    detailsEdit: { editable: teamDetailsEditable(), deadline: getTeamDetailsEditDeadline() },
+    detailsEdit: { editable: teamDetailsEditable(), deadline: getTeamDetailsEditDeadline(), maxMembers: MAX_TEAM_MEMBERS, themes: PROJECT_THEMES },
     submission: team.pdfSubmission?.fileId
       ? { submitted: true, fileName: team.pdfSubmission.fileName, fileSize: team.pdfSubmission.fileSize, submittedAt: team.pdfSubmission.submittedAt, status: deriveSubmissionStatus(team) }
       : { submitted: false },
@@ -98,14 +98,23 @@ export const getOwnTeam = async (request, response) => {
 };
 
 // The logged-in team updates its own team and member details until the edit deadline (server time).
-// Team Head email, Team ID, project theme and the number of members stay as registered.
+// The Team ID stays as registered; a new Team Head email becomes the login. Members may be added (up to the limit), not removed.
 export const updateOwnTeamDetails = async (request, response) => {
   const team = await loadOwnTeam(request);
   if (!team) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
   if (!teamDetailsEditable()) return response.status(403).json({ success: false, editClosed: true, message: TEAM_DETAILS_EDIT_CLOSED_MESSAGE });
 
-  const { errors, value } = validateTeamDetails(request.body, cleanMembers(team.members).length);
+  const shownCount = cleanMembers(team.members).length;
+  const { errors, value } = validateTeamDetails(request.body, shownCount);
   if (errors) return response.status(400).json({ success: false, message: errors.members || "Please correct the highlighted fields.", errors });
+
+  // The Team Head email is the login, so it must not belong to another team's Team Head.
+  const emailChanged = value.leader.email !== String(team.leader?.email || "").trim().toLowerCase();
+  if (emailChanged) {
+    const escaped = value.leader.email.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const taken = await Registration.exists({ _id: { $ne: team._id }, "leader.email": { $regex: `^\\s*${escaped}\\s*$`, $options: "i" } });
+    if (taken) return response.status(400).json({ success: false, message: "Please correct the highlighted fields.", errors: { teamHeadEmail: "This email is already the Team Head email of another team." } });
+  }
 
   const college = {};
   setCollege(college, value.team.college);
@@ -117,15 +126,20 @@ export const updateOwnTeamDetails = async (request, response) => {
       ...college,
       department: value.team.department,
       year: value.team.year,
+      projectTheme: value.team.projectTheme,
       "leader.name": value.leader.name,
+      "leader.email": value.leader.email,
       "leader.phone": value.leader.phone,
       members: value.members,
-    } },
+    },
+    // When members are added, a stored team size would be stale; the portal and admin then derive it from the member list.
+    ...(value.members.length !== shownCount ? { $unset: { teamSize: "" } } : {}) },
   );
   if (!result.matchedCount) return response.status(409).json({ success: false, message: "Your team details changed. Please refresh and try again." });
 
-  console.log(`Team details updated by Team Head for ${team.teamId}.`);
-  return response.json({ success: true, message: "Team details updated successfully." });
+  console.log(`Team details updated by Team Head for ${team.teamId}${value.members.length > shownCount ? ` (+${value.members.length - shownCount} member${value.members.length - shownCount === 1 ? "" : "s"})` : ""}.`);
+  if (emailChanged) console.log(`Team Head email changed for ${team.teamId}.`);
+  return response.json({ success: true, emailChanged, message: emailChanged ? "Team details updated. Use your new Team Head email to log in from now on." : "Team details updated successfully." });
 };
 
 // Round 2: the logged-in team saves its own prototype link once (the token decides which team).

@@ -303,3 +303,11 @@
   .team-portal .team-form-grid{grid-template-columns:minmax(0,1fr)}
   .team-portal .team-details-form fieldset{padding:12px}
 }
+.team-portal .team-member-remove{margin-top:12px}
+.team-portal .team-member-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+.team-portal .team-member-add .team-action{margin-top:0}
+.team-portal .team-member-add small{color:var(--tp-muted);font-size:12px}
+.team-portal .team-form-grid select{width:100%;height:42px;padding:0 10px;border:1.5px solid #c7d6e2;border-radius:8px;background:#fff;color:var(--tp-ink);font:14px Inter,Arial,sans-serif}
+.team-portal .team-form-grid select:focus{outline:0;border-color:var(--tp-blue);box-shadow:0 0 0 4px #1f6fff1f}
+.team-portal .team-form-grid select[aria-invalid="true"]{border-color:#d92d20}
+.team-portal .team-form-grid .team-field-hint{color:#9a3412;font-size:12px;font-style:normal;line-height:1.4}

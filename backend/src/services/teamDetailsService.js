@@ -1,5 +1,6 @@
 // Team Head Portal: teams may update their own team and member details until the edit deadline.
-// The Team Head email (login) and Team ID (password) are never editable here.
+// The Team ID (password) is never editable here; a changed Team Head email becomes the new login.
+import { PROJECT_THEMES } from "../models/Registration.js";
 
 // Editable through 26 Oct 2026, 11:59 PM IST; from 27 Oct 12:00 AM IST it is locked.
 // Override with TEAM_DETAILS_EDIT_DEADLINE (ISO date with offset) if it moves.
@@ -20,10 +21,13 @@ const checkLength = (errors, key, value, label) => {
   if (value.length > MAX_TEXT) errors[key] = `${label} must be ${MAX_TEXT} characters or fewer.`;
 };
 
+// Registration allowed 4–6 members; teams may add members up to this limit, never remove saved ones.
+export const MAX_TEAM_MEMBERS = 6;
+
 /**
- * Validates the Team Head's edit. `memberCount` is the number of members the portal showed,
- * so the edit can only change those members' details, not add or remove members.
- * Returns { errors } or { value: { team, leader, members } } with cleaned values.
+ * Validates the Team Head's edit. `memberCount` is the number of members the portal showed:
+ * those stay (their details may change, in the same order) and new members may be added after them,
+ * up to MAX_TEAM_MEMBERS. Returns { errors } or { value: { team, leader, members } } with cleaned values.
  */
 export const validateTeamDetails = (body, memberCount) => {
   const errors = {};
@@ -32,12 +36,16 @@ export const validateTeamDetails = (body, memberCount) => {
     college: text(body?.college),
     department: text(body?.department),
     year: text(body?.year),
+    projectTheme: text(body?.projectTheme).toUpperCase(),
   };
-  const leader = { name: text(body?.teamHead), phone: text(body?.teamHeadPhone) };
+  const leader = { name: text(body?.teamHead), email: text(body?.teamHeadEmail).toLowerCase(), phone: text(body?.teamHeadPhone) };
 
   if (!team.teamName) errors.teamName = "Team name is required.";
   if (!team.college) errors.college = "College is required.";
   if (!leader.name) errors.teamHead = "Team Head name is required.";
+  if (!leader.email) errors.teamHeadEmail = "Team Head email is required.";
+  else if (!isEmail(leader.email) || leader.email.length > MAX_TEXT) errors.teamHeadEmail = "Enter a valid email address.";
+  if (!PROJECT_THEMES.includes(team.projectTheme)) errors.projectTheme = "Please select your project theme.";
   if (!leader.phone) errors.teamHeadPhone = "Team Head phone number is required.";
   else if (!isPhone(leader.phone)) errors.teamHeadPhone = "Enter a valid phone number.";
   checkLength(errors, "teamName", team.teamName, "Team name");
@@ -47,8 +55,12 @@ export const validateTeamDetails = (body, memberCount) => {
   checkLength(errors, "teamHead", leader.name, "Team Head name");
 
   const given = Array.isArray(body?.members) ? body.members : null;
-  if (!given || given.length !== memberCount) {
+  if (!given || given.length < memberCount) {
     errors.members = "The member list does not match your team. Please refresh and try again.";
+    return { errors };
+  }
+  if (given.length > Math.max(MAX_TEAM_MEMBERS, memberCount)) {
+    errors.members = `A team can have at most ${MAX_TEAM_MEMBERS} members.`;
     return { errors };
   }
 
