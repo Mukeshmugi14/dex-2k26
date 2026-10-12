@@ -7,6 +7,8 @@ import { deriveSubmissionStatus, getTeamPortalPassword, openPdfStream } from "..
 import { getRound2EditDeadline, PROTOTYPE_CATEGORIES, prototypeView, ROUND2_EDIT_CLOSED_MESSAGE, validatePrototypeUrl } from "../services/prototypeService.js";
 
 import { findTeamByLeaderCredentials } from "../services/teamIdService.js";
+import { getTeamDetailsEditDeadline, TEAM_DETAILS_EDIT_CLOSED_MESSAGE, teamDetailsEditable, validateTeamDetails } from "../services/teamDetailsService.js";
+import { setCollege } from "./adminController.js";
 
 const INVALID_LOGIN = { success: false, message: "Invalid Team Head email or Team ID. Please check and try again." };
 
@@ -83,6 +85,7 @@ export const getOwnTeam = async (request, response) => {
       teamSize,
       members,
     },
+    detailsEdit: { editable: teamDetailsEditable(), deadline: getTeamDetailsEditDeadline() },
     submission: team.pdfSubmission?.fileId
       ? { submitted: true, fileName: team.pdfSubmission.fileName, fileSize: team.pdfSubmission.fileSize, submittedAt: team.pdfSubmission.submittedAt, status: deriveSubmissionStatus(team) }
       : { submitted: false },
@@ -92,6 +95,37 @@ export const getOwnTeam = async (request, response) => {
     evaluation: released ? { totalScore: evaluation.totalScore, result: evaluation.result } : null,
     updatedAt: team.rounds?.updatedAt || null,
   });
+};
+
+// The logged-in team updates its own team and member details until the edit deadline (server time).
+// Team Head email, Team ID, project theme and the number of members stay as registered.
+export const updateOwnTeamDetails = async (request, response) => {
+  const team = await loadOwnTeam(request);
+  if (!team) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
+  if (!teamDetailsEditable()) return response.status(403).json({ success: false, editClosed: true, message: TEAM_DETAILS_EDIT_CLOSED_MESSAGE });
+
+  const { errors, value } = validateTeamDetails(request.body, cleanMembers(team.members).length);
+  if (errors) return response.status(400).json({ success: false, message: errors.members || "Please correct the highlighted fields.", errors });
+
+  const college = {};
+  setCollege(college, value.team.college);
+  // Atomic: only applies to the record this request read, so a parallel admin edit is never silently overwritten.
+  const result = await Registration.updateOne(
+    { _id: team._id, updatedAt: team.updatedAt },
+    { $set: {
+      teamName: value.team.teamName,
+      ...college,
+      department: value.team.department,
+      year: value.team.year,
+      "leader.name": value.leader.name,
+      "leader.phone": value.leader.phone,
+      members: value.members,
+    } },
+  );
+  if (!result.matchedCount) return response.status(409).json({ success: false, message: "Your team details changed. Please refresh and try again." });
+
+  console.log(`Team details updated by Team Head for ${team.teamId}.`);
+  return response.json({ success: true, message: "Team details updated successfully." });
 };
 
 // Round 2: the logged-in team saves its own prototype link once (the token decides which team).

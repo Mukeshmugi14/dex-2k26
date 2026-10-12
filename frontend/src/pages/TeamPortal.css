@@ -281,3 +281,25 @@
 .team-portal .team-stage-badge{justify-self:start;width:fit-content}
 .team-portal .team-pill{white-space:nowrap}
 .team-portal .team-pdf-status>span:first-child{min-width:0}
+
+/* ---------- Team & member details edit ---------- */
+.team-portal .team-card h2 .team-edit-toggle{display:inline-flex;align-items:center;gap:5px;margin-left:auto;padding:6px 11px;border:0;border-radius:7px;background:#fff;color:var(--tp-ink);box-shadow:inset 0 0 0 1.5px var(--tp-line);font:700 12px Inter,Arial,sans-serif;letter-spacing:.02em;text-transform:none;cursor:pointer}
+.team-portal .team-card h2 .team-edit-toggle:hover{background:#f4f6fa}
+.team-portal .team-card h2 .team-edit-toggle svg{color:var(--tp-blue)}
+.team-portal .team-area-edit{grid-column:1/3;grid-row:1}
+.team-portal .team-details-form{display:grid;gap:16px;margin-top:14px}
+.team-portal .team-details-form fieldset{min-width:0;margin:0;padding:14px 16px 16px;border:1px solid var(--tp-line);border-radius:12px;background:#f8fafc}
+.team-portal .team-details-form legend{padding:0 6px;color:var(--tp-orange);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.team-portal .team-form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.team-portal .team-form-grid label{display:grid;gap:5px;align-content:start;min-width:0}
+.team-portal .team-form-grid label span{color:var(--tp-ink);font-size:12px;font-weight:700}
+.team-portal .team-form-grid input{width:100%;height:42px;padding:0 12px;border:1.5px solid #c7d6e2;border-radius:8px;background:#fff;color:var(--tp-ink);font:14px Inter,Arial,sans-serif}
+.team-portal .team-form-grid input:focus{outline:0;border-color:var(--tp-blue);box-shadow:0 0 0 4px #1f6fff1f}
+.team-portal .team-form-grid input:disabled{background:#eef2f6;color:var(--tp-muted)}
+.team-portal .team-form-grid input[aria-invalid="true"]{border-color:#d92d20}
+.team-portal .team-form-grid small{color:#b42318;font-size:12px;font-weight:600}
+@media (max-width:768px){
+  .team-portal .team-area-edit{grid-column:1/-1}
+  .team-portal .team-form-grid{grid-template-columns:minmax(0,1fr)}
+  .team-portal .team-details-form fieldset{padding:12px}
+}
