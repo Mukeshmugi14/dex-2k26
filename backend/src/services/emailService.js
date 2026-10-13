@@ -125,6 +125,34 @@ export const sendRound1SelectionEmail = (registration) => sendRoundResultEmail(r
 export const sendRound2SelectionEmail = (registration) => sendRoundResultEmail(registration, 2, "SELECTED");
 export const sendRejectionEmail = (registration, round) => sendRoundResultEmail(registration, round, "REJECTED");
 
+// Admin verification code: "login" (after a correct password) or "setup" (first-time login / forgot password).
+// The code is never logged.
+export const sendAdminOtpEmail = async (to, code, minutes, purpose = "login") => {
+  const setup = purpose === "setup";
+  const title = setup ? "Admin Password Setup" : "Admin Login";
+  const action = setup ? "set your admin password" : "finish signing in";
+  const warning = setup ? "If you did not ask to set or reset your admin password, ignore this email and tell the event team." : "If you did not just try to log in, someone knows your admin password. Do not share this code, and change the password right away.";
+  return sendEmail({
+    type: setup ? "admin-setup-code" : "admin-login-code",
+    to,
+    subject: `DEXATHON 2026 admin ${setup ? "password setup" : "login"} code: ${code}`,
+    html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#16171b"><h2 style="margin:0 0 8px">DEXATHON 2026 — ${title}</h2><p>Your verification code is:</p><p style="font-size:34px;font-weight:800;letter-spacing:10px;margin:8px 0 16px">${code}</p><p>It expires in ${minutes} minutes. Enter it on the admin login page to ${action}.</p><p style="color:#b42318"><b>${warning}</b></p></div>`,
+    text: `DEXATHON 2026 — ${title}\n\nYour verification code is: ${code}\nIt expires in ${minutes} minutes. Enter it on the admin login page to ${action}.\n\n${warning}`,
+  });
+};
+
+// Sent after every successful admin login, so the owner notices a login they didn't make.
+export const sendAdminLoginAlertEmail = async (to, { when, ip, agent, note = "" }) => {
+  const esc = (value) => String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return sendEmail({
+    type: "admin-login-alert",
+    to,
+    subject: "DEXATHON 2026: new admin login",
+    html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#16171b"><h2 style="margin:0 0 8px">DEXATHON 2026 — New admin login</h2><p>Your admin account just signed in${note ? ` (${esc(note)})` : ""}.</p><table style="border-collapse:collapse;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#5d6b7e">Time</td><td><b>${esc(when)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#5d6b7e">IP address</td><td><b>${esc(ip)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#5d6b7e">Browser</td><td>${esc(agent)}</td></tr></table><p style="color:#b42318"><b>If this wasn't you,</b> change the admin password and JWT_SECRET right away, and check the teams.</p></div>`,
+    text: `DEXATHON 2026 — New admin login${note ? ` (${note})` : ""}\n\nTime: ${when}\nIP address: ${ip}\nBrowser: ${agent}\n\nIf this wasn't you, change the admin password and JWT_SECRET right away, and check the teams.`,
+  });
+};
+
 // Admin test email (POST /api/admin/test-email).
 export const sendTestEmail = async (to) => sendEmail({
   type: "admin-test",

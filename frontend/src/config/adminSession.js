@@ -10,11 +10,28 @@ try {
   localStorage.removeItem("dexathon_admin_profile");
 } catch { /* storage unavailable */ }
 
-export const getAdminToken = () => session?.token || null;
+// Auto-logout after 30 minutes without mouse, keyboard, touch or scroll activity (the server also ends sessions after 2 hours).
+export const ADMIN_IDLE_MS = 30 * 60 * 1000;
+let lastActive = Date.now();
+const markActive = () => { lastActive = Date.now(); };
+const expireIfIdle = () => {
+  if (!session || Date.now() - lastActive < ADMIN_IDLE_MS) return false;
+  session = null;
+  if (typeof window !== "undefined" && window.location.pathname.startsWith("/devleader") && !window.location.pathname.startsWith("/devleader/login")) {
+    window.location.assign("/devleader/login?expired=1");
+  }
+  return true;
+};
+if (typeof window !== "undefined") {
+  ["mousedown", "keydown", "touchstart", "scroll", "wheel"].forEach((event) => window.addEventListener(event, markActive, { passive: true, capture: true }));
+  setInterval(expireIfIdle, 30 * 1000);
+}
+
+export const getAdminToken = () => (expireIfIdle() ? null : session?.token || null);
 
 export const getAdminProfile = () => session?.profile || null;
 
-export const setAdminSession = (token, profile) => { session = { token, profile }; };
+export const setAdminSession = (token, profile) => { session = { token, profile }; markActive(); };
 
 export const clearAdminSession = () => { session = null; };
 

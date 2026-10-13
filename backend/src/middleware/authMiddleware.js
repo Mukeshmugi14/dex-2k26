@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import { canAccess } from "../services/adminAccess.js";
+import { adminJwtSecret, WEAK_SECRET_MESSAGE } from "../services/adminSecurity.js";
 
 // Every admin request re-checks the account (exists, active, current role) so role changes and
 // deactivation take effect without waiting for the token to expire. A 15-second cache keeps this cheap.
@@ -18,10 +19,13 @@ const loadAccount = async (id) => {
 };
 
 export const requireAdmin = async (request, response, next) => {
+  // Tokens signed with a missing or public placeholder secret are never accepted (anyone could forge them).
+  const secret = adminJwtSecret();
+  if (!secret) return response.status(503).json({ message: WEAK_SECRET_MESSAGE });
   let payload;
   try {
     const token = request.headers.authorization?.split(" ")[1];
-    payload = jwt.verify(token, process.env.JWT_SECRET);
+    payload = jwt.verify(token, secret);
   } catch {
     return response.status(401).json({ message: "Admin authentication required." });
   }

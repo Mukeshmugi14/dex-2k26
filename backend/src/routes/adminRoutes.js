@@ -14,6 +14,9 @@ import {
   getTeamLists,
   importSpreadsheet,
   login,
+  verifyLoginOtp,
+  requestPasswordSetup,
+  completePasswordSetup,
   resendPaymentConfirmationEmail,
   sendTeamEmail,
   getTeamEmailPreview,
@@ -34,6 +37,9 @@ const upload = multer({
 
 const router = Router();
 router.post("/login", login);
+router.post("/login/verify", verifyLoginOtp);
+router.post("/login/setup", requestPasswordSetup);
+router.post("/login/setup/verify", completePasswordSetup);
 router.use(requireAdmin);
 router.get("/me", getMe);
 
