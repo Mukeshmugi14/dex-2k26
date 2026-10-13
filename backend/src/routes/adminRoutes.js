@@ -29,6 +29,7 @@ import { bulkDeleteTeams, bulkUpdateTeams, deleteTeam } from "../controllers/tea
 import { decideRound, listRoundSelection, retryRoundEmail } from "../controllers/roundSelectionController.js";
 import { listRounds, resendRoundEmail, updateRounds } from "../controllers/roundsController.js";
 import { requireAdmin, requireSection } from "../middleware/authMiddleware.js";
+import { localAdminOnly } from "../middleware/localAdminOnly.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -36,6 +37,8 @@ const upload = multer({
 });
 
 const router = Router();
+// Admin is local-only: every admin route, including login, is refused on hosted deployments.
+router.use(localAdminOnly);
 router.post("/login", login);
 router.post("/login/verify", verifyLoginOtp);
 router.post("/login/setup", requestPasswordSetup);
