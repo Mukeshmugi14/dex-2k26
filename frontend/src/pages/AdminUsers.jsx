@@ -46,13 +46,13 @@ function CreateAdminForm({ roles, headers, onCreated, onUnauthorized }) {
   return <form className="team-card au-create" onSubmit={submit} noValidate>
     <h2><UserPlus size={18} /> Create Admin Login</h2>
     <div className="au-grid">
-      <label className={errors.username ? "has-error" : ""}><span>Username</span><input value={form.username} onChange={(event) => update("username", event.target.value)} autoComplete="off" placeholder="e.g. payments.desk" />{errors.username ? <small>{errors.username}</small> : null}</label>
+      <label className={errors.username ? "has-error" : ""}><span>Gmail address</span><input type="email" value={form.username} onChange={(event) => update("username", event.target.value)} autoComplete="off" placeholder="e.g. payments.desk@gmail.com" />{errors.username ? <small>{errors.username}</small> : null}</label>
       <label><span>Name (optional)</span><input value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Person's name" /></label>
       <label className={errors.role ? "has-error" : ""}><span>Role</span><select value={form.role} onChange={(event) => update("role", event.target.value)}>{roles.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select><small className="au-hint">{ROLE_HELP[form.role]}</small></label>
       <label className={errors.password ? "has-error" : ""}><span>Password</span><input type="password" value={form.password} onChange={(event) => update("password", event.target.value)} autoComplete="new-password" placeholder="At least 8 characters" />{errors.password ? <small>{errors.password}</small> : null}</label>
     </div>
     {error ? <p className="pdf-error" role="alert">{error}</p> : null}
-    <footer><span>Share the username and password with the person privately.</span><button type="submit" disabled={saving}>{saving ? "Creating..." : "Create Admin"}</button></footer>
+    <footer><span>Share the password with the person privately. Their 4-digit login code is emailed to this Gmail.</span><button type="submit" disabled={saving}>{saving ? "Creating..." : "Create Admin"}</button></footer>
   </form>;
 }
 

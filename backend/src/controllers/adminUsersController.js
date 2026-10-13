@@ -4,7 +4,8 @@ import Admin, { ADMIN_ROLES } from "../models/Admin.js";
 import { forgetAdminAccount } from "../middleware/authMiddleware.js";
 import { adminProfile } from "../services/adminAccess.js";
 
-const USERNAME = /^[a-z0-9._-]{3,40}$/;
+// Admins log in with their Gmail address (the login code is emailed there), so the username is an email.
+const USERNAME = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
 const MIN_PASSWORD = 8;
 const view = (admin) => ({ ...adminProfile(admin), active: admin.active !== false, lastLoginAt: admin.lastLoginAt || null, createdAt: admin.createdAt || null });
 const activeSuperAdmins = (excludeId) => Admin.countDocuments({ role: "SUPER_ADMIN", active: { $ne: false }, ...(excludeId ? { _id: { $ne: excludeId } } : {}) });
@@ -19,12 +20,12 @@ export const createAdmin = async (request, response) => {
   const name = typeof request.body.name === "string" ? request.body.name.trim().slice(0, 80) : "";
   const { role, password } = request.body;
   const errors = {};
-  if (!USERNAME.test(username)) errors.username = "Use 3–40 lowercase letters, numbers, dots, dashes or underscores.";
+  if (!USERNAME.test(username) || username.length > 120) errors.username = "Enter the admin's Gmail address.";
   if (!ADMIN_ROLES.includes(role)) errors.role = "Choose a role.";
   if (typeof password !== "string" || password.length < MIN_PASSWORD) errors.password = `Password must be at least ${MIN_PASSWORD} characters.`;
-  if (!errors.username && await Admin.exists({ username })) errors.username = "That username is already taken.";
+  if (!errors.username && await Admin.exists({ $or: [{ username }, { email: username }] })) errors.username = "That Gmail address already has an admin account.";
   if (Object.keys(errors).length) return response.status(400).json({ message: "Please correct the highlighted fields.", errors });
-  const admin = await Admin.create({ username, name, role, active: true, passwordHash: await bcrypt.hash(password, 12) });
+  const admin = await Admin.create({ username, email: username, name, role, active: true, passwordHash: await bcrypt.hash(password, 12) });
   return response.status(201).json({ message: `Admin "${username}" created.`, admin: view(admin) });
 };
 

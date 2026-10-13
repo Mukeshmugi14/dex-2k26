@@ -11,4 +11,8 @@ export default mongoose.model("Admin", new mongoose.Schema({
   active: { type: Boolean, default: true },
   passwordHash: { type: String, required: true },
   lastLoginAt: Date,
+  // Login verification code (4 digits) emailed after a correct password. Only a hash is stored,
+  // and it is never returned by queries unless selected explicitly ("+otp").
+  // purpose: "login" (after a correct password) or "setup" (first-time / forgot password: set a new password).
+  otp: { type: { hash: String, purpose: String, expiresAt: Date, attempts: Number, sentAt: Date }, select: false },
 }, { timestamps: true }));
