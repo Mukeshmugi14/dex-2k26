@@ -1,6 +1,7 @@
-import { ArrowRight, LayoutDashboard, Shield, Users } from "lucide-react";
+import { ArrowRight, Shield, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./PortalGateway.css";
+import { ADMIN_ENABLED } from "../config/adminAvailability";
 
 export default function PortalGateway() {
   return (
@@ -15,11 +16,13 @@ export default function PortalGateway() {
           </div>
           <h1 className="portal-gateway-title">Dexathon 2K26 Portal</h1>
           <p className="portal-gateway-subtitle">
-            Welcome to the official DEXATHON 2026 management portal. Access your team registration or administrative dashboard.
+            {ADMIN_ENABLED
+              ? "Welcome to the official DEXATHON 2026 management portal. Access your team registration or administrative dashboard."
+              : "Welcome to the official DEXATHON 2026 portal. Log in to the Team Head Portal to manage your team and submissions."}
           </p>
         </header>
 
-        <section className="portal-cards-grid">
+        <section className={`portal-cards-grid${ADMIN_ENABLED ? "" : " is-single"}`}>
           {/* Team Head Portal */}
           <article className="portal-card">
             <div className="portal-card-icon">
@@ -35,8 +38,8 @@ export default function PortalGateway() {
             </Link>
           </article>
 
-          {/* Admin Dashboard */}
-          <article className="portal-card card-admin">
+          {/* Admin Dashboard: local development only */}
+          {ADMIN_ENABLED ? <article className="portal-card card-admin">
             <div className="portal-card-icon">
               <Shield size={26} />
             </div>
@@ -48,7 +51,7 @@ export default function PortalGateway() {
             <Link to="/devleader/login" className="portal-card-btn">
               Admin Sign In <ArrowRight size={16} />
             </Link>
-          </article>
+          </article> : null}
         </section>
 
         <footer className="portal-gateway-footer">

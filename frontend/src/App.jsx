@@ -1,20 +1,16 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import TeamProtectedRoute from "./components/TeamProtectedRoute";
 import PortalGateway from "./pages/PortalGateway";
 import TeamLogin from "./pages/TeamLogin";
 import TeamDashboard from "./pages/TeamDashboard";
-import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
-import TeamLists from "./pages/TeamLists";
-import AdminTeams from "./pages/AdminTeams";
-import AdminPdfSubmissions from "./pages/AdminPdfSubmissions";
 import SubmitDocument from "./pages/SubmitDocument";
-import AdminRounds from "./pages/AdminRounds";
-import AdminRoundSelection from "./pages/AdminRoundSelection";
-import AdminUsers from "./pages/AdminUsers";
 import "./styles/dexathon.css";
 import "./styles/responsive.css";
+
+// The admin panel exists only in local development (npm run dev). import.meta.env.DEV is written inline so the
+// bundler sees the constant false in production and drops the admin code: no admin page ships to the deployed site.
+const AdminApp = import.meta.env.DEV ? lazy(() => import("./AdminApp")) : null;
 
 function App() {
   return (
@@ -28,69 +24,10 @@ function App() {
         </Route>
         <Route path="/submit-document/:token" element={<SubmitDocument />} />
 
-        {/* Admin Authentication & Sections */}
-        <Route path="/devleader" element={<Navigate to="/devleader/login" replace />} />
-        <Route path="/devleader/login" element={<AdminLogin />} />
-        <Route
-          path="/devleader/dashboard"
-          element={
-            <AdminProtectedRoute section="dashboard">
-              <AdminDashboard />
-            </AdminProtectedRoute>
-          }
-        />
-        <Route
-          path="/devleader/team-lists"
-          element={
-            <AdminProtectedRoute section="teamLists">
-              <TeamLists />
-            </AdminProtectedRoute>
-          }
-        />
-        {/* Backwards compatibility: redirect payment-history to team-lists */}
-        <Route path="/devleader/payment-history" element={<Navigate to="/devleader/team-lists" replace />} />
-        <Route
-          path="/devleader/teams"
-          element={
-            <AdminProtectedRoute section="teams">
-              <AdminTeams />
-            </AdminProtectedRoute>
-          }
-        />
-        <Route
-          path="/devleader/pdf-submissions"
-          element={
-            <AdminProtectedRoute section="pdf">
-              <AdminPdfSubmissions />
-            </AdminProtectedRoute>
-          }
-        />
-        <Route
-          path="/devleader/rounds"
-          element={
-            <AdminProtectedRoute section="rounds">
-              <AdminRounds />
-            </AdminProtectedRoute>
-          }
-        />
-        <Route
-          path="/devleader/round-selection"
-          element={
-            <AdminProtectedRoute section="rounds">
-              <AdminRoundSelection />
-            </AdminProtectedRoute>
-          }
-        />
-        <Route
-          path="/devleader/users"
-          element={
-            <AdminProtectedRoute section="users">
-              <AdminUsers />
-            </AdminProtectedRoute>
-          }
-        />
+        {/* Admin panel: local development only */}
+        {AdminApp ? <Route path="/devleader/*" element={<Suspense fallback={null}><AdminApp /></Suspense>} /> : null}
 
-        {/* Catch-all redirect to Portal Gateway */}
+        {/* Catch-all redirect to Portal Gateway (on the deployed site this includes /devleader/...) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

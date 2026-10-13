@@ -208,3 +208,9 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Deployed site: only the Team Head Portal card, centred */
+.portal-cards-grid.is-single {
+  grid-template-columns: minmax(0, 520px);
+  justify-content: center;
+}
