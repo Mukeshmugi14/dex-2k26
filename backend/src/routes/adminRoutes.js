@@ -1,15 +1,12 @@
 import { Router } from "express";
 import multer from "multer";
 import {
-  confirmPayment,
   getColleges,
   getDashboard,
   getFaculty,
   getEmailHealthStatus,
   getMe,
   sendAdminTestEmail,
-  getPaymentEmailStatus,
-  getPayments,
   getRegistrations,
   getTeamLists,
   importSpreadsheet,
@@ -17,7 +14,6 @@ import {
   verifyLoginOtp,
   requestPasswordSetup,
   completePasswordSetup,
-  resendPaymentConfirmationEmail,
   sendTeamEmail,
   getTeamEmailPreview,
   getTeamEmailStatus,
@@ -30,6 +26,8 @@ import { decideRound, listRoundSelection, retryRoundEmail } from "../controllers
 import { listRounds, resendRoundEmail, updateRounds } from "../controllers/roundsController.js";
 import { requireAdmin, requireSection } from "../middleware/authMiddleware.js";
 import { localAdminOnly } from "../middleware/localAdminOnly.js";
+import { getAnalytics } from "../controllers/analyticsController.js";
+import { listPrototypes } from "../controllers/prototypesController.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -48,6 +46,8 @@ router.get("/me", getMe);
 
 // Dashboard & registration overview (General Admin, Team Admin)
 router.get("/dashboard", requireSection("dashboard"), getDashboard);
+router.get("/analytics", requireSection("dashboard"), getAnalytics);
+router.get("/prototypes", requireSection("pdf"), listPrototypes);
 router.get("/faculty", requireSection("dashboard"), getFaculty);
 
 // Teams Management (General Admin, Team Admin)
@@ -59,7 +59,7 @@ router.post("/registrations/bulk-delete", requireSection("teams"), bulkDeleteTea
 router.post("/registrations/bulk-update", requireSection("teams"), bulkUpdateTeams);
 router.post("/teams/import", requireSection("teams"), upload.single("file"), importSpreadsheet);
 
-// Team Lists (replacing Payment History - Google Sheets import, email sending, team tracking)
+// Team Lists (Google Sheets import, email sending, team tracking)
 router.get("/team-lists", requireSection("teamLists"), getTeamLists);
 router.post("/team-lists/import", requireSection("teamLists"), upload.single("file"), importSpreadsheet);
 router.get("/team-lists/:id/email-preview", requireSection("teamLists"), getTeamEmailPreview);
@@ -67,11 +67,6 @@ router.post("/team-lists/:id/send-email", requireSection("teamLists"), sendTeamE
 router.get("/team-lists/:id/email-status", requireSection("teamLists"), getTeamEmailStatus);
 
 // Aliases for legacy compatibility
-router.get("/payments", requireSection("teamLists"), getTeamLists);
-router.get("/payment-history", requireSection("teamLists"), getTeamLists);
-router.put("/payments/:id/confirm", requireSection("teamLists"), confirmPayment);
-router.post("/payments/:id/resend-email", requireSection("teamLists"), resendPaymentConfirmationEmail);
-router.get("/payments/:id/email-status", requireSection("teamLists"), getPaymentEmailStatus);
 router.get("/email-health", requireSection("teamLists"), getEmailHealthStatus);
 router.post("/test-email", requireSection("teamLists"), sendAdminTestEmail);
 

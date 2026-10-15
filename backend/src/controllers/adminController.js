@@ -18,6 +18,7 @@ import {
 } from "../services/emailService.js";
 import { generateOtp, hashOtp, isEmail, maskEmail, OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS, otpMatches, passwordProblem, signChallenge, verifyChallenge } from "../services/adminOtpService.js";
 import { processSpreadsheetImport } from "../services/spreadsheetImportService.js";
+import { createCollegeResolver } from "../services/collegeNames.js";
 import { adminJwtSecret, clearFailures, LOCK_MS, clientAgent, clientIp, lockedMinutes, lockedResponse, recordFailure, throttleKeys, WEAK_SECRET_MESSAGE } from "../services/adminSecurity.js";
 
 const INVALID_ADMIN_LOGIN = { success: false, message: "Invalid Gmail address or password" };
@@ -199,7 +200,7 @@ export const getDashboard = async (_request, response) => {
   ]);
 
   const totalTeams = stats.total || 0;
-  const colleges = await Registration.distinct("college");
+  const colleges = (await collegeResolver()).groups();
   const themes = await Registration.distinct("projectTheme");
 
   return response.json({
@@ -217,12 +218,20 @@ export const getDashboard = async (_request, response) => {
   });
 };
 
-// Build common filter for team registrations
-const buildTeamFilter = (query) => {
+// Every spelling of a college, grouped under its standard name ("SIST", "Sathyabama University", … → Sathyabama).
+const collegeResolver = async () => createCollegeResolver(await Registration.distinct("college"));
+const SATHYABAMA_NAME = "Sathyabama Institute of Science and Technology";
+const spellingsOf = async (standardName) => {
+  const group = (await collegeResolver()).groups().find((g) => g.name === standardName);
+  return group ? group.spellings : [standardName];
+};
+
+// Build common filter for team registrations. A college filter is a standard name and matches all of its spellings.
+const buildTeamFilter = async (query) => {
   const filters = [searchFilter(query.search, ["teamName", "teamId", "registrationNumber", "leader.name", "leader.email", "college", "projectTheme"])];
-  if (query.college === "sathyabama") filters.push({ college: /^sathyabama institute of science and technology$/i });
-  else if (query.college === "other") filters.push({ college: { $not: /^sathyabama institute of science and technology$/i } });
-  else if (query.college && query.college !== "all") filters.push({ college: String(query.college) });
+  if (query.college === "sathyabama") filters.push({ college: { $in: await spellingsOf(SATHYABAMA_NAME) } });
+  else if (query.college === "other") filters.push({ college: { $nin: await spellingsOf(SATHYABAMA_NAME) } });
+  else if (query.college && query.college !== "all") filters.push({ college: { $in: await spellingsOf(String(query.college)) } });
 
   if (query.theme && query.theme !== "all") {
     filters.push({ projectTheme: String(query.theme) });
@@ -251,7 +260,7 @@ const buildTeamFilter = (query) => {
 // Paginated team/registration list
 export const getRegistrations = async (request, response) => {
   const { query } = request;
-  const match = buildTeamFilter(query);
+  const match = await buildTeamFilter(query);
 
   const all = query.all === "1";
   const { page, limit, skip } = all ? { page: 1, limit: 2000, skip: 0 } : pageParams(query);
@@ -271,11 +280,11 @@ export const getRegistrations = async (request, response) => {
   return response.json({ items: result.items, total, page, limit, pages: Math.max(Math.ceil(total / limit), 1) });
 };
 
-// Team Lists endpoint (repurposed from Payment History)
+// Team Lists endpoint
 export const getTeamLists = async (request, response) => {
   const { query } = request;
   const { page, limit, skip } = pageParams(query);
-  const match = buildTeamFilter(query);
+  const match = await buildTeamFilter(query);
 
   try {
     const [[summary = {}], items, total] = await Promise.all([
@@ -325,12 +334,11 @@ export const getTeamLists = async (request, response) => {
   }
 };
 
-// Aliased for backwards compatibility with any remaining payments call
-export const getPayments = getTeamLists;
 
 // Distinct colleges
 export const getColleges = async (_request, response) => {
-  const colleges = (await Registration.distinct("college")).filter(Boolean).sort((a, b) => a.localeCompare(b));
+  // Standard names only: the many spellings of one college appear once.
+  const colleges = (await collegeResolver()).groups().map((g) => g.name).filter(Boolean);
   return response.json({ colleges });
 };
 
@@ -422,6 +430,7 @@ export const sendTeamEmail = async (request, response) => {
   if (!team) return response.status(404).json({ success: false, message: "Team not found." });
 
   const force = Boolean(request.body?.force);
+  console.log(`TEAM_EMAIL_REQUEST ${team.teamId} "${team.teamName}" by ${request.admin?.username || "?"} force=${force} current=${team.registrationEmail?.status || "Not Sent"}`);
   if (team.registrationEmail?.status === "Sent" && !force) {
     return response.status(409).json({
       success: false,
@@ -491,6 +500,7 @@ export const getTeamEmailPreview = async (request, response) => {
   if (!mongoose.isValidObjectId(request.params.id)) return response.status(404).json({ success: false, message: "Team not found." });
   const team = await Registration.findById(request.params.id);
   if (!team) return response.status(404).json({ success: false, message: "Team not found." });
+  console.log(`TEAM_EMAIL_PREVIEW ${team.teamId} "${team.teamName}" by ${request.admin?.username || "?"}`);
 
   try {
     // If not yet assigned a sequential ID, preview with the next sequence in order
@@ -536,9 +546,6 @@ export const getTeamEmailStatus = async (request, response) => {
 };
 
 // Aliases for legacy compatibility
-export const confirmPayment = sendTeamEmail;
-export const resendPaymentConfirmationEmail = sendTeamEmail;
-export const getPaymentEmailStatus = getTeamEmailStatus;
 
 // Admin test email
 export const sendAdminTestEmail = async (request, response) => {

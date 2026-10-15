@@ -1,6 +1,6 @@
 // Central email service. Every transactional email is sent through Gmail SMTP from this backend.
 // There is no other provider: the browser never sends email and never sees the Gmail credentials.
-import { buildPaymentConfirmationEmail, buildTeamConfirmationEmail, POSTER_CID, POSTER_IMAGE_PATH } from "../templates/paymentConfirmationEmail.js";
+import { buildTeamConfirmationEmail, POSTER_CID, POSTER_IMAGE_PATH } from "../templates/paymentConfirmationEmail.js";
 import { buildSelectionEmail } from "../templates/resultEmail.js";
 import { buildRoundResultEmail } from "../templates/roundResultEmail.js";
 import { buildRoundUpdateEmail } from "../templates/roundUpdateEmail.js";
@@ -70,35 +70,6 @@ export const sendTeamConfirmationEmail = async (registration) => {
     text,
     attachments: [{ filename: "dexathon-2026-poster.jpg", path: POSTER_IMAGE_PATH, cid: POSTER_CID }],
   });
-};
-
-// Payment confirmation (admin verified the payment). Resolves { sent, messageId } only after Gmail accepted it.
-export const sendPaymentConfirmationEmail = async (registration) => {
-  const to = getRecipientEmail(registration);
-  const { html, text } = buildPaymentConfirmationEmail(registration, { portal: portalAccess(registration) });
-  return sendEmail({
-    type: "payment-confirmation",
-    to,
-    subject: "DEXATHON 2026 — Payment Confirmed ✓",
-    html,
-    text,
-    // The poster is embedded in the email (cid:) so it shows without loading external images.
-    attachments: [{ filename: "dexathon-2026-poster.jpg", path: POSTER_IMAGE_PATH, cid: POSTER_CID }],
-  });
-};
-export const sendPaymentConfirmation = sendPaymentConfirmationEmail;
-export const resendConfirmationEmail = sendPaymentConfirmationEmail;
-
-// Plain registration receipt (Razorpay payment flow).
-export const sendConfirmationEmail = async (registration) => {
-  const to = getRecipientEmail(registration);
-  const result = await sendEmail({
-    type: "registration-receipt",
-    to,
-    subject: "DEXATHON 2026 Registration Confirmation",
-    text: `DEXATHON 2026 Registration Successful\n\nTeam Name: ${registration.teamName}\nTeam ID: ${registration.teamId}\nRegistration Number: ${registration.registrationNumber}\nAmount Paid: ₹${registration.payment.amount}\nTransaction ID: ${registration.payment.transactionId}\nPayment Status: ${registration.payment.status}\nUPI ID: ${registration.payment.upiId || "Razorpay"}\nRegistration Date: ${registration.createdAt.toLocaleDateString()}`,
-  });
-  return result.sent;
 };
 
 // Second-round selection after the Round 1 PDF evaluation. Returns true only when Gmail accepted it.

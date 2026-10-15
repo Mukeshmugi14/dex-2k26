@@ -264,7 +264,7 @@ export default function AdminPdfSubmissions() {
 
     {loading ? <AdminSkeleton rows={4} variant="cards" />
       : loadError ? <div className="admin-teams-state error"><p>{loadError}</p><button type="button" onClick={load}>Retry</button></div>
-        : !visibleTeams.length ? <p className="admin-teams-state">{teams.length ? "No teams match this filter." : "No confirmed teams yet. Teams appear here once their payment is confirmed."}</p>
+        : !visibleTeams.length ? <p className="admin-teams-state">{teams.length ? "No teams match this filter." : "No teams yet. Teams appear here once they register."}</p>
           : <section className="team-card-grid pdf-card-grid">{paged.pageItems.map((team) => {
             const status = team.pdfSubmission.status;
             const hasPdf = team.pdfSubmission.hasPdf;

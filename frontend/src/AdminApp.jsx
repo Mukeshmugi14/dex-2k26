@@ -2,9 +2,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import TeamLists from "./pages/TeamLists";
 import AdminTeams from "./pages/AdminTeams";
 import AdminPdfSubmissions from "./pages/AdminPdfSubmissions";
+import AdminPrototypes from "./pages/AdminPrototypes";
 import AdminRounds from "./pages/AdminRounds";
 import AdminRoundSelection from "./pages/AdminRoundSelection";
 import AdminUsers from "./pages/AdminUsers";
@@ -19,11 +21,11 @@ export default function AdminApp() {
       <Route index element={<Navigate to="/devleader/login" replace />} />
       <Route path="login" element={<AdminLogin />} />
       <Route path="dashboard" element={guarded("dashboard", <AdminDashboard />)} />
+      <Route path="analytics" element={guarded("dashboard", <AdminAnalytics />)} />
       <Route path="team-lists" element={guarded("teamLists", <TeamLists />)} />
-      {/* Backwards compatibility: redirect payment-history to team-lists */}
-      <Route path="payment-history" element={<Navigate to="/devleader/team-lists" replace />} />
       <Route path="teams" element={guarded("teams", <AdminTeams />)} />
       <Route path="pdf-submissions" element={guarded("pdf", <AdminPdfSubmissions />)} />
+      <Route path="prototypes" element={guarded("pdf", <AdminPrototypes />)} />
       <Route path="rounds" element={guarded("rounds", <AdminRounds />)} />
       <Route path="round-selection" element={guarded("rounds", <AdminRoundSelection />)} />
       <Route path="users" element={guarded("users", <AdminUsers />)} />

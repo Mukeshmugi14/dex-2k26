@@ -155,7 +155,7 @@ function DeleteDialog({ teams, onCancel, onConfirm, busy, error }) {
         {single ? <p className="tm-delete-text">Team:<br /><b>{teams[0].teamName}</b><br /><br />Are you sure you want to delete this team?</p>
           : <p className="tm-delete-text">This action will permanently remove the selected team records.</p>}
         {!single ? <ul className="tm-delete-list">{teams.slice(0, 8).map((team) => <li key={team._id}>{team.teamName}</li>)}{teams.length > 8 ? <li>…and {teams.length - 8} more</li> : null}</ul> : null}
-        <p className="tm-delete-warning">Their payment details, round results and any submitted PDF will be removed too. This cannot be undone.</p>
+        <p className="tm-delete-warning">Their team details, round results and any submitted PDF will be removed too. This cannot be undone.</p>
         {error ? <p className="edit-team-form-error" role="alert">{error}</p> : null}
       </div>
       <footer><div>
