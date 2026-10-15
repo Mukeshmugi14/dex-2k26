@@ -34,3 +34,6 @@ backend/uploads/*
 
 # Local database backups (contain participant personal data)
 backend/backups/
+
+# Team data exports (contain participant personal data)
+team-data-export/

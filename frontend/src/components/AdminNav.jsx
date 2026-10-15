@@ -4,9 +4,11 @@ import { clearAdminSession, getAdminProfile } from "../config/adminSession";
 // Every admin page shares this menu; it shows only the sections the signed-in admin may use.
 export const ADMIN_LINKS = [
   ["/devleader/dashboard", "Dashboard", "dashboard"],
+  ["/devleader/analytics", "Analytics", "dashboard"],
   ["/devleader/team-lists", "Team Lists", "teamLists"],
   ["/devleader/teams", "Teams", "teams"],
   ["/devleader/pdf-submissions", "PDF Submissions", "pdf"],
+  ["/devleader/prototypes", "Prototypes", "pdf"],
   ["/devleader/rounds", "Round Status", "rounds"],
   ["/devleader/round-selection", "Round Selection", "rounds"],
   ["/devleader/users", "Admin Users", "users"],

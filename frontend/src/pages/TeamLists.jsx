@@ -20,6 +20,9 @@ import "./TeamLists.css";
 import { API_URL } from "../config/api";
 import { clearAdminSession, getAdminToken } from "../config/adminSession";
 import useAutoRefresh from "../config/useAutoRefresh";
+
+// No response at all means the local backend isn't running (or can't be reached), not a problem with the file or team.
+const SERVER_DOWN = "Can't reach the backend server. Start it in a terminal with: npm --prefix backend run dev — then try again.";
 import AdminNav from "../components/AdminNav";
 import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components/AdminListParts";
 
@@ -166,7 +169,7 @@ export default function TeamLists() {
       });
       loadTeams();
     } catch (err) {
-      const msg = err.response?.data?.message || "Failed to process the spreadsheet file.";
+      const msg = !err.response ? SERVER_DOWN : err.response?.data?.message || "Failed to process the spreadsheet file.";
       setImportError(msg);
     } finally {
       setImporting(false);
@@ -186,7 +189,7 @@ export default function TeamLists() {
     } catch (err) {
       setFeedback({
         type: "error",
-        message: err.response?.data?.message || "Unable to generate email preview.",
+        message: !err.response ? SERVER_DOWN : err.response?.data?.message || "Unable to generate email preview.",
       });
       setPreviewModalOpen(false);
     } finally {
@@ -217,7 +220,7 @@ export default function TeamLists() {
       } else {
         setFeedback({
           type: "error",
-          message: err.response?.data?.message || "Failed to send confirmation email.",
+          message: !err.response ? SERVER_DOWN : err.response?.data?.message || "Failed to send confirmation email.",
         });
       }
     } finally {
@@ -919,6 +922,21 @@ export default function TeamLists() {
                   <dd>
                     {selectedTeam.department || "—"}{" "}
                     {selectedTeam.year ? `(${selectedTeam.year})` : ""}
+                  </dd>
+                </div>
+                <div className="details-field">
+                  <dt>Round 2 Prototype</dt>
+                  <dd style={{ overflowWrap: "anywhere" }}>
+                    {/^https?:\/\//i.test(selectedTeam.prototypeSubmission?.url || "") ? (
+                      <>
+                        <b>{selectedTeam.prototypeSubmission.category === "HARDWARE" ? "Hardware · YouTube video" : "Software · Website / app"}</b>
+                        {" — "}
+                        <a href={selectedTeam.prototypeSubmission.url} target="_blank" rel="noopener noreferrer" style={{ color: "#55caff" }}>
+                          {selectedTeam.prototypeSubmission.category === "HARDWARE" ? "Watch on YouTube" : "Open website"}
+                        </a>
+                        <span style={{ display: "block", color: "#8ba0b6", fontSize: 12 }}>{selectedTeam.prototypeSubmission.url}</span>
+                      </>
+                    ) : "Not submitted yet"}
                   </dd>
                 </div>
                 {selectedTeam.mentor?.name ? (
