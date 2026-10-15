@@ -26,7 +26,9 @@ const run = async () => {
       insert = tx?.o.applyOps.find((x) => x.op === "i" && String(x.o._id) === String(_id))?.o;
     }
     if (!insert) { console.log(`NOT FOUND ${_id}`); continue; }
-    const doc = structuredClone(insert);
+    // Use the driver's own document: structuredClone would turn BSON types (ObjectId _id, nested ids) into plain
+    // objects, which breaks lookups by id. The insert entry was just read, so changing it in place is safe.
+    const doc = insert;
     let applied = 0, skipped = 0;
     for (const entry of await oplog.find({ ns: "SIST.registrations", op: "u", "o2._id": _id }).sort({ $natural: 1 }).toArray()) {
       if (skip.some((prefix) => String(entry.lsid?.id || "").startsWith(prefix))) { skipped++; continue; }
