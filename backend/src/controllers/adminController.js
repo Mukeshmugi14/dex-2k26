@@ -18,7 +18,10 @@ import {
 } from "../services/emailService.js";
 import { generateOtp, hashOtp, isEmail, maskEmail, OTP_MAX_ATTEMPTS, OTP_RESEND_MS, OTP_TTL_MS, otpMatches, passwordProblem, signChallenge, verifyChallenge } from "../services/adminOtpService.js";
 import { processSpreadsheetImport } from "../services/spreadsheetImportService.js";
-import { createCollegeResolver } from "../services/collegeNames.js";
+import College from "../models/College.js";
+import { createCollegeLookup } from "../services/collegeRegistry.js";
+import { memberCollegeNames, teamCollegeMix } from "../services/teamColleges.js";
+import { referralCategory } from "../services/referralSource.js";
 import { adminJwtSecret, clearFailures, LOCK_MS, clientAgent, clientIp, lockedMinutes, lockedResponse, recordFailure, throttleKeys, WEAK_SECRET_MESSAGE } from "../services/adminSecurity.js";
 
 const INVALID_ADMIN_LOGIN = { success: false, message: "Invalid Gmail address or password" };
@@ -200,7 +203,7 @@ export const getDashboard = async (_request, response) => {
   ]);
 
   const totalTeams = stats.total || 0;
-  const colleges = (await collegeResolver()).groups();
+  const colleges = (await Registration.distinct("collegeId")).filter(Boolean);
   const themes = await Registration.distinct("projectTheme");
 
   return response.json({
@@ -218,20 +221,21 @@ export const getDashboard = async (_request, response) => {
   });
 };
 
-// Every spelling of a college, grouped under its standard name ("SIST", "Sathyabama University", … → Sathyabama).
-const collegeResolver = async () => createCollegeResolver(await Registration.distinct("college"));
-const SATHYABAMA_NAME = "Sathyabama Institute of Science and Technology";
-const spellingsOf = async (standardName) => {
-  const group = (await collegeResolver()).groups().find((g) => g.name === standardName);
-  return group ? group.spellings : [standardName];
-};
+// Colleges are grouped by the resolved registry collegeId (see services/collegeRegistry.js), never by raw text.
+const HOST_COLLEGE_ID = "sathyabama";
+const collegeIdForName = async (name) => (await College.findOne({ name, active: true }, "collegeId").lean())?.collegeId || null;
 
-// Build common filter for team registrations. A college filter is a standard name and matches all of its spellings.
+// Build common filter for team registrations. A college filter is a registry college name and matches every
+// registration resolved to that collegeId, whatever spelling was submitted.
 const buildTeamFilter = async (query) => {
   const filters = [searchFilter(query.search, ["teamName", "teamId", "registrationNumber", "leader.name", "leader.email", "college", "projectTheme"])];
-  if (query.college === "sathyabama") filters.push({ college: { $in: await spellingsOf(SATHYABAMA_NAME) } });
-  else if (query.college === "other") filters.push({ college: { $nin: await spellingsOf(SATHYABAMA_NAME) } });
-  else if (query.college && query.college !== "all") filters.push({ college: { $in: await spellingsOf(String(query.college)) } });
+  if (query.college === "sathyabama") filters.push({ collegeId: HOST_COLLEGE_ID });
+  else if (query.college === "other") filters.push({ collegeId: { $ne: HOST_COLLEGE_ID } });
+  else if (query.college === "unresolved") filters.push({ $or: [{ collegeId: null }, { collegeId: { $exists: false } }] });
+  else if (query.college && query.college !== "all") {
+    const collegeId = await collegeIdForName(String(query.college));
+    filters.push(collegeId ? { collegeId } : { college: String(query.college) });
+  }
 
   if (query.theme && query.theme !== "all") {
     filters.push({ projectTheme: String(query.theme) });
@@ -307,8 +311,18 @@ export const getTeamLists = async (request, response) => {
       Registration.countDocuments(match),
     ]);
 
+    // Registry college name for display; the submitted spelling stays in `college`.
+    const collegeNames = new Map((await College.find({ collegeId: { $in: items.map((t) => t.collegeId).filter(Boolean) } }, "collegeId name").lean()).map((c) => [c.collegeId, c.name]));
+    // Per-member colleges: cross-college teams are flagged, and each member's college shown by its registry name.
+    const lookup = await createCollegeLookup();
+    await lookup.prepare(memberCollegeNames(items));
     const formattedItems = items.map((team) => ({
       ...team,
+      ...(() => { const mix = teamCollegeMix(team, lookup); return { crossCollege: mix.crossCollege, teamColleges: mix.colleges.map((c) => ({ name: c.name, people: c.people, needsReview: !c.collegeId })) }; })(),
+      members: (team.members || []).map((m) => ({ ...m, collegeCanonical: String(m.college || "").trim() ? lookup.forRaw(m.college).name : "" })),
+      referral: team.referralSource?.raw ? { answer: team.referralSource.raw, channel: referralCategory(team.referralSource.raw) } : null,
+      collegeCanonical: team.collegeId ? collegeNames.get(team.collegeId) || "" : "",
+      collegeStatus: team.collegeMatch?.status || "unresolved",
       emailStatus: team.registrationEmail?.status || "Not Sent",
       emailSentAt: team.registrationEmail?.sentAt || null,
       emailError: team.registrationEmail?.error || null,
@@ -337,8 +351,9 @@ export const getTeamLists = async (request, response) => {
 
 // Distinct colleges
 export const getColleges = async (_request, response) => {
-  // Standard names only: the many spellings of one college appear once.
-  const colleges = (await collegeResolver()).groups().map((g) => g.name).filter(Boolean);
+  // Registry names of the colleges that have registrations: the many spellings of one college appear once.
+  const ids = (await Registration.distinct("collegeId")).filter(Boolean);
+  const colleges = (await College.find({ collegeId: { $in: ids } }, "name").lean()).map((c) => c.name).sort((a, b) => a.localeCompare(b));
   return response.json({ colleges });
 };
 

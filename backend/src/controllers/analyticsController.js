@@ -1,12 +1,19 @@
 import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
 import Registration from "../models/Registration.js";
-import { createCollegeResolver } from "../services/collegeNames.js";
+import { createCollegeLookup } from "../services/collegeRegistry.js";
+import { referralCategory } from "../services/referralSource.js";
+import { memberCollegeNames, PLACEHOLDER_COLLEGE, teamCollegeMix } from "../services/teamColleges.js";
 
 // Admin → Analytics: every figure is computed here from the live registrations, so the page only draws them.
 const IST_OFFSET = 5.5 * 3600 * 1000;
-const HOST_COLLEGE = "Sathyabama Institute of Science and Technology";
+const HOST_COLLEGE_ID = "sathyabama";
 const istDay = (date) => new Date(new Date(date).getTime() + IST_OFFSET).toISOString().slice(0, 10);
+const istHour = (date) => new Date(new Date(date).getTime() + IST_OFFSET).getUTCHours();
+const istWeekday = (date) => new Date(new Date(date).getTime() + IST_OFFSET).getUTCDay();
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// When the team registered: the Google Form timestamp if known, otherwise when the record was created.
+const registeredAt = (team) => team.formSubmittedAt || team.createdAt;
 const norm = (value) => String(value || "").trim().toLowerCase();
 const tidy = (value) => String(value || "").trim().replace(/\s+/g, " ");
 const digits = (value) => String(value || "").replace(/\D/g, "");
@@ -67,25 +74,74 @@ const departmentOf = (raw) => {
   return DEPARTMENTS.find(([re]) => re.test(s))?.[1] || "Other (not in the list)";
 };
 
+// Top colleges' channel mix: for each of the top 5 colleges (by teams), how its teams heard about the event.
+const topCollegeChannels = (teams, teamsByCollege, collegeOf, channelOf) => {
+  const top = teamsByCollege.filter((c) => c.label !== "Not given" && !c.label.startsWith("Needs review")).slice(0, 5).map((c) => c.label);
+  return top.map((college) => ({ college, channels: countBy(teams.filter((t) => collegeOf(t) === college), channelOf) }));
+};
+
 const teamRef = (team) => ({ teamId: team.teamId || "", teamName: team.teamName || "", email: team.leader?.email || "" });
 
 export const getAnalytics = async (_request, response) => {
   const teams = await Registration.find({}).lean();
   const total = teams.length;
-  // Every spelling of a college ("SIST", "Sathyabama University", …) counts as one standard college.
-  const colleges = createCollegeResolver(teams.flatMap((t) => [t.college || t.collegeName, ...(t.members || []).map((m) => m.college)]));
-  const collegeOfTeam = (t) => colleges.resolve(t.college || t.collegeName).name;
-  const everyone = teams.flatMap((t) => peopleOf(t).map((p) => ({ ...p, team: t, college: colleges.resolve(p.college || t.college || t.collegeName).name })));
+  // Colleges are grouped by the registry collegeId stored on each registration; members' own colleges go through
+  // the same matcher. Names that couldn't be resolved confidently appear as "Needs review: …", never merged.
+  const lookup = await createCollegeLookup();
+  await lookup.prepare(memberCollegeNames(teams));
+  const teamCollege = (t) => lookup.forTeam(t);
+  const collegeOfTeam = (t) => teamCollege(t).name;
+  const personCollege = (p, t) => (tidy(p.college) && !PLACEHOLDER_COLLEGE.test(tidy(p.college)) ? lookup.forRaw(p.college) : teamCollege(t));
+  const everyone = teams.flatMap((t) => peopleOf(t).map((p) => { const c = personCollege(p, t); return { ...p, team: t, college: c.name, collegeId: c.collegeId }; }));
 
   const teamsByCollege = countBy(teams, (t) => collegeOfTeam(t) || "Not given");
   const peopleByCollege = countBy(everyone, (p) => p.college || "Not given");
-  const collegeCount = teamsByCollege.filter((c) => c.label !== "Not given").length;
-  const hostTeams = teams.filter((t) => collegeOfTeam(t) === HOST_COLLEGE).length;
-  const hostPeople = everyone.filter((p) => p.college === HOST_COLLEGE).length;
-  const mixedTeams = teams.filter((t) => new Set(peopleOf(t).map((p) => colleges.resolve(p.college || t.college || t.collegeName).name).filter(Boolean)).size > 1);
+  const collegeCount = new Set(teams.map((t) => t.collegeId).filter(Boolean)).size;
+  const hostTeams = teams.filter((t) => t.collegeId === HOST_COLLEGE_ID).length;
+  const hostPeople = everyone.filter((p) => p.collegeId === HOST_COLLEGE_ID).length;
+  // Cross-college teams: people from more than one registry college.
+  const mixes = teams.map((t) => ({ team: t, ...teamCollegeMix(t, lookup) }));
+  const mixedTeams = mixes.filter((m) => m.crossCollege);
+  const pairCounts = new Map();
+  for (const m of mixedTeams) {
+    const names = m.colleges.map((c) => c.name).filter((n) => !n.startsWith("Needs review")).sort();
+    for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) { const key = `${names[i]}  +  ${names[j]}`; pairCounts.set(key, (pairCounts.get(key) || 0) + 1); }
+  }
+  const crossCollege = {
+    teams: mixedTeams.map((m) => ({ ...teamRef(m.team), people: m.colleges.reduce((n, c) => n + c.people, 0), colleges: m.colleges.map((c) => ({ name: c.name, people: c.people, needsReview: !c.collegeId })) })),
+    people: mixedTeams.reduce((n, m) => n + m.colleges.reduce((k, c) => k + c.people, 0), 0),
+    collegesInvolved: new Set(mixedTeams.flatMap((m) => m.colleges.filter((c) => c.collegeId).map((c) => c.collegeId))).size,
+    pairs: [...pairCounts].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, 8),
+  };
+
+  // "From where did you know about this event?" — grouped by channel, split by host college vs others.
+  const channelOf = (t) => referralCategory(t.referralSource?.raw);
+  const channels = countBy(teams, channelOf);
+  const referral = {
+    answered: teams.filter((t) => tidy(t.referralSource?.raw)).length,
+    channels,
+    byHost: channels.filter((c) => c.label !== "Not answered").map(({ label }) => ({
+      label,
+      host: teams.filter((t) => t.collegeId === HOST_COLLEGE_ID && channelOf(t) === label).length,
+      other: teams.filter((t) => t.collegeId !== HOST_COLLEGE_ID && channelOf(t) === label).length,
+    })),
+    // Answers that didn't fit a channel, as written (so new channels can be spotted).
+    otherAnswers: countBy(teams.filter((t) => channelOf(t) === "Other"), (t) => tidy(t.referralSource.raw)).slice(0, 10),
+    byCollege: topCollegeChannels(teams, teamsByCollege, collegeOfTeam, channelOf),
+  };
+
+  // When teams registered: hour of day and day of week (IST).
+  const timed = teams.filter((t) => registeredAt(t));
+  const hours = Array.from({ length: 24 }, (_, h) => ({ label: h, count: timed.filter((t) => istHour(registeredAt(t)) === h).length }));
+  const weekdays = WEEKDAYS.map((label, d) => ({ label, count: timed.filter((t) => istWeekday(registeredAt(t)) === d).length }));
+  const needsReview = teams.filter((t) => !t.collegeId && tidy(t.collegeNameRaw ?? t.college));
+  // Submitted variants per registry college (teams and members), to inspect what was grouped together.
+  const variants = new Map();
+  const note = (collegeId, raw) => { const text = tidy(raw); if (!collegeId || !text) return; const m = variants.get(collegeId) || new Map(); m.set(text, (m.get(text) || 0) + 1); variants.set(collegeId, m); };
+  for (const t of teams) { note(t.collegeId, t.collegeNameRaw ?? t.college); for (const m of t.members || []) if (tidy(m.college)) note(lookup.forRaw(m.college).collegeId, m.college); }
 
   // Registrations per IST day, with no gaps between the first and the last day.
-  const perDay = new Map(countBy(teams.filter((t) => t.createdAt), (t) => istDay(t.createdAt)).map(({ label, count }) => [label, count]));
+  const perDay = new Map(countBy(timed, (t) => istDay(registeredAt(t))).map(({ label, count }) => [label, count]));
   const days = [...perDay.keys()].sort();
   const registrations = [];
   if (days.length) {
@@ -116,7 +172,7 @@ export const getAnalytics = async (_request, response) => {
 
   // Theme × college (top 6 colleges by teams): which themes each college chose.
   const themeNames = countBy(teams, (t) => t.projectTheme || "Not selected").map((t) => t.label);
-  const topCollegeNames = teamsByCollege.filter((c) => c.label !== "Not given").slice(0, 6).map((c) => c.label);
+  const topCollegeNames = teamsByCollege.filter((c) => c.label !== "Not given" && !c.label.startsWith("Needs review")).slice(0, 6).map((c) => c.label);
   const themeByCollege = {
     themes: themeNames,
     rows: topCollegeNames.map((college) => ({ college, counts: themeNames.map((theme) => teams.filter((t) => collegeOfTeam(t) === college && (t.projectTheme || "Not selected") === theme).length) })),
@@ -132,6 +188,7 @@ export const getAnalytics = async (_request, response) => {
     issue("email-typo", "Team Head email looks mistyped", "The login email may not arrive (e.g. @gmail.co).", teams.filter((t) => !isEmail(t.leader?.email) || looksMistyped(t.leader?.email))),
     issue("no-phone", "No Team Head phone", "Add a phone number so the team can be reached.", teams.filter((t) => digits(t.leader?.phone).length < 10)),
     issue("no-college", "No college", "College is missing.", teams.filter((t) => !tidy(t.college || t.collegeName))),
+    issue("college-review", "College needs review", "The submitted college couldn't be matched confidently. Resolve it on the Colleges page.", needsReview),
     issue("college-unclear", "College entry mixes several colleges", 'The college field names more than one college (e.g. "Member 1–5: … and Member 6: …").', teams.filter((t) => /member\s*\d|\band\s+team\s+member/i.test(String(t.college || "")))),
     issue("no-theme", "No project theme", "The team hasn't chosen a theme yet.", teams.filter((t) => !t.projectTheme)),
   ].filter((i) => i.count);
@@ -150,8 +207,12 @@ export const getAnalytics = async (_request, response) => {
 
   return response.json({
     generatedAt: new Date(),
-    totals: { teams: total, people, colleges: collegeCount, emailed, pdf, prototype: prototypes.length, round1Selected, hostTeams, hostPeople, mixedTeams: mixedTeams.length, completeTeams, avgSize: total ? people / total : 0 },
+    totals: { teams: total, people, colleges: collegeCount, needsReview: needsReview.length, emailed, pdf, prototype: prototypes.length, round1Selected, hostTeams, hostPeople, mixedTeams: mixedTeams.length, referralAnswered: referral.answered, completeTeams, avgSize: total ? people / total : 0 },
     registrations,
+    hours,
+    weekdays,
+    crossCollege,
+    referral,
     themes: countBy(teams, (t) => t.projectTheme || "Not selected"),
     colleges: topWithOther(teamsByCollege, 8, "colleges"),
     collegePeople: topWithOther(peopleByCollege, 8, "colleges"),
@@ -159,7 +220,7 @@ export const getAnalytics = async (_request, response) => {
       { label: "Sathyabama (host college)", teams: hostTeams, people: hostPeople },
       { label: "Other colleges", teams: total - hostTeams, people: people - hostPeople },
     ],
-    collegeGroups: colleges.groups().filter((g) => g.spellings.length > 1).map((g) => ({ name: g.name, spellings: g.spellings })),
+    collegeGroups: [...variants].map(([collegeId, m]) => ({ collegeId, name: lookup.nameOf(collegeId), spellings: [...m.keys()] })).filter((g) => g.spellings.length > 1).sort((a, b) => b.spellings.length - a.spellings.length),
     years: countBy(everyone, (p) => yearOf(p.year || p.team.year) || "Not given"),
     departments: topWithOther(countBy(everyone, (p) => departmentOf(p.department || p.team.department) || "Not given"), 9, "departments"),
     emails: countBy(teams, (t) => t.registrationEmail?.status || "Not Sent"),

@@ -28,6 +28,7 @@ import { requireAdmin, requireSection } from "../middleware/authMiddleware.js";
 import { localAdminOnly } from "../middleware/localAdminOnly.js";
 import { getAnalytics } from "../controllers/analyticsController.js";
 import { listPrototypes } from "../controllers/prototypesController.js";
+import { addCollegeAlias, createCollege, deleteCollegeAlias, getCollegeAudit, getCollegeRegistry, getCollegeReview, mergeCollege, reprocessColleges, resolveRegistrationCollege, updateCollege, updateCollegeAlias } from "../controllers/collegesController.js";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -48,6 +49,18 @@ router.get("/me", getMe);
 router.get("/dashboard", requireSection("dashboard"), getDashboard);
 router.get("/analytics", requireSection("dashboard"), getAnalytics);
 router.get("/prototypes", requireSection("pdf"), listPrototypes);
+// College registry (entity resolution of submitted college names)
+router.get("/colleges/registry", requireSection("teams"), getCollegeRegistry);
+router.get("/colleges/review", requireSection("teams"), getCollegeReview);
+router.get("/colleges/audit", requireSection("teams"), getCollegeAudit);
+router.post("/colleges/resolve", requireSection("teams"), resolveRegistrationCollege);
+router.post("/colleges/reprocess", requireSection("teams"), reprocessColleges);
+router.post("/colleges", requireSection("teams"), createCollege);
+router.put("/colleges/:collegeId", requireSection("teams"), updateCollege);
+router.post("/colleges/:collegeId/aliases", requireSection("teams"), addCollegeAlias);
+router.put("/colleges/:collegeId/aliases/:aliasId", requireSection("teams"), updateCollegeAlias);
+router.delete("/colleges/:collegeId/aliases/:aliasId", requireSection("teams"), deleteCollegeAlias);
+router.post("/colleges/:collegeId/merge", requireSection("teams"), mergeCollege);
 router.get("/faculty", requireSection("dashboard"), getFaculty);
 
 // Teams Management (General Admin, Team Admin)

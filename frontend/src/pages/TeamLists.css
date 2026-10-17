@@ -613,3 +613,17 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Teams whose members come from more than one college */
+.cross-college-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 1px 7px;
+  border: 1px solid rgba(85, 202, 255, 0.45);
+  border-radius: 999px;
+  color: #55caff;
+  font-size: 11px;
+  font-weight: 600;
+}

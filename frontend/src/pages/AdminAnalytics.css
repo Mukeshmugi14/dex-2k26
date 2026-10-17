@@ -119,3 +119,15 @@
 .admin-analytics .viz-groups small { color: var(--viz-muted); font-size: 11px; }
 .admin-analytics .viz-groups span { color: var(--viz-text-2); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
 @media (min-width: 1101px) { .admin-analytics .viz-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Hour-of-day columns: 24 narrow columns */
+.admin-analytics .viz-hours { gap: 3px; }
+.admin-analytics .viz-hours .viz-size b { font-size: 10px; }
+.admin-analytics .viz-hours .viz-size small { min-height: 13px; font-size: 10px; }
+
+/* Cross-college team list */
+.admin-analytics .viz-cross span { display: flex; flex-wrap: wrap; gap: 6px; }
+.admin-analytics .viz-cross em { padding: 2px 8px; border: 1px solid #ffffff1f; border-radius: 999px; color: var(--viz-text); font-size: 12px; font-style: normal; }
+.admin-analytics .viz-cross em strong { color: var(--viz-muted); font-weight: 600; }
+.admin-analytics .viz-cross em.needs-review { border-style: dashed; color: var(--viz-muted); }
+@media (max-width: 640px) { .admin-analytics .viz-hours .viz-size b { display: none; } }

@@ -1,6 +1,8 @@
 import * as XLSX from "xlsx";
 import Registration, { PROJECT_THEMES } from "../models/Registration.js";
 import { getNextSequentialTeamId } from "./teamIdService.js";
+import { referralCategory } from "./referralSource.js";
+import { PLACEHOLDER_COLLEGE } from "./teamColleges.js";
 
 const clean = (val) => (val !== undefined && val !== null ? String(val).trim() : "");
 const normalizeKey = (val) => clean(val).toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -101,12 +103,25 @@ export const detectColumns = (headers) => {
     mentorEmail: null,
     mentorPhone: null,
     membersBlob: null,
+    referral: null, // "From where did you know about this event?"
+    timestamp: null, // Google Form submission time
     memberNumbered: {}, // index -> { name, email, phone, college, year, department, studentId }
   };
 
+  let lastMemberIdx = null;
   headers.forEach((header) => {
     const raw = header;
     const k = normalizeKey(header);
+
+    // 0. How the team heard about the event, and the form's timestamp.
+    if (!mapping.referral && (k.includes("knowabout") || k.includes("fromwhere") || k.includes("hearabout") || k.includes("howdidyou") || k.includes("referr"))) {
+      mapping.referral = raw;
+      return;
+    }
+    if (!mapping.timestamp && (k === "timestamp" || k === "submittedat")) {
+      mapping.timestamp = raw;
+      return;
+    }
 
     // 1. Check if column belongs to a numbered member
     const memberIdx = extractMemberIndex(header);
@@ -114,7 +129,19 @@ export const detectColumns = (headers) => {
       const field = detectMemberField(header);
       if (!mapping.memberNumbered[memberIdx]) mapping.memberNumbered[memberIdx] = {};
       mapping.memberNumbered[memberIdx][field] = raw;
+      lastMemberIdx = memberIdx;
       return; // Do NOT let member columns pollute leader detection!
+    }
+
+    // 1b. Google Forms often label a member's college/year columns without the number ("College name", "Year of
+    // Study 3") right after "Member N - Full Name"; they belong to that member, not to the Team Head.
+    if (lastMemberIdx !== null) {
+      const field = detectMemberField(header);
+      const slot = mapping.memberNumbered[lastMemberIdx];
+      if (["college", "year", "department"].includes(field) && !slot[field]) {
+        slot[field] = raw;
+        return;
+      }
     }
 
     // 2. Check for faculty mentor columns
@@ -294,6 +321,10 @@ export const processSpreadsheetImport = async (buffer) => {
     const rawMentorName = colMap.mentorName ? clean(row[colMap.mentorName]) : "";
     const rawMentorEmail = colMap.mentorEmail ? clean(row[colMap.mentorEmail]) : "";
     const rawMentorPhone = colMap.mentorPhone ? clean(row[colMap.mentorPhone]) : "";
+    const rawReferral = colMap.referral ? clean(row[colMap.referral]) : "";
+    const referralSource = rawReferral ? { raw: rawReferral, category: referralCategory(rawReferral), source: "sheet" } : undefined;
+    const submittedAt = colMap.timestamp ? new Date(row[colMap.timestamp]) : null;
+    const formSubmittedAt = submittedAt && !Number.isNaN(submittedAt.getTime()) ? submittedAt : undefined;
 
     // If Member 1 columns exist and leader fields are empty, use Member 1
     if (colMap.memberNumbered[1]) {
@@ -339,7 +370,8 @@ export const processSpreadsheetImport = async (buffer) => {
     for (const num of sortedMemberKeys) {
       const fields = colMap.memberNumbered[num];
       const mName = fields.name ? clean(row[fields.name]) : "";
-      const mCollege = fields.college ? clean(row[fields.college]) : "";
+      const mCollegeRaw = fields.college ? clean(row[fields.college]) : "";
+      const mCollege = PLACEHOLDER_COLLEGE.test(mCollegeRaw) ? "" : mCollegeRaw; // "NA", "nil" → the team's college
       const mYear = fields.year ? clean(row[fields.year]) : "";
       const mDept = fields.department ? clean(row[fields.department]) : "";
       const mPhone = fields.phone ? clean(row[fields.phone]) : "";
@@ -423,6 +455,10 @@ export const processSpreadsheetImport = async (buffer) => {
     });
 
     if (existing) {
+      // Fill in how the team heard about the event / when it submitted the form, if not recorded yet.
+      let filled = false;
+      if (referralSource && !existing.referralSource?.raw) { existing.referralSource = referralSource; filled = true; }
+      if (formSubmittedAt && !existing.formSubmittedAt) { existing.formSubmittedAt = formSubmittedAt; filled = true; }
       // If the existing team has missing/incomplete member data and the sheet has members,
       // enrich it with full details while preserving its teamId and registrationNumber!
       const existingMembersCount = (existing.members || []).length;
@@ -454,6 +490,7 @@ export const processSpreadsheetImport = async (buffer) => {
       }
 
       // If existing team already has complete data, leave it untouched ("let it free")
+      if (filled) await existing.save();
       skippedCount++;
       processedTeams.push(existing);
       continue;
@@ -475,6 +512,8 @@ export const processSpreadsheetImport = async (buffer) => {
       leader: leaderObj,
       members,
       mentor: mentorObj,
+      referralSource,
+      formSubmittedAt,
       importSource: "GOOGLE_SHEETS",
       importedAt: new Date(),
       rounds: {

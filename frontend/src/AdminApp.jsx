@@ -7,6 +7,7 @@ import TeamLists from "./pages/TeamLists";
 import AdminTeams from "./pages/AdminTeams";
 import AdminPdfSubmissions from "./pages/AdminPdfSubmissions";
 import AdminPrototypes from "./pages/AdminPrototypes";
+import AdminColleges from "./pages/AdminColleges";
 import AdminRounds from "./pages/AdminRounds";
 import AdminRoundSelection from "./pages/AdminRoundSelection";
 import AdminUsers from "./pages/AdminUsers";
@@ -24,6 +25,7 @@ export default function AdminApp() {
       <Route path="analytics" element={guarded("dashboard", <AdminAnalytics />)} />
       <Route path="team-lists" element={guarded("teamLists", <TeamLists />)} />
       <Route path="teams" element={guarded("teams", <AdminTeams />)} />
+      <Route path="colleges" element={guarded("teams", <AdminColleges />)} />
       <Route path="pdf-submissions" element={guarded("pdf", <AdminPdfSubmissions />)} />
       <Route path="prototypes" element={guarded("pdf", <AdminPrototypes />)} />
       <Route path="rounds" element={guarded("rounds", <AdminRounds />)} />

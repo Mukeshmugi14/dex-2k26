@@ -1,0 +1,36 @@
+// Starting college registry: official names, verified aliases (short names, historical names, common
+// misspellings seen in registrations) and cities/campuses used as matching evidence.
+// collegeId values are stable and must never be reused for a different institution.
+// Similar-looking but distinct institutions are separate entries on purpose.
+export const SEED_COLLEGES = [
+  { collegeId: "sathyabama", name: "Sathyabama Institute of Science and Technology", cities: ["Chennai", "Semmancheri"], aliases: ["SIST", "Sathyabama", "Sathyabama University", "Sathyabama Engineering College", "Sathyabama Institute of Science & Technology", "Sathyabama Deemed University"] },
+  { collegeId: "st-josephs-ce", name: "St. Joseph's College of Engineering", cities: ["Chennai", "OMR", "Semmancheri"], aliases: ["SJCE Chennai", "St Joseph College of Engineering", "St. Joseph's Engineering College", "St Josephs College of Engineering"] },
+  { collegeId: "st-josephs-cet", name: "St. Joseph's College of Engineering and Technology", cities: [], aliases: ["SJCET"] },
+  { collegeId: "st-josephs-it", name: "St. Joseph's Institute of Technology", cities: ["Chennai", "OMR"], aliases: ["SJIT"] },
+  { collegeId: "srmist", name: "SRM Institute of Science and Technology", cities: ["Chennai", "Kattankulathur", "Ramapuram", "Vadapalani", "KTR"], aliases: ["SRM", "SRMIST", "SRM IST", "SRM University", "SRM Ramapuram", "SRM KTR", "SRM Kattankulathur", "SRM Vadapalani", "SRM Ramapuram IST", "SRMIST Ramapuram"] },
+  { collegeId: "panimalar-ec", name: "Panimalar Engineering College", cities: ["Chennai", "Poonamallee"], aliases: ["PEC Chennai", "Panimalar"] },
+  { collegeId: "saveetha-ec", name: "Saveetha Engineering College", cities: ["Chennai"], aliases: [] },
+  { collegeId: "simats", name: "Saveetha Institute of Medical and Technical Sciences", cities: ["Chennai"], aliases: ["SIMATS", "SIMATS Engineering", "Saveetha University", "Saveetha School of Engineering"] },
+  { collegeId: "smvec", name: "Sri Manakula Vinayagar Engineering College", cities: ["Puducherry", "Pondicherry"], aliases: ["SMVEC"] },
+  { collegeId: "dhanalakshmi-ce", name: "Dhanalakshmi College of Engineering", cities: ["Chennai", "Tambaram"], aliases: [] },
+  { collegeId: "dscet", name: "Dhanalakshmi Srinivasan College of Engineering and Technology", cities: ["Mamallapuram", "Mahabalipuram", "Chennai"], aliases: ["DSCET"] },
+  { collegeId: "veltech-univ", name: "Vel Tech Rangarajan Dr. Sagunthala R&D Institute of Science and Technology", cities: ["Avadi", "Chennai"], aliases: ["Vel Tech", "Veltech", "Vel Tech University", "Veltech University", "Vel Tech Rangarajan Dr Sagunthala R and D Institute"] },
+  { collegeId: "veltech-hightech", name: "Vel Tech High Tech Dr. Rangarajan Dr. Sakunthala Engineering College", cities: ["Avadi", "Chennai"], aliases: ["Vel Tech High Tech", "Veltech High Tech", "Veltech High Tech Dr Rangarajan Dr Sakuntala Engineering College"] },
+  { collegeId: "vistas", name: "Vels Institute of Science, Technology & Advanced Studies", cities: ["Pallavaram", "Chennai"], aliases: ["VISTAS", "Vels University", "Vels Institute of Science Technology and Advanced Studies VISTAS"] },
+  { collegeId: "rmd-ec", name: "R.M.D. Engineering College", cities: ["Kavaraipettai", "Chennai"], aliases: ["RMD", "RMD Engineering College", "RMDEC"] },
+  { collegeId: "rmk-ec", name: "R.M.K. Engineering College", cities: ["Kavaraipettai", "Chennai"], aliases: ["RMK", "RMKEC", "RMK Engineering College"] },
+  { collegeId: "rmk-cet", name: "R.M.K. College of Engineering and Technology", cities: ["Puduvoyal", "Chennai"], aliases: ["RMKCET", "RMK College of Engineering and Technology"] },
+  { collegeId: "vit", name: "Vellore Institute of Technology", cities: ["Vellore", "Chennai"], aliases: ["VIT", "VIT Chennai", "VIT Vellore", "VIT University"] },
+  { collegeId: "iiitdm-k", name: "Indian Institute of Information Technology, Design and Manufacturing, Kancheepuram", cities: ["Kancheepuram", "Chennai"], aliases: ["IIITDM", "IIITDM Kancheepuram", "IIIT DM Kancheepuram"] },
+  { collegeId: "ycce", name: "Yeshwantrao Chavan College of Engineering", cities: ["Nagpur"], aliases: ["YCCE"] },
+  { collegeId: "drmgr", name: "Dr. M.G.R. Educational and Research Institute", cities: ["Chennai", "Maduravoyal"], aliases: ["Dr MGR University", "MGR University", "Dr MGR Educational and Research Institute"] },
+  { collegeId: "crescent", name: "B.S. Abdur Rahman Crescent Institute of Science and Technology", cities: ["Vandalur", "Chennai"], aliases: ["BSA Crescent", "Crescent", "BSA Crescent Institute of Science and Technology", "BSACIST"] },
+  { collegeId: "biher", name: "Bharath Institute of Higher Education and Research", cities: ["Selaiyur", "Chennai"], aliases: ["Bharath University", "BIHER"] },
+  { collegeId: "anna-univ", name: "Anna University", cities: ["Guindy", "Chennai"], aliases: ["College of Engineering Guindy", "CEG"] },
+  { collegeId: "ssn", name: "Sri Sivasubramaniya Nadar College of Engineering", cities: ["Kalavakkam", "Chennai"], aliases: ["SSN", "SSNCE", "SSN College of Engineering"] },
+  { collegeId: "annapoorana-ec", name: "Annapoorana Engineering College", cities: ["Salem"], aliases: [] },
+  { collegeId: "christ-academy", name: "Christ Academy Institute for Advanced Studies", cities: ["Bengaluru", "Bangalore"], aliases: ["Christ Academy Institute for Advance Studies", "CAIAS"] },
+  { collegeId: "jerusalem-ce", name: "Jerusalem College of Engineering", cities: ["Chennai", "Pallikaranai"], aliases: [] },
+  { collegeId: "vijaya-vittal-it", name: "Vijaya Vittal Institute of Technology", cities: ["Bengaluru", "Bangalore"], aliases: ["VVIT Bangalore"] },
+  { collegeId: "wcc", name: "Women's Christian College", cities: ["Chennai"], aliases: ["WCC Chennai"] },
+];

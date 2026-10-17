@@ -425,6 +425,9 @@ export default function TeamDashboard() {
             <div><dt>Team Head Email</dt><dd className="break">{team.teamHeadEmail}</dd></div>
             {team.teamHeadPhone ? <div><dt>Team Head Phone</dt><dd>{team.teamHeadPhone}</dd></div> : null}
             <div><dt>College</dt><dd>{team.college}</dd></div>
+            {team.crossCollege && team.colleges?.length ? (
+              <div><dt>Cross-college Team</dt><dd>{team.colleges.map((c) => `${c.name} (${c.people})`).join(" + ")}</dd></div>
+            ) : null}
             {team.department || team.year ? (
               <div><dt>Department & Year</dt><dd>{team.department || "—"} {team.year ? `(${team.year})` : ""}</dd></div>
             ) : null}

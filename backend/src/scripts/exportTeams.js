@@ -8,7 +8,7 @@ import path from "path";
 import mongoose from "mongoose";
 import XLSX from "xlsx";
 import { connectDB } from "../config/db.js";
-import { createCollegeResolver } from "../services/collegeNames.js";
+import { createCollegeLookup } from "../services/collegeRegistry.js";
 
 const norm = (value) => String(value || "").trim().toLowerCase();
 const ist = (date) => (date ? `${new Date(new Date(date).getTime() + 5.5 * 3600e3).toISOString().slice(0, 16).replace("T", " ")} IST` : "");
@@ -44,8 +44,9 @@ const run = async () => {
     return [...keep.values()];
   };
 
-  // Every spelling of a college ("SIST", "Sathyabama University", …) also gets one standard name.
-  const colleges = createCollegeResolver(teams.flatMap((t) => [t.college || t.collegeName, ...(t.members || []).map((m) => m.college)]));
+  // Registry college for every team (stored collegeId) and member (same matcher); unresolved names are flagged.
+  const colleges = await createCollegeLookup();
+  await colleges.prepare(teams.flatMap((t) => (t.members || []).map((m) => m.college)));
   const teamRows = [];
   const memberRows = [];
   for (const team of teams) {
@@ -61,7 +62,9 @@ const run = async () => {
       "Team Head Email (login)": team.leader?.email || "",
       "Team Head Phone": team.leader?.phone || "",
       College: team.college || team.collegeName || "",
-      "College (standard name)": colleges.resolve(team.college || team.collegeName).name,
+      "College (standard name)": colleges.forTeam(team).name,
+      "College ID": team.collegeId || "",
+      "College match": team.collegeMatch?.status || "",
       Department: team.department || "",
       Year: team.year || "",
       "Members Listed": members.length,
@@ -83,7 +86,7 @@ const run = async () => {
       Email: member.email || "",
       Phone: member.phone || "",
       College: member.college || "",
-      "College (standard name)": colleges.resolve(member.college || team.college || team.collegeName).name,
+      "College (standard name)": (String(member.college || "").trim() ? colleges.forRaw(member.college) : colleges.forTeam(team)).name,
       Department: member.department || "",
       Year: member.year || "",
       "Student ID": member.studentId || "",

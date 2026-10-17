@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AlertTriangle, CheckCircle2, ChevronDown, Clock3, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Clock3, Megaphone, RefreshCw, ShieldCheck, Shuffle, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AdminDashboard.css";
@@ -111,6 +111,33 @@ function SizeColumns({ data, tip }) {
   </div>;
 }
 
+// Simple columns (hour of day): the count is printed above each column; tooltip gives the full label.
+function Columns({ data, tip, labelOf, tipOf, ariaLabel }) {
+  const max = Math.max(1, ...data.map((d) => d.count));
+  return <div className="viz-sizes viz-hours" role="img" aria-label={ariaLabel}>
+    {data.map((d) => <div key={d.label} className="viz-size" onMouseMove={(e) => tip.show(e, tipOf(d))} onMouseLeave={tip.hide}>
+      <b>{d.count || ""}</b>
+      <span className="viz-size-track"><i style={{ height: `${(d.count / max) * 100}%` }} /></span>
+      <small>{labelOf(d)}</small>
+    </div>)}
+  </div>;
+}
+const hourLabel = (h) => `${((h + 11) % 12) + 1}${h < 12 ? "a" : "p"}`;
+const clock = (h) => `${((h % 24) + 11) % 12 + 1}:00 ${h % 24 < 12 ? "AM" : "PM"}`;
+const hourRange = (h) => `${clock(h)} – ${clock(h + 1)}`;
+
+// Cross-college teams: each team with its colleges and how many people come from each.
+function CrossCollegeList({ data }) {
+  if (!data.teams.length) return <p className="viz-empty">No cross-college teams yet.</p>;
+  return <>
+    <ul className="viz-groups viz-cross">{data.teams.map((team) => <li key={team.teamId}>
+      <b>{team.teamId} · {team.teamName}</b> <small>{team.people} people · {team.colleges.length} colleges</small>
+      <span>{team.colleges.map((c) => <em key={c.name} className={c.needsReview ? "needs-review" : ""}>{c.name.replace(/^Needs review: /, "")} <strong>×{c.people}</strong>{c.needsReview ? " (needs review)" : ""}</em>)}</span>
+    </li>)}</ul>
+    {data.pairs.length ? <p className="viz-note">Colleges that team up: {data.pairs.map((p) => `${p.label} (${p.count})`).join(" · ")}</p> : null}
+  </>;
+}
+
 // Theme × college table: each cell's shade (one blue, light → dark) follows its count, and the number is always printed.
 function ThemeByCollege({ data }) {
   const max = Math.max(1, ...data.rows.flatMap((r) => r.counts));
@@ -167,13 +194,17 @@ export default function AdminAnalytics() {
   const tiles = t ? [
     ["Teams", t.teams, `${data.registrations.at(-1)?.count || 0} registered on ${data.registrations.length ? fmtDay(data.registrations.at(-1).label) : "-"}`],
     ["Participants", t.people, t.teams ? `${(t.people / t.teams).toFixed(1)} per team on average` : ""],
-    ["Colleges", t.colleges, data.colleges[0] ? `Most: ${data.colleges[0].label}` : ""],
+    ["Colleges", t.colleges, t.needsReview ? `${t.needsReview} team${t.needsReview === 1 ? "" : "s"} with a college still to review (Colleges page)` : data.colleges[0] ? `Most: ${data.colleges[0].label}` : ""],
     ["From Sathyabama", t.hostTeams, `${t.hostPeople} participants · ${t.teams - t.hostTeams} teams from other colleges`],
     ["Login emails sent", t.emailed, `${t.teams - t.emailed} still to send`],
     ["Round 1 PDFs", t.pdf, `${pct(t.pdf, t.teams)}% of teams submitted`],
     ["Round 2 prototypes", t.prototype, `${pct(t.prototype, t.teams)}% of teams submitted`],
     ["Complete profiles", t.completeTeams, "teams with every member's phone & email"],
+    ["Cross-college teams", t.mixedTeams, `${data.crossCollege.people} people from ${data.crossCollege.collegesInvolved} colleges in mixed teams`],
+    ["Top channel", data.referral.channels.find((c) => c.label !== "Not answered")?.label || "-", `${t.referralAnswered} of ${t.teams} teams said how they heard about DEXATHON`],
   ] : [];
+  const channelsAnswered = data ? data.referral.channels.filter((c) => c.label !== "Not answered") : [];
+  const channelMatrix = data ? { themes: channelsAnswered.map((c) => c.label), rows: data.referral.byCollege.map((r) => ({ college: r.college, counts: channelsAnswered.map((c) => r.channels.find((x) => x.label === c.label)?.count || 0) })) } : null;
 
   return <main className="admin-dashboard admin-analytics">
     <header>
@@ -197,6 +228,36 @@ export default function AdminAnalytics() {
           <DailyColumns data={data.registrations} tip={tip} />
         </ChartCard>
 
+        <ChartCard title={<><Megaphone size={17} /> How teams heard about DEXATHON</>} subtitle={`"From where you know about this event" · ${t.referralAnswered} of ${t.teams} teams answered`}
+          table={{ columns: ["Channel", "Teams", "%"], rows: data.referral.channels.map((x) => [x.label, x.count, `${pct(x.count, t.teams)}%`]) }}>
+          <BarList items={data.referral.channels} total={t.teams} tip={tip} />
+          {data.referral.otherAnswers.length ? <p className="viz-note">"Other" answers: {data.referral.otherAnswers.map((a) => `${a.label}${a.count > 1 ? ` (${a.count})` : ""}`).join(" · ")}</p> : null}
+        </ChartCard>
+
+        <ChartCard title="Channels · Sathyabama vs other colleges" subtitle="Which channels reached the host college and which reached outside"
+          table={{ columns: ["Channel", "Sathyabama teams", "Other-college teams"], rows: data.referral.byHost.map((x) => [x.label, x.host, x.other]) }}>
+          <BarList items={data.referral.byHost.map((x) => ({ label: `${x.label} · other colleges`, count: x.other }))} total={t.teams - t.hostTeams} tip={tip} showPercent={false} />
+          <BarList items={data.referral.byHost.filter((x) => x.host).map((x) => ({ label: `${x.label} · Sathyabama`, count: x.host }))} tip={tip} showPercent={false} />
+        </ChartCard>
+
+        <ChartCard wide title="Channels by college" subtitle="How teams at the five largest colleges heard about the event">
+          <ThemeByCollege data={channelMatrix} />
+        </ChartCard>
+
+        <ChartCard wide title={<><Shuffle size={17} /> Cross-college teams</>} subtitle={`${t.mixedTeams} team${t.mixedTeams === 1 ? "" : "s"} with members from more than one college (each member's own college, from the registration form or the Team Portal)`}>
+          <CrossCollegeList data={data.crossCollege} />
+        </ChartCard>
+
+        <ChartCard wide title="Time of day teams registered" subtitle="Form submissions by hour (IST)"
+          table={{ columns: ["Hour (IST)", "Teams"], rows: data.hours.map((h) => [hourRange(h.label), h.count]) }}>
+          <Columns data={data.hours} tip={tip} labelOf={(d) => (d.label % 3 === 0 ? hourLabel(d.label) : "")} tipOf={(d) => [hourRange(d.label), `${d.count} team${d.count === 1 ? "" : "s"} registered`]} ariaLabel="Teams registered by hour of day" />
+        </ChartCard>
+
+        <ChartCard title="Day of the week" subtitle="Form submissions by weekday (IST)"
+          table={{ columns: ["Day", "Teams", "%"], rows: data.weekdays.map((x) => [x.label, x.count, `${pct(x.count, t.teams)}%`]) }}>
+          <BarList items={data.weekdays} total={t.teams} tip={tip} />
+        </ChartCard>
+
         <ChartCard title="Event progress" subtitle="How many teams reached each step"
           table={{ columns: ["Step", "Teams", "% of teams"], rows: data.progress.map((p) => [p.label, p.count, `${pct(p.count, t.teams)}%`]) }}>
           <BarList items={data.progress} total={t.teams} tip={tip} />
@@ -217,7 +278,7 @@ export default function AdminAnalytics() {
           <BarList items={data.collegePeople} tip={tip} unit="people" showPercent={false} />
         </ChartCard>
 
-        <ChartCard title="Sathyabama vs other colleges" subtitle={`${t.mixedTeams} team${t.mixedTeams === 1 ? "" : "s"} mix members from more than one college`}
+        <ChartCard title="Sathyabama vs other colleges" subtitle={`${t.mixedTeams} cross-college team${t.mixedTeams === 1 ? "" : "s"} (see Cross-college teams)`}
           table={{ columns: ["", "Teams", "Participants"], rows: data.hostSplit.map((x) => [x.label, x.teams, x.people]) }}>
           <BarList items={data.hostSplit.map((x) => ({ label: `${x.label} · teams`, count: x.teams }))} total={t.teams} tip={tip} />
           <BarList items={data.hostSplit.map((x) => ({ label: `${x.label} · people`, count: x.people }))} tip={tip} unit="people" showPercent={false} />
@@ -265,7 +326,7 @@ export default function AdminAnalytics() {
           <HealthList items={data.health} />
         </ChartCard>
 
-        <ChartCard wide title="College name matching" subtitle="Different spellings counted as one college in every chart and filter">
+        <ChartCard wide title="College name matching" subtitle="Submitted spellings linked to one registry college. Manage aliases, merges and reviews on the Colleges page.">
           <CollegeGroups groups={data.collegeGroups} />
         </ChartCard>
 

@@ -9,6 +9,8 @@ import { getRound2EditDeadline, PROTOTYPE_CATEGORIES, prototypeView, ROUND2_EDIT
 import { findTeamByLeaderCredentials } from "../services/teamIdService.js";
 import { getTeamDetailsEditDeadline, MAX_TEAM_MEMBERS, TEAM_DETAILS_EDIT_CLOSED_MESSAGE, teamDetailsEditable, validateTeamDetails } from "../services/teamDetailsService.js";
 import { setCollege } from "./adminController.js";
+import { createCollegeLookup, resolutionFor } from "../services/collegeRegistry.js";
+import { memberCollegeNames, teamCollegeMix } from "../services/teamColleges.js";
 
 const INVALID_LOGIN = { success: false, message: "Invalid Team Head email or Team ID. Please check and try again." };
 
@@ -70,6 +72,11 @@ export const getOwnTeam = async (request, response) => {
   const released = Boolean(team.rounds?.scoreReleased) && Number.isFinite(evaluation.totalScore);
   const members = cleanMembers(team.members);
   const teamSize = team.teamSize || (members.length + 1);
+  // Cross-college teams see which colleges their people come from (names as the team wrote them when not in the registry).
+  const lookup = await createCollegeLookup();
+  await lookup.prepare(memberCollegeNames([team]));
+  const mix = teamCollegeMix(team, lookup);
+  const colleges = mix.crossCollege ? mix.colleges.map((c) => ({ name: c.collegeId ? c.name : c.name.replace(/^Needs review: /, ""), people: c.people })) : [];
 
   return response.json({
     success: true,
@@ -84,6 +91,8 @@ export const getOwnTeam = async (request, response) => {
       projectTheme: team.projectTheme || "Not selected",
       teamSize,
       members,
+      crossCollege: mix.crossCollege,
+      colleges,
     },
     detailsEdit: { editable: teamDetailsEditable(), deadline: getTeamDetailsEditDeadline(), maxMembers: MAX_TEAM_MEMBERS, themes: PROJECT_THEMES },
     submission: team.pdfSubmission?.fileId
@@ -118,6 +127,8 @@ export const updateOwnTeamDetails = async (request, response) => {
 
   const college = {};
   setCollege(college, value.team.college);
+  // Resolve the (possibly changed) college to the registry; an admin-confirmed mapping is kept if unchanged.
+  Object.assign(college, (await resolutionFor(value.team.college, team)) || {});
   // Atomic: only applies to the record this request read, so a parallel admin edit is never silently overwritten.
   const result = await Registration.updateOne(
     { _id: team._id, updatedAt: team.updatedAt },

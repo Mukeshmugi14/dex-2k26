@@ -93,6 +93,23 @@ const registrationSchema = new mongoose.Schema({
   },
   importSource: { type: String, default: "MANUAL" },
   importedAt: Date,
+  // When the registration form was submitted (the Google Form timestamp), if known.
+  formSubmittedAt: Date,
+  // "From where did you know about this event?" — the answer as given, plus its channel for analytics.
+  referralSource: { raw: String, category: String, source: String },
+  // College entity resolution. `college` / `collegeName` keep what was submitted; collegeNameRaw is the original
+  // value used for matching and auditing, collegeId the resolved registry college (null while unresolved/in review).
+  collegeNameRaw: String,
+  collegeId: { type: String, default: null },
+  collegeMatch: {
+    method: { type: String, enum: ["exact", "alias", "token-set", "location", "fuzzy", "manual", "none"], default: "none" },
+    confidence: { type: Number, default: 0 },
+    status: { type: String, enum: ["matched", "review", "unresolved", "confirmed", "empty"], default: "unresolved" },
+    candidates: [{ _id: false, collegeId: String, name: String, score: Number }],
+    note: String,
+    resolvedAt: Date,
+    resolvedBy: String,
+  },
 }, { timestamps: true });
 
 // Never send submission-link secrets in any API response.
@@ -106,9 +123,18 @@ export const stripLinkSecrets = (_doc, ret) => {
 };
 registrationSchema.set("toJSON", { transform: stripLinkSecrets });
 
+// Resolve the college whenever a registration is created or its college changes (website, Sheets import, admin edits).
+registrationSchema.pre("save", async function resolveCollege() {
+  if (!this.isNew && !this.isModified("college") && !this.isModified("collegeName") && this.collegeNameRaw) return;
+  const { applyCollegeResolution } = await import("../services/collegeRegistry.js");
+  await applyCollegeResolution(this);
+});
+
 // Indexes for admin lists and team lookups
 registrationSchema.index({ createdAt: -1 });
 registrationSchema.index({ "leader.email": 1 });
 registrationSchema.index({ "registrationEmail.status": 1 });
+registrationSchema.index({ collegeId: 1 });
+registrationSchema.index({ "collegeMatch.status": 1 });
 
 export default mongoose.model("Registration", registrationSchema);

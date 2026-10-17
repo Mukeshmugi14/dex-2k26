@@ -8,6 +8,7 @@ import {
   Eye,
   FileSpreadsheet,
   Mail,
+  Shuffle,
   RefreshCw,
   Search,
   Upload,
@@ -526,7 +527,12 @@ export default function TeamLists() {
                           </div>
                         </td>
                         <td>
-                          <span style={{ color: "#e2e8f0" }}>{row.college}</span>
+                          <span style={{ color: "#e2e8f0" }} title={row.collegeCanonical && row.collegeCanonical !== row.college ? `Submitted as: ${row.college}` : undefined}>{row.collegeCanonical || row.college}{!row.collegeCanonical && row.college ? <em style={{ marginLeft: 6, color: "#fab219", fontStyle: "normal", fontSize: 11 }}>needs review</em> : null}</span>
+                          {row.crossCollege ? (
+                            <div className="cross-college-tag" title={(row.teamColleges || []).map((c) => `${c.name} (${c.people})`).join(", ")}>
+                              <Shuffle size={11} aria-hidden="true" /> Cross-college · {(row.teamColleges || []).length} colleges
+                            </div>
+                          ) : null}
                           {row.department ? (
                             <div style={{ fontSize: "11px", color: "#94a3b8" }}>{row.department}</div>
                           ) : null}
@@ -906,7 +912,36 @@ export default function TeamLists() {
                 </div>
                 <div className="details-field">
                   <dt>College / Institution</dt>
-                  <dd>{selectedTeam.college || "—"}</dd>
+                  <dd>
+                    {selectedTeam.collegeCanonical || selectedTeam.college || "—"}
+                    {selectedTeam.collegeCanonical && selectedTeam.college && selectedTeam.collegeCanonical !== selectedTeam.college ? (
+                      <span style={{ display: "block", color: "#8ba0b6", fontSize: 12 }}>Submitted as: {selectedTeam.college}</span>
+                    ) : null}
+                  </dd>
+                </div>
+                {selectedTeam.crossCollege ? (
+                  <div className="details-field">
+                    <dt><Shuffle size={12} aria-hidden="true" /> Cross-college team</dt>
+                    <dd>
+                      {(selectedTeam.teamColleges || []).map((c) => (
+                        <span key={c.name} style={{ display: "block" }}>
+                          {c.name.replace(/^Needs review: /, "")} — <b>{c.people}</b> {c.people === 1 ? "person" : "people"}
+                          {c.needsReview ? <em style={{ marginLeft: 6, color: "#fab219", fontStyle: "normal", fontSize: 11 }}>needs review</em> : null}
+                        </span>
+                      ))}
+                    </dd>
+                  </div>
+                ) : null}
+                <div className="details-field">
+                  <dt>How they heard about DEXATHON</dt>
+                  <dd>
+                    {selectedTeam.referral ? (
+                      <>
+                        <b>{selectedTeam.referral.channel}</b>
+                        {selectedTeam.referral.answer.toLowerCase() !== selectedTeam.referral.channel.toLowerCase() ? <span style={{ color: "#8ba0b6" }}> — “{selectedTeam.referral.answer}”</span> : null}
+                      </>
+                    ) : "Not answered"}
+                  </dd>
                 </div>
                 <div className="details-field">
                   <dt>Team Size</dt>
@@ -985,7 +1020,9 @@ export default function TeamLists() {
                               <b style={{ color: "#ffffff" }}>{member.name}</b>
                             </td>
                             <td>
-                              <span style={{ color: "#e2e8f0" }}>{member.college || selectedTeam.college || "—"}</span>
+                              <span style={{ color: "#e2e8f0" }} title={member.college && member.collegeCanonical !== member.college ? `Submitted as: ${member.college}` : undefined}>
+                                {member.college ? (member.collegeCanonical || member.college).replace(/^Needs review: /, "") : selectedTeam.collegeCanonical || selectedTeam.college || "—"}
+                              </span>
                               {member.year ? (
                                 <div style={{ fontSize: "11px", color: "#94a3b8" }}>{member.year}</div>
                               ) : null}

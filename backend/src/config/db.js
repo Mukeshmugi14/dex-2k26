@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 let isConnected = false;
 
+// Brief network drops to Atlas ("connection … closed") are normal; the driver reconnects on its own. Log them
+// instead of letting an unhandled 'error' event stop the whole server.
+mongoose.connection.on("error", (error) => console.error(`MongoDB connection error (will retry): ${error.message}`));
+mongoose.connection.on("disconnected", () => { isConnected = false; console.warn("MongoDB disconnected; reconnecting on the next request."); });
+mongoose.connection.on("reconnected", () => console.log("MongoDB reconnected."));
+
 export const connectDB = async () => {
   if (isConnected && mongoose.connection.readyState === 1) {
     return;

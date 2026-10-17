@@ -5,7 +5,7 @@ export const POSTER_CID = "dexathon-poster";
 export const POSTER_IMAGE_PATH = path.join(path.dirname(fileURLToPath(import.meta.url)), "../assets/dexathon-2026-poster.jpg");
 
 // Official DEXATHON community links shown in the team registration email.
-export const WHATSAPP_URL = "https://chat.whatsapp.com/B4t2PoZlgx7GFuO1E526Gr?s=cl&p=a&mlu=0";
+export const WHATSAPP_URL = "https://chat.whatsapp.com/LkFlZrK61201jAU8yiHeRF?s=sh&p=a&mlu=4&ilr=4";
 export const INSTAGRAM_URL = "https://www.instagram.com/dexathon2k26/";
 
 const EVENT = { date: "Wednesday, 4 November 2026", venue: "Indoor Auditorium", campus: "Sathyabama Institute of Science and Technology", duration: "24 Hours" };

@@ -7,6 +7,7 @@ export const ADMIN_LINKS = [
   ["/devleader/analytics", "Analytics", "dashboard"],
   ["/devleader/team-lists", "Team Lists", "teamLists"],
   ["/devleader/teams", "Teams", "teams"],
+  ["/devleader/colleges", "Colleges", "teams"],
   ["/devleader/pdf-submissions", "PDF Submissions", "pdf"],
   ["/devleader/prototypes", "Prototypes", "pdf"],
   ["/devleader/rounds", "Round Status", "rounds"],
