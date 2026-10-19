@@ -32,7 +32,8 @@ const sheetTeam = (row) => {
   });
   return {
     teamName: tidy(col(row, (k) => k === "team name")),
-    submittedAt: col(row, (k) => k === "timestamp"),
+    // The sheet's text timestamp (local time), parsed like the Excel upload does; SheetJS dates drift by seconds.
+    submittedAt: (() => { const d = new Date(tidy(col(row, (k) => k === "timestamp"))); return Number.isNaN(d.getTime()) ? null : d; })(),
     leaderName: tidy(col(row, (k) => k === "team leader name")),
     leaderEmail: email(col(row, (k) => k === "team leader email")),
     leaderCollege: tidy(col(row, (k) => k === "college name")),
@@ -45,9 +46,11 @@ const run = async () => {
   const file = process.argv[2];
   const apply = process.argv.includes("--apply");
   if (!file) throw new Error('Usage: node src/scripts/syncFromSheet.js "<sheet.xlsx>" [--apply]');
-  const rows = XLSX.utils.sheet_to_json((() => { const wb = XLSX.readFile(file, { cellDates: true }); return wb.Sheets["Form responses 1"] || wb.Sheets[wb.SheetNames[0]]; })(), { defval: "" }).map(sheetTeam).filter((t) => t.leaderEmail);
-  // Later submissions win when a team submitted twice.
-  const byEmail = new Map(rows.map((r) => [r.leaderEmail, r]));
+  const rows = XLSX.utils.sheet_to_json((() => { const wb = XLSX.readFile(file); return wb.Sheets["Form responses 1"] || wb.Sheets[wb.SheetNames[0]]; })(), { defval: "", raw: false }).map(sheetTeam).filter((t) => t.leaderEmail);
+  // Later submissions win when a team submitted twice, but the registration time is the team's first submission.
+  const firstSubmittedAt = new Map();
+  for (const r of rows) if (r.submittedAt instanceof Date && !(firstSubmittedAt.get(r.leaderEmail) <= r.submittedAt)) firstSubmittedAt.set(r.leaderEmail, r.submittedAt);
+  const byEmail = new Map(rows.map((r) => [r.leaderEmail, { ...r, submittedAt: firstSubmittedAt.get(r.leaderEmail) || r.submittedAt }]));
 
   await connectDB();
   const lookup = await createCollegeLookup();
@@ -79,7 +82,10 @@ const run = async () => {
     const referralChanged = row.referral && tidy(team.referralSource?.raw) !== row.referral;
     if (referralChanged) team.referralSource = { raw: row.referral, category: referralCategory(row.referral), source: "sheet" };
     const submittedAt = row.submittedAt instanceof Date ? row.submittedAt : null;
-    const timeChanged = submittedAt && team.formSubmittedAt?.getTime() !== submittedAt.getTime();
+    // Keep the earliest known registration time (editing a Google Form response moves its timestamp later); a
+    // difference under a minute is only rounding, so the sheet's exact time is used then.
+    const stored = team.formSubmittedAt?.getTime();
+    const timeChanged = submittedAt && (!stored || submittedAt.getTime() < stored - 60000 || (Math.abs(submittedAt.getTime() - stored) < 60000 && submittedAt.getTime() !== stored));
     if (timeChanged) team.formSubmittedAt = submittedAt;
     if (updates.length || referralChanged || timeChanged) {
       report.teamsChanged++; report.memberCollegeUpdates += updates.length; if (referralChanged) report.referralUpdates++;
