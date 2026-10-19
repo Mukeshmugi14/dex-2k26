@@ -6,6 +6,29 @@ import { PLACEHOLDER_COLLEGE } from "./teamColleges.js";
 
 const clean = (val) => (val !== undefined && val !== null ? String(val).trim() : "");
 const normalizeKey = (val) => clean(val).toLowerCase().replace(/[^a-z0-9]/g, "");
+const nameKey = (val) => clean(val).toLowerCase().replace(/\s+/g, " ");
+const personKey = (val) => clean(val).toLowerCase().replace(/[^a-z]/g, "");
+const escapeRegex = (val) => val.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// The people in a team (Team Head + members) as comparable name keys.
+export const peopleKeys = (leaderName, members = []) => new Set([leaderName, ...members.map((m) => m?.name)].map(personKey).filter(Boolean));
+const sameSet = (a, b) => a.size === b.size && [...a].every((k) => b.has(k));
+// Two teams are the same people when at least half of the smaller team's people match
+// (members may have been added in the Team Portal since).
+export const samePeople = (a, b) => {
+  const small = Math.min(a.size, b.size);
+  if (!small) return false;
+  let shared = 0;
+  for (const k of a) if (b.has(k)) shared++;
+  return shared / small >= 0.5;
+};
+// "Team X" taken → "Team X 2.0", then "Team X 3.0", … (case-insensitive).
+export const nextFreeTeamName = (base, taken) => {
+  if (!taken.has(nameKey(base))) return base;
+  let n = 2;
+  while (taken.has(nameKey(`${base} ${n}.0`))) n++;
+  return `${base} ${n}.0`;
+};
 
 // Fuzzy map project themes
 export const normalizeTheme = (rawTheme) => {
@@ -304,8 +327,11 @@ export const processSpreadsheetImport = async (buffer) => {
   let duplicateCount = 0;
   const invalidRecords = [];
   const processedTeams = [];
-  const seenEmailsInFile = new Set();
-  const seenTeamsInFile = new Set();
+  const renamedTeams = [];
+  // First row per Team Head email in this file: { row, teamName, name, people }.
+  const seenEmailsInFile = new Map();
+  // Every team name already used (site + this upload), so a repeated name gets the next "2.0", "3.0", …
+  const takenNames = new Set((await Registration.find({}, "teamName").lean()).map((t) => nameKey(t.teamName)).filter(Boolean));
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -351,15 +377,7 @@ export const processSpreadsheetImport = async (buffer) => {
       continue;
     }
 
-    // Check for duplicate row within the same uploaded file
     const emailKey = rawLeaderEmail.toLowerCase();
-    const teamKey = rawTeamName.toLowerCase();
-    if (seenEmailsInFile.has(emailKey) || (rawTeamName && seenTeamsInFile.has(teamKey))) {
-      duplicateCount++;
-      continue;
-    }
-    seenEmailsInFile.add(emailKey);
-    seenTeamsInFile.add(teamKey);
 
     // Parse team members (Member 2, Member 3, etc.)
     const members = [];
@@ -426,6 +444,20 @@ export const processSpreadsheetImport = async (buffer) => {
       }
     }
 
+    // Duplicates within this file. Same team name + Team Head email + members → the same submission twice, skipped.
+    // The same Team Head email with a different team: only the first is imported (the email is the team's login).
+    const people = peopleKeys(rawLeaderName, members);
+    const seen = seenEmailsInFile.get(emailKey);
+    if (seen) {
+      if (seen.name === nameKey(rawTeamName) && sameSet(seen.people, people)) {
+        duplicateCount++;
+      } else {
+        invalidRecords.push({ row: rowNum, teamName: rawTeamName, email: rawLeaderEmail, reason: `Same Team Head email as row ${seen.row} ("${seen.teamName}") with different details; only row ${seen.row} was imported` });
+      }
+      continue;
+    }
+    seenEmailsInFile.set(emailKey, { row: rowNum, teamName: rawTeamName, name: nameKey(rawTeamName), people });
+
     // Determine accurate team size: Leader + all members
     const parsedTeamSize = colMap.teamSize ? parseInt(clean(row[colMap.teamSize]), 10) : 0;
     const computedTeamSize = 1 + members.length;
@@ -446,13 +478,8 @@ export const processSpreadsheetImport = async (buffer) => {
       phone: rawMentorPhone,
     };
 
-    // Database lookup: check if team already exists (by leader email or team name)
-    const existing = await Registration.findOne({
-      $or: [
-        { "leader.email": { $regex: `^\\s*${rawLeaderEmail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, $options: "i" } },
-        ...(rawTeamName ? [{ teamName: { $regex: `^\\s*${rawTeamName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, $options: "i" } }] : []),
-      ],
-    });
+    // Database lookup: the same Team Head email is the same team (resubmission or update).
+    const existing = await Registration.findOne({ "leader.email": { $regex: `^\\s*${escapeRegex(rawLeaderEmail)}\\s*$`, $options: "i" } });
 
     if (existing) {
       // Fill in how the team heard about the event / when it submitted the form, if not recorded yet.
@@ -496,12 +523,24 @@ export const processSpreadsheetImport = async (buffer) => {
       continue;
     }
 
+    // Same team name with a different Team Head email. If it's the same people (e.g. the email was corrected in the
+    // Team Portal), it's already on the site; otherwise it's another team that shares the name → "2.0", "3.0", …
+    const sameName = await Registration.find({ teamName: { $regex: `^\\s*${escapeRegex(rawTeamName)}\\s*$`, $options: "i" } }, "teamId teamName leader members").lean();
+    const samePeopleTeam = sameName.find((t) => samePeople(peopleKeys(t.leader?.name, t.members), people));
+    if (samePeopleTeam) {
+      invalidRecords.push({ row: rowNum, teamName: rawTeamName, email: rawLeaderEmail, reason: `Already on the site as ${samePeopleTeam.teamId} (same team name and members, Team Head email ${samePeopleTeam.leader?.email || "-"}); not imported again` });
+      skippedCount++;
+      continue;
+    }
+    const finalTeamName = nextFreeTeamName(rawTeamName, takenNames);
+    takenNames.add(nameKey(finalTeamName));
+
     // Automatically form brand new team with sequential DEX26 Team ID
     const { teamId: seqTeamId, registrationNumber: seqRegNum } = await getNextSequentialTeamId();
     const newTeam = new Registration({
       teamId: seqTeamId,
       registrationNumber: seqRegNum,
-      teamName: rawTeamName,
+      teamName: finalTeamName,
       teamSize,
       projectTheme,
       college: rawCollege || "Sathyabama Institute of Science and Technology",
@@ -525,6 +564,7 @@ export const processSpreadsheetImport = async (buffer) => {
     });
 
     await newTeam.save();
+    if (finalTeamName !== rawTeamName) renamedTeams.push({ row: rowNum, teamId: seqTeamId, from: rawTeamName, to: finalTeamName, email: rawLeaderEmail });
     importedCount++;
     processedTeams.push(newTeam);
   }
@@ -536,9 +576,11 @@ export const processSpreadsheetImport = async (buffer) => {
       updatedCount,
       skippedCount,
       duplicateCount,
+      renamedCount: renamedTeams.length,
       invalidCount: invalidRecords.length,
     },
     invalidRecords,
+    renamedTeams,
     detectedColumns: {
       teamName: colMap.teamName || "Auto-generated from Leader",
       leaderName: colMap.leaderName || "Not detected",

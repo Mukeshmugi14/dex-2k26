@@ -723,14 +723,50 @@ export default function TeamLists() {
                       <b>{importResult.summary?.skippedCount ?? importResult.summary?.updatedCount ?? 0}</b>
                     </div>
                     <div className="summary-tile tile-duplicate">
-                      <small>Duplicates in Sheet</small>
+                      <small>Exact Duplicates Skipped</small>
                       <b>{importResult.summary?.duplicateCount || 0}</b>
+                    </div>
+                    <div className="summary-tile tile-imported">
+                      <small>Renamed (same team name)</small>
+                      <b>{importResult.summary?.renamedCount || 0}</b>
                     </div>
                     <div className="summary-tile tile-invalid">
                       <small>Invalid Rows</small>
                       <b>{importResult.summary?.invalidCount || 0}</b>
                     </div>
                   </div>
+
+                  {importResult.renamedTeams?.length > 0 && (
+                    <div style={{ marginTop: "18px" }}>
+                      <strong style={{ fontSize: "12px", color: "#4ade80" }}>
+                        Different teams with a name already in use, imported with a new name ({importResult.renamedTeams.length}):
+                      </strong>
+                      <div style={{ maxHeight: "150px", overflowY: "auto", marginTop: "6px" }}>
+                        <table className="invalid-records-table">
+                          <thead>
+                            <tr>
+                              <th>Row</th>
+                              <th>Team ID</th>
+                              <th>Name in Sheet</th>
+                              <th>Saved As</th>
+                              <th>Email</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {importResult.renamedTeams.map((rec) => (
+                              <tr key={rec.teamId}>
+                                <td>{rec.row}</td>
+                                <td>{rec.teamId}</td>
+                                <td>{rec.from}</td>
+                                <td style={{ color: "#4ade80", fontWeight: 700 }}>{rec.to}</td>
+                                <td>{rec.email}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
 
                   {importResult.invalidRecords?.length > 0 && (
                     <div style={{ marginTop: "18px" }}>
