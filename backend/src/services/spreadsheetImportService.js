@@ -456,7 +456,12 @@ export const processSpreadsheetImport = async (buffer) => {
       }
       continue;
     }
-    seenEmailsInFile.set(emailKey, { row: rowNum, teamName: rawTeamName, name: nameKey(rawTeamName), people });
+    const sameHeadRow = [...seenEmailsInFile.values()].find((x) => x.name === nameKey(rawTeamName) && x.head && x.head === personKey(rawLeaderName));
+    if (sameHeadRow) {
+      invalidRecords.push({ row: rowNum, teamName: rawTeamName, email: rawLeaderEmail, reason: `Same team name and Team Head as row ${sameHeadRow.row} (different email); only row ${sameHeadRow.row} was imported` });
+      continue;
+    }
+    seenEmailsInFile.set(emailKey, { row: rowNum, teamName: rawTeamName, name: nameKey(rawTeamName), head: personKey(rawLeaderName), people });
 
     // Determine accurate team size: Leader + all members
     const parsedTeamSize = colMap.teamSize ? parseInt(clean(row[colMap.teamSize]), 10) : 0;
@@ -523,12 +528,16 @@ export const processSpreadsheetImport = async (buffer) => {
       continue;
     }
 
-    // Same team name with a different Team Head email. If it's the same people (e.g. the email was corrected in the
-    // Team Portal), it's already on the site; otherwise it's another team that shares the name → "2.0", "3.0", …
-    const sameName = await Registration.find({ teamName: { $regex: `^\\s*${escapeRegex(rawTeamName)}\\s*$`, $options: "i" } }, "teamId teamName leader members").lean();
-    const samePeopleTeam = sameName.find((t) => samePeople(peopleKeys(t.leader?.name, t.members), people));
-    if (samePeopleTeam) {
-      invalidRecords.push({ row: rowNum, teamName: rawTeamName, email: rawLeaderEmail, reason: `Already on the site as ${samePeopleTeam.teamId} (same team name and members, Team Head email ${samePeopleTeam.leader?.email || "-"}); not imported again` });
+    // Same team name with a different Team Head email. It's the same team (not imported again) when the Team Head's
+    // name matches or it's mostly the same people (e.g. the email was corrected in the Team Portal); a "2.0"/"3.0"
+    // copy of the name counts as the same name here. Otherwise it's another team that shares the name → "2.0", "3.0", …
+    const baseName = rawTeamName.replace(/\s+\d+\.0$/, "");
+    const sameName = await Registration.find({ teamName: { $regex: `^\\s*${escapeRegex(baseName)}(\\s+\\d+\\.0)?\\s*$`, $options: "i" } }, "teamId teamName leader members").lean();
+    const sameTeam = sameName.find((t) => (personKey(rawLeaderName) && personKey(t.leader?.name) === personKey(rawLeaderName)))
+      || sameName.find((t) => nameKey(t.teamName) === nameKey(rawTeamName) && samePeople(peopleKeys(t.leader?.name, t.members), people));
+    if (sameTeam) {
+      const why = personKey(sameTeam.leader?.name) === personKey(rawLeaderName) ? "same team name and Team Head" : "same team name and members";
+      invalidRecords.push({ row: rowNum, teamName: rawTeamName, email: rawLeaderEmail, reason: `Already on the site as ${sameTeam.teamId} "${sameTeam.teamName}" (${why}, Team Head email ${sameTeam.leader?.email || "-"}); not imported again` });
       skippedCount++;
       continue;
     }

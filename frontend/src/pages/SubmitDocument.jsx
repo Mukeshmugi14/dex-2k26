@@ -95,8 +95,15 @@ export default function SubmitDocument() {
     {info.submission ? <p className="submit-doc-file-note"><FileText size={15} /> {info.submission.fileName} · {formatSize(info.submission.fileSize)} · {formatDate(info.submission.submittedAt)}</p> : null}
   </>);
 
+  const closesAt = info.deadline ? new Date(info.deadline).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }) + " IST" : "";
+  if (info.open === false) return card(<>
+    <TeamDetails info={info} />
+    <p className="submit-doc-error" role="alert">Round 1 PPT submission closed{closesAt ? ` on ${closesAt}` : ""}. Submissions are no longer accepted.</p>
+  </>);
+
   return card(<>
     <TeamDetails info={info} />
+    {closesAt ? <p className="submit-doc-muted">Last date to submit: <b>{closesAt}</b></p> : null}
     <form onSubmit={submit} noValidate>
       <div className="submit-doc-round-notice" role="note">
         <span>⚠️ ROUND 1 SUBMISSION — PDF ONLY — MAX 15 MB</span>

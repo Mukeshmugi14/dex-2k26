@@ -65,6 +65,27 @@ describe("spreadsheet import duplicates (integration)", { skip: !uri && "MONGO_U
     assert.match(result.invalidRecords[0].reason, /Already on the site/);
   });
 
+  test("same team name and Team Head under another email is never added again, even with other members", async () => {
+    const before = await Registration.countDocuments();
+    const result = await processSpreadsheetImport(sheet([
+      row("Code Crushers", "asha.new@example.com", "Asha", ["Manoj", "Nila"]),
+      row("Code Crushers 2.0", "asha.other@example.com", "Asha", ["Manoj"]),
+    ]));
+    assert.equal(result.summary.importedCount, 0);
+    assert.equal(result.summary.renamedCount, 0);
+    assert.match(result.invalidRecords[0].reason, /same team name and Team Head/);
+    assert.equal(await Registration.countDocuments(), before);
+  });
+
+  test("in one file, a repeat of the same team name and Team Head with another email imports only the first row", async () => {
+    const result = await processSpreadsheetImport(sheet([
+      row("Quantum Quokkas", "q1@example.com", "Ravi", ["Sita"]),
+      row("Quantum Quokkas", "q2@example.com", "Ravi", ["Tara"]),
+    ]));
+    assert.equal(result.summary.importedCount, 1);
+    assert.match(result.invalidRecords[0].reason, /Same team name and Team Head as row 2/);
+  });
+
   test("the same Team Head email with a different team in one file imports only the first row", async () => {
     const result = await processSpreadsheetImport(sheet([
       row("Byte Bandits", "j@example.com", "Jaya", ["Kiran"]),

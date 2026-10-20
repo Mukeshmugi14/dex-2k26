@@ -1,6 +1,6 @@
 import multer from "multer";
 import Registration from "../models/Registration.js";
-import { deletePdf, deriveSubmissionStatus, isPdfBuffer, isWellFormedToken, MAX_PDF_SIZE_BYTES, safePdfFileName, storePdf, tokenLookupQuery } from "../services/submissionService.js";
+import { deletePdf, deriveSubmissionStatus, getRound1Deadline, isPdfBuffer, isWellFormedToken, MAX_PDF_SIZE_BYTES, round1Open, ROUND1_CLOSED_MESSAGE, safePdfFileName, storePdf, tokenLookupQuery } from "../services/submissionService.js";
 
 const INVALID_LINK = { success: false, message: "This submission link is invalid. Please use the link from your DEXATHON 2026 confirmation email." };
 const ALREADY_SUBMITTED = { success: false, alreadySubmitted: true, message: "Your team has already submitted the PDF." };
@@ -17,6 +17,8 @@ const toPublicView = (registration) => ({
   submitted: Boolean(registration.pdfSubmission?.fileId),
   submission: registration.pdfSubmission?.fileId ? { fileName: registration.pdfSubmission.fileName, fileSize: registration.pdfSubmission.fileSize, submittedAt: registration.pdfSubmission.submittedAt } : null,
   maxFileSize: MAX_PDF_SIZE_BYTES,
+  deadline: getRound1Deadline(),
+  open: round1Open(),
 });
 
 export const getSubmission = async (request, response) => {
@@ -39,6 +41,7 @@ export const receivePdf = async (request, response, next) => {
   const registration = await findByToken(request.params.token);
   if (!registration) return response.status(404).json(INVALID_LINK);
   if (registration.pdfSubmission?.fileId) return response.status(409).json(ALREADY_SUBMITTED);
+  if (!round1Open()) return response.status(403).json({ success: false, closed: true, message: ROUND1_CLOSED_MESSAGE });
   request.registration = registration;
   upload(request, response, (error) => {
     if (!error) return next();
@@ -53,6 +56,7 @@ export const receiveOwnPdf = async (request, response, next) => {
   const registration = await Registration.findById(request.teamRegistrationId);
   if (!registration) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
   if (registration.pdfSubmission?.fileId) return response.status(409).json(ALREADY_SUBMITTED);
+  if (!round1Open()) return response.status(403).json({ success: false, closed: true, message: ROUND1_CLOSED_MESSAGE });
   request.registration = registration;
   upload(request, response, (error) => {
     if (!error) return next();
@@ -66,6 +70,7 @@ export const receiveOwnPdfReplacement = async (request, response, next) => {
   const registration = await Registration.findById(request.teamRegistrationId);
   if (!registration) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
   if (!registration.pdfSubmission?.fileId) return response.status(404).json({ success: false, message: "Your team has not submitted a PDF yet." });
+  if (!round1Open()) return response.status(403).json({ success: false, closed: true, message: ROUND1_CLOSED_MESSAGE });
   request.registration = registration;
   upload(request, response, (error) => {
     if (!error) return next();
@@ -105,6 +110,7 @@ export const deleteOwnPdf = async (request, response) => {
   if (!registration) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
   const fileId = registration.pdfSubmission?.fileId;
   if (!fileId) return response.status(404).json({ success: false, message: "Your team has not submitted a PDF yet." });
+  if (!round1Open()) return response.status(403).json({ success: false, closed: true, message: ROUND1_CLOSED_MESSAGE });
 
   const result = await Registration.updateOne(
     { _id: registration._id, "pdfSubmission.fileId": fileId },

@@ -4,6 +4,16 @@ import { Readable } from "stream";
 import Registration from "../models/Registration.js";
 
 export const MAX_PDF_SIZE_BYTES = 15 * 1024 * 1024;
+
+// Round 1 PPT (PDF) submission closes 23 Oct 2026, 11 PM IST: after that no upload, replace or delete.
+// Override with ROUND1_DEADLINE (ISO date with offset) if it moves.
+const DEFAULT_ROUND1_DEADLINE = "2026-10-23T23:00:00+05:30";
+export const getRound1Deadline = () => {
+  const configured = new Date(process.env.ROUND1_DEADLINE || DEFAULT_ROUND1_DEADLINE);
+  return Number.isNaN(configured.getTime()) ? new Date(DEFAULT_ROUND1_DEADLINE) : configured;
+};
+export const round1Open = () => Date.now() <= getRound1Deadline().getTime();
+export const ROUND1_CLOSED_MESSAGE = "Round 1 PPT submission closed on 23 October 2026, 11:00 PM IST. Submissions can no longer be made, edited or deleted.";
 const BUCKET_NAME = "submissions";
 
 // --- Secret per-team submission links -------------------------------------------------------

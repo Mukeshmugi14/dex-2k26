@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import Registration, { PROJECT_THEMES } from "../models/Registration.js";
 import { signTeamToken } from "../middleware/teamAuthMiddleware.js";
 import { currentRound, readRounds, ROUND_INFO } from "../services/roundService.js";
-import { deriveSubmissionStatus, getTeamPortalPassword, openPdfStream } from "../services/submissionService.js";
+import { deriveSubmissionStatus, getRound1Deadline, getTeamPortalPassword, openPdfStream, round1Open } from "../services/submissionService.js";
 import { getRound2EditDeadline, PROTOTYPE_CATEGORIES, prototypeView, ROUND2_EDIT_CLOSED_MESSAGE, validatePrototypeUrl } from "../services/prototypeService.js";
 
 import { findTeamByLeaderCredentials } from "../services/teamIdService.js";
@@ -95,9 +95,13 @@ export const getOwnTeam = async (request, response) => {
       colleges,
     },
     detailsEdit: { editable: teamDetailsEditable(), deadline: getTeamDetailsEditDeadline(), maxMembers: MAX_TEAM_MEMBERS, themes: PROJECT_THEMES },
-    submission: team.pdfSubmission?.fileId
-      ? { submitted: true, fileName: team.pdfSubmission.fileName, fileSize: team.pdfSubmission.fileSize, submittedAt: team.pdfSubmission.submittedAt, status: deriveSubmissionStatus(team) }
-      : { submitted: false },
+    submission: {
+      ...(team.pdfSubmission?.fileId
+        ? { submitted: true, fileName: team.pdfSubmission.fileName, fileSize: team.pdfSubmission.fileSize, submittedAt: team.pdfSubmission.submittedAt, status: deriveSubmissionStatus(team) }
+        : { submitted: false }),
+      deadline: getRound1Deadline(),
+      open: round1Open(),
+    },
     prototype: prototypeView(team, rounds),
     rounds: Object.entries(rounds).map(([key, status]) => ({ key, number: ROUND_INFO[key].number, title: ROUND_INFO[key].title, status })),
     current: { round: ROUND_INFO[current.key].number, status: current.status },

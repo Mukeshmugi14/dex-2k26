@@ -83,9 +83,9 @@ function TeamRunners({ count, stopped }) {
 
 const KEY_DATES = [
   { stage: "OPEN", date: "5 OCT 2026", when: "Monday", event: "Registration Opens", tone: "blue" },
-  { stage: "DEADLINE", date: "20 OCT 2026", when: "Tuesday · 11 PM", event: "Round 1 PPT Submission Closes", tone: "orange" },
+  { stage: "DEADLINE", date: "23 OCT 2026", when: "Friday · 11 PM", event: "Round 1 PPT Submission Closes", tone: "orange" },
   { stage: "RESULTS", date: "25 OCT 2026", when: "Sunday · 7 PM", event: "Round 1 Results Announced", tone: "blue" },
-  { stage: "DEADLINE", date: "30 OCT 2026", when: "Friday · 11 PM", event: "Round 2 Prototype Closes", tone: "orange" },
+  { stage: "DEADLINE", date: "28 OCT 2026", when: "Wednesday · 11 PM", event: "Round 2 Prototype Closes", tone: "orange" },
   { stage: "RESULTS", date: "2 NOV 2026", when: "Monday · 7 PM", event: "Round 2 Results Announced", tone: "blue" },
   { stage: "FINALE", date: "4–5 NOV 2026", when: "Wed – Thu", event: "Final 24-Hour On-Campus Hackathon", tone: "cyan" },
 ];
@@ -216,7 +216,7 @@ export default function TeamDashboard() {
       await load();
     } catch (requestError) {
       if (requestError.response?.status === 401) { logout(); return; }
-      if ([404, 409].includes(requestError.response?.status)) { setSelectedPdf(null); setPdfEditing(false); await load(); }
+      if ([403, 404, 409].includes(requestError.response?.status)) { setSelectedPdf(null); setPdfEditing(false); await load(); }
       setPdfError(requestError.response?.data?.message || "Unable to upload your PDF. Please check your connection and try again.");
     } finally { setUploading(false); }
   };
@@ -234,7 +234,7 @@ export default function TeamDashboard() {
       await load();
     } catch (requestError) {
       if (requestError.response?.status === 401) { logout(); return; }
-      if ([404, 409].includes(requestError.response?.status)) await load();
+      if ([403, 404, 409].includes(requestError.response?.status)) await load();
       setPdfError(requestError.response?.data?.message || "Unable to delete your PDF. Please try again.");
     } finally { setPdfDeleting(false); }
   };
@@ -328,6 +328,7 @@ export default function TeamDashboard() {
   if (!data) return <main className="team-portal team-dash">{header}<div className="team-dash-inner"><p className="team-state">{error || "Loading your team dashboard..."}</p>{error ? <button type="button" className="team-retry" onClick={load}>Retry</button> : null}</div></main>;
 
   const { team, submission, rounds, current, evaluation, prototype, detailsEdit } = data;
+  const round1Closed = submission.open === false;
   const detailsEditable = Boolean(detailsEdit?.editable);
   const savedMemberCount = (team.members || []).length;
   const maxMembers = Math.max(detailsEdit?.maxMembers || DEFAULT_MAX_MEMBERS, savedMemberCount);
@@ -433,7 +434,7 @@ export default function TeamDashboard() {
             ) : null}
             <div><dt>Selected Project Theme</dt><dd className="team-theme-value">{team.projectTheme}</dd></div>
             <div><dt>Round 1 Status</dt><dd>{roundOne ? <span className={statusClass(roundOne.status)}>{roundOneInfo.mark} {roundOneInfo.label}</span> : "—"}</dd></div>
-            <div><dt>Round 1 PDF Submission Status</dt><dd>{submission.submitted ? <span className="team-pill ok">✓ PDF Submitted</span> : <span className="team-pill open">● Submission Open</span>}</dd></div>
+            <div><dt>Round 1 PDF Submission Status</dt><dd>{submission.submitted ? <span className="team-pill ok">✓ PDF Submitted</span> : round1Closed ? <span className="team-pill closed">✕ Submission Closed</span> : <span className="team-pill open">● Submission Open</span>}</dd></div>
             {prototypeStatus ? <div><dt>Round 2 Prototype Status</dt><dd>{prototypeStatus}</dd></div> : null}
           </dl>
           {detailsEditable
@@ -485,7 +486,10 @@ export default function TeamDashboard() {
             {pdfNotice ? <p className="team-pdf-success" role="status">{pdfNotice}</p> : null}
             <div className="team-pdf-file"><FileText size={22} /><div><b>{submission.fileName}</b><span>{submission.fileSize ? `${formatSize(submission.fileSize)} · ` : ""}Submitted {formatDate(submission.submittedAt)}</span></div></div>
             <div className="team-pdf-status"><span>Round 1 PDF Status</span><span className="team-pill ok">✓ PDF Submitted</span></div>
-            {pdfEditing ? <>
+            {round1Closed ? <>
+              <div className="team-upload-actions"><button type="button" className="team-action" onClick={viewPdf}><Eye size={16} /> View PDF</button></div>
+              <p className="team-edit-closed" role="note">Round 1 PPT submission closed on {formatDeadline(submission.deadline)}. Your PDF can no longer be edited or deleted.</p>
+            </> : pdfEditing ? <>
               <small className="team-edit-note">Replace your PDF · PDF format only · Maximum 15 MB</small>
               {selectedPdf ? <div className="team-pdf-file"><FileText size={22} /><div><b>{selectedPdf.name}</b><span>{formatSize(selectedPdf.size)} · Ready to replace</span></div></div> : null}
               {uploading ? <div className="team-upload-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}><i style={{ width: `${uploadProgress}%` }} /><span>Uploading… {uploadProgress}%</span></div> : null}
@@ -499,7 +503,12 @@ export default function TeamDashboard() {
               <button type="button" className="team-action team-action-secondary" onClick={startPdfEdit} disabled={pdfDeleting}><Pencil size={16} /> Edit</button>
               <button type="button" className="team-action team-action-danger" onClick={deleteSubmittedPdf} disabled={pdfDeleting}><Trash2 size={16} /> {pdfDeleting ? "Deleting…" : "Delete"}</button>
             </div>}
+            {!round1Closed && submission.deadline ? <small className="team-edit-note">You can edit or delete your PDF until {formatDeadline(submission.deadline)}.</small> : null}
             {pdfError ? <p className="team-inline-error">{pdfError}</p> : null}
+          </> : round1Closed ? <>
+            {pdfNotice ? <p className="team-pdf-success" role="status">{pdfNotice}</p> : null}
+            <div className="team-pdf-status"><span>Round 1 PDF Status</span><span className="team-pill closed">✕ Submission Closed</span></div>
+            <p className="team-edit-closed" role="note">Round 1 PPT submission closed on {formatDeadline(submission.deadline)}. Your team did not submit a PDF.</p>
           </> : <>
             {pdfNotice ? <p className="team-pdf-success" role="status">{pdfNotice}</p> : null}
             <div className="team-pdf-warning" role="note">
@@ -509,6 +518,7 @@ export default function TeamDashboard() {
               <small>Maximum File Size: 15 MB · PPT / PPTX files are not accepted</small>
             </div>
             <div className="team-pdf-status"><span>Round 1 PDF Status</span><span className="team-pill open">● Submission Open</span></div>
+            {submission.deadline ? <p className="team-r2-intro">Last date to submit: <b>{formatDeadline(submission.deadline)}</b>.</p> : null}
             {selectedPdf ? <div className="team-pdf-file"><FileText size={22} /><div><b>{selectedPdf.name}</b><span>{formatSize(selectedPdf.size)} · Ready to submit</span></div></div> : null}
             {uploading ? <div className="team-upload-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}><i style={{ width: `${uploadProgress}%` }} /><span>Uploading… {uploadProgress}%</span></div> : null}
             <div className="team-upload-actions">
