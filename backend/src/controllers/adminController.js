@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
-import Registration from "../models/Registration.js";
+import Registration, { COUNTED } from "../models/Registration.js";
 import { adminProfile } from "../services/adminAccess.js";
 import {
   describeEmailError,
@@ -187,6 +187,7 @@ const SECRET_FIELDS = { "pdfSubmission.tokenHash": 0, "pdfSubmission.legacyToken
 // ---------- Admin Dashboard Summary (purely focused on team and registration management) ----------
 export const getDashboard = async (_request, response) => {
   const [stats = {}] = await Registration.aggregate([
+    { $match: COUNTED },
     {
       $group: {
         _id: null,
@@ -203,8 +204,8 @@ export const getDashboard = async (_request, response) => {
   ]);
 
   const totalTeams = stats.total || 0;
-  const colleges = (await Registration.distinct("collegeId")).filter(Boolean);
-  const themes = await Registration.distinct("projectTheme");
+  const colleges = (await Registration.distinct("collegeId", COUNTED)).filter(Boolean);
+  const themes = await Registration.distinct("projectTheme", COUNTED);
 
   return response.json({
     totalRegistrations: totalTeams,
@@ -277,11 +278,13 @@ export const getRegistrations = async (request, response) => {
       $facet: {
         items: [{ $skip: skip }, { $limit: limit }, { $project: projection }],
         total: [{ $count: "n" }],
+        counted: [{ $match: COUNTED }, { $count: "n" }],
       },
     },
   ]);
-  const total = result.total[0]?.n || 0;
-  return response.json({ items: result.items, total, page, limit, pages: Math.max(Math.ceil(total / limit), 1) });
+  const listed = result.total[0]?.n || 0;
+  const total = result.counted[0]?.n || 0;
+  return response.json({ items: result.items, total, page, limit, pages: Math.max(Math.ceil(listed / limit), 1) });
 };
 
 // Team Lists endpoint
@@ -291,8 +294,9 @@ export const getTeamLists = async (request, response) => {
   const match = await buildTeamFilter(query);
 
   try {
-    const [[summary = {}], items, total] = await Promise.all([
+    const [[summary = {}], items, listed, total] = await Promise.all([
       Registration.aggregate([
+        { $match: COUNTED },
         {
           $group: {
             _id: null,
@@ -309,6 +313,7 @@ export const getTeamLists = async (request, response) => {
         .limit(limit)
         .lean(),
       Registration.countDocuments(match),
+      Registration.countDocuments({ $and: [match, COUNTED] }),
     ]);
 
     // Registry college name for display; the submitted spelling stays in `college`.
@@ -333,7 +338,7 @@ export const getTeamLists = async (request, response) => {
       total,
       page,
       limit,
-      pages: Math.max(Math.ceil(total / limit), 1),
+      pages: Math.max(Math.ceil(listed / limit), 1),
       summary: {
         total: summary.total || 0,
         sent: summary.sent || 0,

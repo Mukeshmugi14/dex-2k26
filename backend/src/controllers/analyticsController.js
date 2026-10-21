@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
-import Registration from "../models/Registration.js";
+import Registration, { COUNTED } from "../models/Registration.js";
 import { createCollegeLookup } from "../services/collegeRegistry.js";
 import { referralCategory } from "../services/referralSource.js";
 import { memberCollegeNames, PLACEHOLDER_COLLEGE, teamCollegeMix } from "../services/teamColleges.js";
@@ -83,7 +83,7 @@ const topCollegeChannels = (teams, teamsByCollege, collegeOf, channelOf) => {
 const teamRef = (team) => ({ teamId: team.teamId || "", teamName: team.teamName || "", email: team.leader?.email || "" });
 
 export const getAnalytics = async (_request, response) => {
-  const teams = await Registration.find({}).lean();
+  const teams = await Registration.find(COUNTED).lean();
   const total = teams.length;
   // Colleges are grouped by the registry collegeId stored on each registration; members' own colleges go through
   // the same matcher. Names that couldn't be resolved confidently appear as "Needs review: …", never merged.

@@ -3,6 +3,8 @@ export const SUBMISSION_STATUSES = ["Pending", "Submitted", "Under Review", "Sel
 export const EVALUATION_RESULTS = ["Pending", "Selected", "Not Selected"];
 export const ROUND_STATUSES = ["PENDING", "COMPLETED", "LIVE", "SELECTED", "NOT_SELECTED", "UPCOMING"];
 export const ROUND_DECISIONS = ["PENDING", "SELECTED", "REJECTED"];
+// Filter for the teams that count in admin totals (see excludeFromCount).
+export const COUNTED = { excludeFromCount: { $ne: true } };
 export const PROJECT_THEMES = ["OPEN INNOVATION", "BLOCKCHAIN & CYBERSECURITY", "HEALTHCARE", "AI & MACHINE LEARNING", "SUSTAINABILITY DEVELOPMENT", "FINTECH & EDTECH"];
 const roundResultSchema = new mongoose.Schema({
   status: { type: String, enum: ROUND_DECISIONS, default: "PENDING" },
@@ -92,6 +94,8 @@ const registrationSchema = new mongoose.Schema({
     messageId: String,
   },
   importSource: { type: String, default: "MANUAL" },
+  // Admin choice: a real team (listed, can log in, gets emails) that is left out of every admin total and analytics.
+  excludeFromCount: { type: Boolean, default: false },
   importedAt: Date,
   // When the registration form was submitted (the Google Form timestamp), if known.
   formSubmittedAt: Date,

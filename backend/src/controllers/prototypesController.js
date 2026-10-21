@@ -28,7 +28,8 @@ const youTubeId = (value) => {
 };
 
 export const listPrototypes = async (_request, response) => {
-  const teams = await Registration.find({}, "teamId teamName leader.name leader.email college collegeName projectTheme rounds.round1 prototypeSubmission").lean();
+  const teams = await Registration.find({}, "teamId teamName leader.name leader.email college collegeName projectTheme rounds.round1 prototypeSubmission excludeFromCount").lean();
+  const notCounted = new Set(teams.filter((t) => t.excludeFromCount).map((t) => String(t._id)));
   const rows = teams.map((team) => {
     const submission = team.prototypeSubmission || {};
     const url = safeUrl(submission.url);
@@ -53,16 +54,18 @@ export const listPrototypes = async (_request, response) => {
   });
   // Submitted first (newest first), then the rest by Team ID.
   rows.sort((a, b) => (b.submitted - a.submitted) || (new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0)) || a.teamId.localeCompare(b.teamId, undefined, { numeric: true }));
-  const submitted = rows.filter((r) => r.submitted);
+  // Counts leave out teams the admin marked as not counted; they're still listed.
+  const counted = rows.filter((r) => !notCounted.has(r.id));
+  const submitted = counted.filter((r) => r.submitted);
   return response.json({
     deadline: getRound2Deadline(),
     editDeadline: getRound2EditDeadline(),
     counts: {
-      teams: rows.length,
+      teams: counted.length,
       submitted: submitted.length,
       software: submitted.filter((r) => r.category === "SOFTWARE").length,
       hardware: submitted.filter((r) => r.category === "HARDWARE").length,
-      notSubmitted: rows.filter((r) => !r.submitted && r.eligible).length,
+      notSubmitted: counted.filter((r) => !r.submitted && r.eligible).length,
     },
     teams: rows,
   });
