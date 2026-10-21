@@ -213,7 +213,7 @@ export default function AdminPdfSubmissions() {
   const visibleTeams = useMemo(() => {
     const term = search.trim().toLowerCase();
     return teams.filter((team) => (filter === "All" || team.pdfSubmission.status === filter)
-      && (!term || [team.teamName, team.leader?.name, team.leader?.email, team.teamId].some((value) => value?.toLowerCase().includes(term))));
+      && (!term || [team.teamName, team.leader?.name, team.leader?.email, team.teamId, team.study?.department, team.study?.year].some((value) => value?.toLowerCase().includes(term))));
   }, [teams, filter, search]);
   const paged = usePagedList(visibleTeams, 24, `${filter}|${search}`);
 
@@ -274,7 +274,10 @@ export default function AdminPdfSubmissions() {
                 <div><dt>Team Head</dt><dd>{team.leader?.name}</dd></div>
                 <div><dt>Email</dt><dd className="break">{team.leader?.email}</dd></div>
                 <div><dt>Phone</dt><dd>{team.leader?.phone}</dd></div>
-                <div><dt>College</dt><dd>{team.college || team.collegeName}</dd></div><div><dt>Project Theme</dt><dd>{team.projectTheme || "Not selected"}</dd></div>
+                <div><dt>College</dt><dd>{team.college || team.collegeName}</dd></div>
+                <div><dt>Department</dt><dd>{team.study?.department || "—"}</dd></div>
+                <div><dt>Year of Study</dt><dd>{team.study?.year || "—"}</dd></div>
+                <div><dt>Project Theme</dt><dd>{team.projectTheme || "Not selected"}</dd></div>
                 <div><dt>Submitted</dt><dd>{hasPdf ? formatDate(team.pdfSubmission.submittedAt) : "Not yet"}</dd></div>
               </dl>
               <div className="pdf-card-actions">

@@ -47,7 +47,7 @@ export default function AdminPrototypes() {
       if (filter === "submitted" && !t.submitted) return false;
       if ((filter === "SOFTWARE" || filter === "HARDWARE") && t.category !== filter) return false;
       if (filter === "pending" && (t.submitted || !t.eligible)) return false;
-      return !term || [t.teamId, t.teamName, t.teamHead, t.email, t.college, t.host].some((v) => String(v).toLowerCase().includes(term));
+      return !term || [t.teamId, t.teamName, t.teamHead, t.email, t.college, t.host, t.department, t.year].some((v) => String(v).toLowerCase().includes(term));
     });
   }, [data, filter, search]);
 
@@ -89,6 +89,7 @@ export default function AdminPrototypes() {
               {cat ? <span className={`proto-badge is-${t.category.toLowerCase()}`}><cat.Icon size={13} aria-hidden="true" /> {cat.label}</span> : <span className="proto-badge is-none">{t.eligible ? "Not submitted" : "Not in Round 2"}</span>}
             </div>
             <p className="proto-meta">{t.teamHead || "—"} · {t.email}{t.college ? ` · ${t.college}` : ""}</p>
+            <p className="proto-meta">{t.department ? `Department: ${t.department}` : "Department: —"} · {t.year ? `Year: ${t.year}` : "Year: —"}</p>
             {t.submitted ? <>
               <p className="proto-link"><span>{cat?.note}:</span> <a href={t.url} target="_blank" rel="noopener noreferrer">{t.url}</a></p>
               <div className="proto-actions">

@@ -1,5 +1,6 @@
 import Registration from "../models/Registration.js";
 import { getRound2Deadline, getRound2EditDeadline } from "../services/prototypeService.js";
+import { STUDY_FIELDS, teamStudyInfo } from "../services/teamProfile.js";
 
 // Admin → Prototypes: every team's Round 2 submission (category + link) for review.
 // Only http(s) links are passed on, so the page can never be handed a javascript: or data: URL.
@@ -28,7 +29,7 @@ const youTubeId = (value) => {
 };
 
 export const listPrototypes = async (_request, response) => {
-  const teams = await Registration.find({}, "teamId teamName leader.name leader.email college collegeName projectTheme rounds.round1 prototypeSubmission excludeFromCount").lean();
+  const teams = await Registration.find({}, `teamId teamName leader.name leader.email college collegeName projectTheme rounds.round1 prototypeSubmission excludeFromCount ${STUDY_FIELDS}`).lean();
   const notCounted = new Set(teams.filter((t) => t.excludeFromCount).map((t) => String(t._id)));
   const rows = teams.map((team) => {
     const submission = team.prototypeSubmission || {};
@@ -42,6 +43,7 @@ export const listPrototypes = async (_request, response) => {
       email: team.leader?.email || "",
       college: team.college || team.collegeName || "",
       theme: team.projectTheme || "",
+      ...teamStudyInfo(team),
       round1: team.rounds?.round1 || "PENDING",
       eligible: team.rounds?.round1 !== "NOT_SELECTED",
       submitted: Boolean(url),

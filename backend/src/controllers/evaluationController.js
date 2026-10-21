@@ -3,9 +3,10 @@ import EvaluationSettings from "../models/EvaluationSettings.js";
 import Registration, { EVALUATION_RESULTS } from "../models/Registration.js";
 import { sendSelectionEmail } from "../services/emailService.js";
 import { deriveSubmissionStatus, openPdfStream } from "../services/submissionService.js";
+import { STUDY_FIELDS, teamStudyInfo } from "../services/teamProfile.js";
 
 const CRITERIA = ["criterion1", "criterion2", "criterion3", "criterion4"];
-const LIST_FIELDS = "teamId teamName leader college collegeName projectTheme pdfSubmission evaluation selectionEmailSent selectionEmailStatus selectionEmailSentAt createdAt";
+const LIST_FIELDS = `teamId teamName leader college collegeName projectTheme pdfSubmission evaluation selectionEmailSent selectionEmailStatus selectionEmailSentAt createdAt ${STUDY_FIELDS}`;
 
 const getSettings = async () => (await EvaluationSettings.findOne()) || new EvaluationSettings();
 const settingsView = (settings) => ({ maxScorePerCriterion: settings.maxScorePerCriterion ?? null, criteriaLabels: settings.criteriaLabels });
@@ -17,6 +18,8 @@ const toAdminView = (registration) => {
   delete view.pdfSubmission.legacyTokenHash;
   delete view.pdfSubmission.linkSalt;
   view.evaluation = { result: "Pending", ...(view.evaluation || {}) };
+  Object.assign(view, { study: teamStudyInfo(view) });
+  delete view.members;
   return view;
 };
 
