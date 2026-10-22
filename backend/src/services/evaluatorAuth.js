@@ -15,15 +15,22 @@ export const EVAL_OTP_RESEND_MS = 60 * 1000;
 export const EVAL_SESSION_HOURS = 12;
 export const MIN_EVALUATOR_PASSWORD = 10;
 
-// Same strength rules as the admin secret, with a separate derived key so evaluator, admin and team tokens can never be swapped.
+// EVALUATOR_JWT_SECRET (at least 32 characters) if set, so the portal can be enabled without changing JWT_SECRET
+// (which would sign every team out); otherwise a strong JWT_SECRET. Keys are derived per purpose, so evaluator,
+// admin and team tokens can never be swapped.
+const MIN_SECRET_LENGTH = 32;
+const evaluatorSecret = () => {
+  const own = String(process.env.EVALUATOR_JWT_SECRET || "").trim();
+  return own.length >= MIN_SECRET_LENGTH ? own : adminJwtSecret();
+};
 const baseSecret = () => {
-  const value = adminJwtSecret();
-  if (!value) throw Object.assign(new Error("JWT_SECRET is not securely configured."), { code: "EWEAKSECRET" });
+  const value = evaluatorSecret();
+  if (!value) throw Object.assign(new Error("EVALUATOR_JWT_SECRET / JWT_SECRET is not securely configured."), { code: "EWEAKSECRET" });
   return value;
 };
 const key = (purpose) => crypto.createHmac("sha256", baseSecret()).update(`dexathon-evaluator:${purpose}`).digest("hex");
-export const evaluatorSecretConfigured = () => Boolean(adminJwtSecret());
-export const EVAL_SECRET_MESSAGE = "Evaluator login is not available yet: the server's JWT_SECRET is missing or weak. Ask the organisers.";
+export const evaluatorSecretConfigured = () => Boolean(evaluatorSecret());
+export const EVAL_SECRET_MESSAGE = "Evaluator login is not available yet: the server's EVALUATOR_JWT_SECRET (or JWT_SECRET) is missing or too short. Ask the organisers.";
 
 const SESSION = { audience: "dexathon-evaluator", issuer: "dexathon-2026" };
 const CHALLENGE = { audience: "dexathon-evaluator-code", issuer: "dexathon-2026" };
