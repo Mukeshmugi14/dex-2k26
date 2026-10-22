@@ -24,3 +24,11 @@
 .admin-users button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:1000px){.admin-users .au-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.admin-users .au-grid{grid-template-columns:1fr}.admin-users .au-card footer{display:grid;grid-template-columns:1fr 1fr}.admin-users .au-card footer button{justify-content:center}}
+
+/* Evaluators: panel coverage */
+.admin-users .ev-panels h2 svg{color:#55caff}
+.admin-users .ev-coverage{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.admin-users .ev-coverage div{display:grid;gap:4px;padding:10px 12px;border:1px solid #ffffff15;border-radius:6px}
+.admin-users .ev-coverage span{color:#91a4b9;font-size:11px;letter-spacing:0;text-transform:none}
+.admin-users .ev-coverage b{color:#fff;font-size:22px}
+@media (max-width:760px){.admin-users .ev-coverage{grid-template-columns:1fr 1fr}}

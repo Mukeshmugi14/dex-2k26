@@ -57,10 +57,17 @@ const registrationSchema = new mongoose.Schema({
     totalScore: Number,
     // Number of evaluators whose submitted PPT Evaluation Sheets make up totalScore (their average, out of 100).
     evaluatorCount: Number,
+    // True once every evaluator on the team's panel (3) has submitted: totalScore is then the final Round 1 score.
+    scoreComplete: Boolean,
+    // Highest minus lowest submitted total, to spot panels that disagree.
+    scoreSpread: Number,
     result: { type: String, enum: EVALUATION_RESULTS, default: "Pending" },
     evaluatedAt: Date,
     evaluatedBy: String,
   },
+  // Round 1 PPT evaluation panel: the evaluators assigned to score this team (normally 3).
+  evaluationPanel: [{ type: mongoose.Schema.Types.ObjectId, ref: "Evaluator" }],
+  evaluationPanelAt: Date,
   // Second-round selection email (sent only for "Selected"), tracked so it is never sent twice by accident.
   selectionEmailSent: { type: Boolean, default: false },
   selectionEmailStatus: { type: String, enum: ["Not Sent", "Sending", "Sent", "Failed"], default: "Not Sent" },
@@ -151,5 +158,6 @@ registrationSchema.index({ "leader.email": 1 });
 registrationSchema.index({ "registrationEmail.status": 1 });
 registrationSchema.index({ collegeId: 1 });
 registrationSchema.index({ "collegeMatch.status": 1 });
+registrationSchema.index({ evaluationPanel: 1 });
 
 export default mongoose.model("Registration", registrationSchema);

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ExternalLink, KeyRound, Mail, UserPlus, X } from "lucide-react";
+import { ExternalLink, KeyRound, Mail, Shuffle, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
@@ -17,6 +17,7 @@ const formatDate = (value) => (value ? new Date(value).toLocaleString("en-IN", {
 export default function AdminEvaluators() {
   const [evaluators, setEvaluators] = useState([]);
   const [portalUrl, setPortalUrl] = useState("");
+  const [coverage, setCoverage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [message, setMessage] = useState("");
@@ -31,7 +32,7 @@ export default function AdminEvaluators() {
   const load = useCallback(() => {
     setLoading(true); setLoadError("");
     axios.get(`${API_URL}/admin/evaluators`, { headers })
-      .then((r) => { setEvaluators(r.data.evaluators); setPortalUrl(r.data.portalUrl); })
+      .then((r) => { setEvaluators(r.data.evaluators); setPortalUrl(r.data.portalUrl); setCoverage(r.data.coverage); })
       .catch((e) => { if (e.response?.status === 401) signOut(); else setLoadError(e.response?.data?.message || "Unable to load evaluators."); })
       .finally(() => setLoading(false));
   }, [headers, signOut]);
@@ -65,6 +66,19 @@ export default function AdminEvaluators() {
       <footer><span>They sign in with this email: the first time with a one-time code sent to it, then with the password they choose.</span><button type="submit" disabled={busy === "add"}>{busy === "add" ? "Adding..." : "Add Evaluator"}</button></footer>
     </form>
 
+    {coverage ? <section className="team-card au-create ev-panels">
+      <h2><Shuffle size={18} /> Round 1 panels · {coverage.panelSize} evaluators per PPT</h2>
+      <div className="ev-coverage">
+        <div><span>PPTs submitted</span><b>{coverage.teams}</b></div>
+        <div><span>Full panels ({coverage.panelSize} evaluators)</span><b>{coverage.fullPanels}</b></div>
+        <div><span>No panel yet</span><b>{coverage.unassigned}</b></div>
+        <div><span>Final scores ({coverage.panelSize}/{coverage.panelSize} sheets)</span><b>{coverage.finalScores}</b></div>
+      </div>
+      <footer><span>Assigns every PPT to {coverage.panelSize} different active evaluators, spreading them evenly. Running it again only fills gaps (new PDFs, disabled evaluators); nobody loses teams they've started. Add all evaluators first.</span>
+        <button type="button" disabled={Boolean(busy) || evaluators.filter((e) => e.active).length < coverage.panelSize} title={evaluators.filter((e) => e.active).length < coverage.panelSize ? `Needs at least ${coverage.panelSize} active evaluators` : undefined}
+          onClick={() => act("assign", () => axios.post(`${API_URL}/admin/evaluators/assign-panels`, {}, { headers }))}>{busy === "assign" ? "Assigning..." : coverage.unassigned || coverage.fullPanels < coverage.teams ? "Assign panels" : "Re-check panels"}</button></footer>
+    </section> : null}
+
     {loading ? <AdminSkeleton rows={3} variant="cards" />
       : loadError ? <div className="admin-teams-state error"><p>{loadError}</p><button type="button" onClick={load}>Retry</button></div>
         : !evaluators.length ? <p className="admin-teams-state">No evaluators yet. Add the first one above.</p>
@@ -74,7 +88,8 @@ export default function AdminEvaluators() {
               <div><dt>Email</dt><dd className="break">{ev.email}</dd></div>
               <div><dt>Password</dt><dd>{ev.passwordSet ? `Set ${formatDate(ev.passwordSetAt)}` : "Not set yet (first sign-in pending)"}</dd></div>
               <div><dt>Last sign-in</dt><dd>{formatDate(ev.lastLoginAt)}</dd></div>
-              <div><dt>Sheets</dt><dd>{ev.submitted} submitted · {ev.drafts} draft{ev.drafts === 1 ? "" : "s"}</dd></div>
+              <div><dt>Assigned PPTs</dt><dd>{ev.assigned}</dd></div>
+              <div><dt>Sheets</dt><dd>{ev.submitted} submitted · {ev.drafts} draft{ev.drafts === 1 ? "" : "s"}{ev.assigned ? ` · ${Math.max(0, ev.assigned - ev.submitted)} left` : ""}</dd></div>
             </dl>
             <footer>
               {ev.active ? <button type="button" className="ghost" disabled={Boolean(busy)} onClick={() => act(`inv-${ev.id}`, () => axios.post(`${API_URL}/admin/evaluators/${ev.id}/invite`, {}, { headers }))}><Mail size={14} /> {busy === `inv-${ev.id}` ? "Sending..." : "Resend invite"}</button> : null}

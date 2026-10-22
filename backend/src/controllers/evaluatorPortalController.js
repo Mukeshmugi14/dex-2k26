@@ -10,11 +10,12 @@ import {
   evaluatorSecretConfigured, generateEvaluatorOtp, hashEvaluatorOtp, signCodeChallenge, signEvaluatorSession, verifyCodeChallenge,
 } from "../services/evaluatorAuth.js";
 import { clearFailures, clientIp, lockedMinutes, recordFailure } from "../services/adminSecurity.js";
-import { cleanSheet, RUBRIC_VERSION, rubricView } from "../services/rubric.js";
+import { CRITERIA, cleanSheet, RUBRIC_VERSION, rubricView } from "../services/rubric.js";
 import { createCollegeLookup } from "../services/collegeRegistry.js";
 import { openPdfStream } from "../services/submissionService.js";
 import { teamStudyInfo } from "../services/teamProfile.js";
-import { refreshTeamRubricScore } from "../services/rubricScores.js";
+import { PANEL_SIZE, refreshTeamRubricScore } from "../services/rubricScores.js";
+import { memberCollegeNames, teamCollegeMix } from "../services/teamColleges.js";
 
 const isEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(value || "").trim());
 const cleanEmail = (value) => String(value || "").trim().toLowerCase();
@@ -126,26 +127,67 @@ export const getEvaluatorMe = async (request, response) => response.json({ succe
 export const getEvaluatorRubric = async (_request, response) => response.json({ success: true, rubric: rubricView() });
 
 const isLocked = (team) => team?.evaluation?.result && team.evaluation.result !== "Pending";
+const onPanel = (team, evaluatorId) => (team?.evaluationPanel || []).some((id) => String(id) === String(evaluatorId));
+const NOT_ASSIGNED = { success: false, notAssigned: true, message: "This team isn't assigned to you. Each PPT is scored by its own panel of evaluators." };
+const LIST_FIELDS = "teamId teamName college collegeName collegeId collegeNameRaw projectTheme year department leader.name members.name members.year members.department pdfSubmission.fileName pdfSubmission.fileSize pdfSubmission.submittedAt evaluation.result evaluationPanel";
 
-// Teams with a Round 1 PDF, with only what judging needs (no contact details) and this evaluator's own progress.
+// The scoring pattern of this evaluator's own submitted sheets (never other evaluators' scores).
+const insightsFor = (sheets, criteria) => {
+  const submitted = sheets.filter((s) => s.status === "submitted");
+  const totals = submitted.map((s) => s.total || 0);
+  const avg = (values) => (values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : null);
+  const levelOf = (s, id) => { const v = s.levels instanceof Map ? s.levels.get(id) : s.levels?.[id]; return Number.isInteger(v) ? v : null; };
+  const buckets = [[0, 20], [20, 40], [40, 60], [60, 80], [80, 101]];
+  return {
+    submitted: submitted.length,
+    averageTotal: avg(totals),
+    highest: totals.length ? Math.max(...totals) : null,
+    lowest: totals.length ? Math.min(...totals) : null,
+    distribution: buckets.map(([lo, hi]) => ({ label: `${lo}–${Math.min(hi, 100)}`, count: totals.filter((t) => t >= lo && t < hi).length })),
+    criteria: criteria.map((c) => {
+      const levels = submitted.map((s) => levelOf(s, c.id)).filter((v) => v !== null);
+      const a = avg(levels);
+      return { id: c.id, name: c.name, max: c.max, averageLevel: a, averageMarks: a === null ? null : Math.round(((c.max * a) / 5) * 10) / 10 };
+    }),
+    recommendations: [...submitted.reduce((m, s) => (s.recommendation ? m.set(s.recommendation, (m.get(s.recommendation) || 0) + 1) : m), new Map())].map(([label, count]) => ({ label, count })),
+    flagged: submitted.filter((s) => (s.policyFlags || []).length).length,
+  };
+};
+
+// This evaluator's assigned teams (their panel), with only what judging needs (no contact details), their own
+// progress, how far each panel has got, and insights into their own scoring.
 export const listEvaluatorTeams = async (request, response) => {
-  const teams = await Registration.find({ "pdfSubmission.fileId": { $ne: null } }, "teamId teamName college collegeName collegeId collegeNameRaw projectTheme year department members.year members.department pdfSubmission.fileName pdfSubmission.fileSize pdfSubmission.submittedAt evaluation.result").sort({ teamId: 1 }).lean();
-  const mine = new Map((await RubricEvaluation.find({ evaluator: request.evaluator.id }, "registration status total updatedAt submittedAt").lean()).map((e) => [String(e.registration), e]));
+  const me = request.evaluator.id;
+  const teams = await Registration.find({ "pdfSubmission.fileId": { $ne: null }, evaluationPanel: me }, LIST_FIELDS).sort({ teamId: 1 }).lean();
+  const ids = teams.map((t) => t._id);
+  const [mine, panelDone] = await Promise.all([
+    RubricEvaluation.find({ evaluator: me }, "registration status total updatedAt submittedAt levels recommendation policyFlags").lean(),
+    RubricEvaluation.aggregate([{ $match: { registration: { $in: ids }, status: "submitted" } }, { $group: { _id: "$registration", evaluators: { $addToSet: "$evaluator" } } }]),
+  ]);
+  const mineByTeam = new Map(mine.map((e) => [String(e.registration), e]));
+  const doneByTeam = new Map(panelDone.map((r) => [String(r._id), r.evaluators.map(String)]));
   const lookup = await createCollegeLookup();
+  const assignedIds = new Set(ids.map(String));
   return response.json({
     success: true,
+    panelSize: PANEL_SIZE,
+    resultsAt: "2026-10-25T19:00:00+05:30",
     teams: teams.map((t) => {
-      const e = mine.get(String(t._id));
+      const e = mineByTeam.get(String(t._id));
       const college = lookup.forTeam(t);
+      const panel = (t.evaluationPanel || []).map(String);
       return {
         id: String(t._id), teamId: t.teamId, teamName: t.teamName,
         college: college.collegeId ? college.name : (t.college || t.collegeName || ""),
         theme: t.projectTheme || "", ...teamStudyInfo(t),
+        teamSize: (t.members || []).filter((m) => m?.name).length + (t.leader?.name ? 1 : 0),
         fileName: t.pdfSubmission?.fileName || "", fileSize: t.pdfSubmission?.fileSize || 0, submittedAt: t.pdfSubmission?.submittedAt || null,
         myStatus: e?.status || "not-started", myTotal: e ? e.total : null, myUpdatedAt: e?.updatedAt || null,
+        panelSize: panel.length, panelSubmitted: (doneByTeam.get(String(t._id)) || []).filter((id) => panel.includes(id)).length,
         locked: isLocked(t),
       };
     }),
+    insights: insightsFor(mine.filter((s) => assignedIds.has(String(s.registration))), CRITERIA),
   });
 };
 
@@ -154,8 +196,9 @@ const findTeam = async (id, fields) => (mongoose.isValidObjectId(id) ? Registrat
 // The PDF in parts (HTTP Range), so large files stay under the hosting platform's response size limit.
 const MAX_CHUNK = 3 * 1024 * 1024;
 export const streamEvaluatorPdf = async (request, response) => {
-  const team = await findTeam(request.params.id, "teamId pdfSubmission");
+  const team = await findTeam(request.params.id, "teamId pdfSubmission evaluationPanel");
   if (!team) return response.status(404).json({ success: false, message: "No PDF has been submitted for this team." });
+  if (!onPanel(team, request.evaluator.id)) return response.status(403).json(NOT_ASSIGNED);
   const size = team.pdfSubmission.fileSize || 0;
   const match = /^bytes=(\d+)-(\d*)$/.exec(String(request.headers.range || ""));
   const start = match ? Number(match[1]) : 0;
@@ -184,24 +227,49 @@ const sheetView = (e) => (e ? {
   strengths: e.strengths || [], improvements: e.improvements || [], recommendation: e.recommendation || "", coiDeclared: Boolean(e.coiDeclared),
 } : null);
 
+const SHEET_FIELDS = "teamId teamName college collegeName collegeId collegeNameRaw projectTheme year department createdAt formSubmittedAt leader.name members.name members.college members.year members.department pdfSubmission.fileName pdfSubmission.fileSize pdfSubmission.submittedAt prototypeSubmission.category evaluation.result evaluationPanel";
+
+// The team as the evaluator needs it: everything about the team and its members except contact details.
 export const getEvaluatorSheet = async (request, response) => {
-  const team = await findTeam(request.params.id, "teamId teamName college collegeName collegeId collegeNameRaw projectTheme year department members.year members.department pdfSubmission.fileName pdfSubmission.fileSize pdfSubmission.submittedAt evaluation.result");
+  const team = await findTeam(request.params.id, SHEET_FIELDS);
   if (!team) return response.status(404).json({ success: false, message: "Team not found or no PDF submitted." });
-  const sheet = await RubricEvaluation.findOne({ registration: team._id, evaluator: request.evaluator.id }).lean();
+  if (!onPanel(team, request.evaluator.id)) return response.status(403).json(NOT_ASSIGNED);
+  const [sheet, panelDone] = await Promise.all([
+    RubricEvaluation.findOne({ registration: team._id, evaluator: request.evaluator.id }).lean(),
+    RubricEvaluation.countDocuments({ registration: team._id, status: "submitted", evaluator: { $in: team.evaluationPanel || [] } }),
+  ]);
   const lookup = await createCollegeLookup();
+  await lookup.prepare(memberCollegeNames([team]));
   const college = lookup.forTeam(team);
+  const collegeName = (c, raw) => (c.collegeId ? c.name : String(raw || "").trim());
+  const mix = teamCollegeMix(team, lookup);
+  const members = (team.members || []).filter((m) => m?.name).map((m) => ({
+    name: m.name, year: m.year || "", department: m.department || "",
+    college: String(m.college || "").trim() ? collegeName(lookup.forRaw(m.college), m.college) : collegeName(college, team.college || team.collegeName),
+  }));
   return response.json({
     success: true,
-    team: { id: String(team._id), teamId: team.teamId, teamName: team.teamName, college: college.collegeId ? college.name : (team.college || team.collegeName || ""), theme: team.projectTheme || "", ...teamStudyInfo(team), fileName: team.pdfSubmission.fileName, fileSize: team.pdfSubmission.fileSize || 0, submittedAt: team.pdfSubmission.submittedAt, locked: isLocked(team) },
+    team: {
+      id: String(team._id), teamId: team.teamId, teamName: team.teamName,
+      college: collegeName(college, team.college || team.collegeName), theme: team.projectTheme || "", ...teamStudyInfo(team),
+      teamHead: team.leader?.name || "", members, teamSize: members.length + (team.leader?.name ? 1 : 0),
+      crossCollege: mix.crossCollege, colleges: mix.crossCollege ? mix.colleges.map((c) => ({ name: c.collegeId ? c.name : c.name.replace(/^Needs review: /, ""), people: c.people })) : [],
+      registeredAt: team.formSubmittedAt || team.createdAt || null,
+      psCategory: team.prototypeSubmission?.category === "HARDWARE" ? "Hardware" : team.prototypeSubmission?.category === "SOFTWARE" ? "Software" : "",
+      fileName: team.pdfSubmission.fileName, fileSize: team.pdfSubmission.fileSize || 0, submittedAt: team.pdfSubmission.submittedAt,
+      panelSize: (team.evaluationPanel || []).length, panelSubmitted: panelDone,
+      locked: isLocked(team),
+    },
     sheet: sheetView(sheet),
   });
 };
 
-// Saves this evaluator's sheet as a draft, or submits it (all paper-sheet rules enforced). Locked once the
-// organisers have decided the team's Round 1 result.
+// Saves this evaluator's sheet as a draft, or submits it (all paper-sheet rules enforced). Only the team's panel
+// can score it, and it's locked once the organisers have decided the team's Round 1 result.
 export const saveEvaluatorSheet = async (request, response) => {
-  const team = await findTeam(request.params.id, "teamId evaluation.result");
+  const team = await findTeam(request.params.id, "teamId evaluation.result evaluationPanel");
   if (!team) return response.status(404).json({ success: false, message: "Team not found or no PDF submitted." });
+  if (!onPanel(team, request.evaluator.id)) return response.status(403).json(NOT_ASSIGNED);
   if (isLocked(team)) return response.status(403).json({ success: false, locked: true, message: "The organisers have already decided this team's Round 1 result, so its evaluation can no longer be changed." });
   const submit = request.body?.submit === true;
   const { value, errors } = cleanSheet(request.body, { submit });

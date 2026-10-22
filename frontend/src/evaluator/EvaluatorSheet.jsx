@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AlertTriangle, ArrowLeft, CheckCircle2, ExternalLink, FileText, Info, Lock, Save, Send } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, ExternalLink, FileText, Info, Lock, Save, Send, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { API_URL } from "../config/api";
@@ -151,6 +151,29 @@ export default function EvaluatorSheet() {
           <ol>{rubric.rules.map((rule) => <li key={rule}>{rule}</li>)}</ol>
           <table><tbody>{rubric.levels.map((l) => <tr key={l.level}><td><b>{l.level}</b></td><td>{l.label}</td><td>{l.meaning}</td></tr>)}</tbody></table>
         </details>
+
+        <section className="eval-card eval-team-card" aria-label="Team details">
+          <h2 className="eval-card-title"><Users size={16} /> Team details</h2>
+          <dl className="eval-team-facts">
+            <div><dt>Team ID</dt><dd>{team.teamId}</dd></div>
+            <div><dt>Team Head</dt><dd>{team.teamHead || "—"}</dd></div>
+            <div><dt>Team size</dt><dd>{team.teamSize} {team.teamSize === 1 ? "person" : "people"}</dd></div>
+            <div><dt>Theme</dt><dd>{team.theme || "Not selected"}</dd></div>
+            <div><dt>College</dt><dd>{team.crossCollege ? team.colleges.map((c) => `${c.name} (${c.people})`).join(" + ") : team.college || "—"}</dd></div>
+            <div><dt>Department · Year</dt><dd>{[team.department, team.year].filter(Boolean).join(" · ") || "—"}</dd></div>
+            {team.psCategory ? <div><dt>Prototype type (Round 2)</dt><dd>{team.psCategory}</dd></div> : null}
+            <div><dt>Registered</dt><dd>{formatDate(team.registeredAt)}</dd></div>
+            <div><dt>PDF submitted</dt><dd>{formatDate(team.submittedAt)}</dd></div>
+          </dl>
+          <table className="eval-members">
+            <thead><tr><th>#</th><th>Name</th><th>College</th><th>Year</th><th>Department</th></tr></thead>
+            <tbody>
+              {team.teamHead ? <tr><td>1</td><td><b>{team.teamHead}</b><em>Team Head</em></td><td>{team.college || "—"}</td><td>{team.year || "—"}</td><td>{team.department || "—"}</td></tr> : null}
+              {team.members.map((m, i) => <tr key={`${m.name}-${i}`}><td>{i + (team.teamHead ? 2 : 1)}</td><td>{m.name}</td><td>{m.college || "—"}</td><td>{m.year || "—"}</td><td>{m.department || "—"}</td></tr>)}
+            </tbody>
+          </table>
+          <p className="eval-panel-note">Scored by a panel of {team.panelSize} evaluators · {team.panelSubmitted} of {team.panelSize} have submitted. The final score is the average of the {team.panelSize} sheets.</p>
+        </section>
 
         <fieldset className="eval-card" disabled={ro}><legend>A. Project details</legend>
           <label className="eval-input"><span>Project title</span><input value={form.projectTitle} onChange={(e) => update({ projectTitle: e.target.value })} maxLength={200} /></label>

@@ -101,9 +101,18 @@ describe("evaluator portal (integration)", { skip: (!uri && "MONGO_URI not confi
     await Evaluator.updateOne({ _id: judge._id }, { $set: { active: true } });
   });
 
+  test("only the team's panel can score it", async () => {
+    const outsider = { id: String(judge._id), email: judge.email, name: judge.name };
+    const r = await call(saveEvaluatorSheet, { params: { id: String(team._id) }, body: { levels: { C1: 3 } }, evaluator: outsider });
+    assert.equal(r.status, 403);
+    assert.equal(r.body.notAssigned, true);
+  });
+
   test("drafts save incomplete; submitting needs every rule; the team gets the average", async () => {
     const as1 = { id: String(judge._id), email: judge.email, name: judge.name };
     const as2 = { id: String(judge2._id), email: judge2.email, name: judge2.name };
+    const judge3 = await Evaluator.create({ email: "judge.three@example.com", name: "Judge Three" });
+    await Registration.updateOne({ _id: team._id }, { $set: { evaluationPanel: [judge._id, judge2._id, judge3._id] } });
     const draft = await call(saveEvaluatorSheet, { params: { id: String(team._id) }, body: { levels: { C1: 3 } }, evaluator: as1 });
     assert.equal(draft.status, 200);
     assert.equal(draft.body.sheet.status, "draft");
@@ -111,9 +120,16 @@ describe("evaluator portal (integration)", { skip: (!uri && "MONGO_URI not confi
     assert.equal(incomplete.status, 400);
     assert.equal((await call(saveEvaluatorSheet, { params: { id: String(team._id) }, body: { ...fullSheet(4), submit: true }, evaluator: as1 })).status, 200);
     assert.equal((await call(saveEvaluatorSheet, { params: { id: String(team._id) }, body: { ...fullSheet(3), submit: true }, evaluator: as2 })).status, 200);
-    const t = await Registration.findById(team._id).lean();
+    let t = await Registration.findById(team._id).lean();
     assert.equal(t.evaluation.totalScore, 70, "average of 80 and 60");
     assert.equal(t.evaluation.evaluatorCount, 2);
+    assert.equal(t.evaluation.scoreComplete, false, "2 of 3 is provisional");
+    const as3 = { id: String(judge3._id), email: judge3.email, name: judge3.name };
+    assert.equal((await call(saveEvaluatorSheet, { params: { id: String(team._id) }, body: { ...fullSheet(5), submit: true }, evaluator: as3 })).status, 200);
+    t = await Registration.findById(team._id).lean();
+    assert.equal(t.evaluation.totalScore, 80, "final = average of 80, 60 and 100");
+    assert.equal(t.evaluation.scoreComplete, true);
+    assert.equal(t.evaluation.scoreSpread, 40);
     const list = await call(listEvaluatorTeams, { evaluator: as2 });
     const row = list.body.teams.find((x) => x.teamId === "TST900");
     assert.equal(row.myStatus, "submitted");

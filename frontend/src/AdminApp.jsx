@@ -8,6 +8,7 @@ import AdminTeams from "./pages/AdminTeams";
 import AdminPdfSubmissions from "./pages/AdminPdfSubmissions";
 import AdminPrototypes from "./pages/AdminPrototypes";
 import AdminEvaluators from "./pages/AdminEvaluators";
+import AdminShortlist from "./pages/AdminShortlist";
 import AdminColleges from "./pages/AdminColleges";
 import AdminRounds from "./pages/AdminRounds";
 import AdminRoundSelection from "./pages/AdminRoundSelection";
@@ -30,6 +31,7 @@ export default function AdminApp() {
       <Route path="pdf-submissions" element={guarded("pdf", <AdminPdfSubmissions />)} />
       <Route path="prototypes" element={guarded("pdf", <AdminPrototypes />)} />
       <Route path="evaluators" element={guarded("pdf", <AdminEvaluators />)} />
+      <Route path="shortlist" element={guarded("pdf", <AdminShortlist />)} />
       <Route path="rounds" element={guarded("rounds", <AdminRounds />)} />
       <Route path="round-selection" element={guarded("rounds", <AdminRoundSelection />)} />
       <Route path="users" element={guarded("users", <AdminUsers />)} />

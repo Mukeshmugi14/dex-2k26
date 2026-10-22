@@ -1,0 +1,31 @@
+/* Builds on AdminTeams.css (dark admin theme). */
+.admin-shortlist .sl-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:18px}
+.admin-shortlist .sl-stats div{display:grid;gap:4px;padding:12px 14px;border:1px solid #55caff26;border-radius:8px;background:#0b1626}
+.admin-shortlist .sl-stats span{color:#91a4b9;font-size:11px}
+.admin-shortlist .sl-stats b{color:#fff;font-size:24px}
+.admin-shortlist .sl-stats .is-warn{border-color:#ffb27a66}.admin-shortlist .sl-stats .is-warn b{color:#ffb27a}
+.admin-shortlist .sl-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px}
+.admin-shortlist .sl-controls input,.admin-shortlist .sl-controls select{height:36px;padding:0 10px;border:1px solid #55caff44;border-radius:5px;background:#07111f;color:#fff;font:13px Arial,sans-serif}
+.admin-shortlist .sl-controls input[type=number]{width:80px}
+.admin-shortlist .sl-controls .sl-search{flex:1;min-width:180px}
+.admin-shortlist .sl-mode{display:flex;align-items:center;gap:6px}
+.admin-shortlist .sl-mode label{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border:1px solid #55caff33;border-radius:999px;color:#c9d6ea;font-size:13px;cursor:pointer}
+.admin-shortlist .sl-mode label.is-on{border-color:#ff7432;background:#ff74321f;color:#fff}
+.admin-shortlist .sl-mode label input{width:auto;height:auto;margin:0;accent-color:#ff7432}
+.admin-shortlist .sl-check{display:inline-flex;align-items:center;gap:6px;color:#c9d6ea;font-size:13px}
+.admin-shortlist .sl-check input{width:16px;height:16px;padding:0}
+.admin-shortlist .sl-summary{margin:12px 0 0;color:#91a4b9;font-size:13px}.admin-shortlist .sl-summary b{color:#fff}
+.admin-shortlist .sl-table-wrap{margin-top:10px;overflow-x:auto;border:1px solid #55caff26;border-radius:8px}
+.admin-shortlist .sl-table{width:100%;min-width:900px;border-collapse:collapse;font-size:13px}
+.admin-shortlist .sl-table th{position:sticky;top:0;padding:10px;background:#0b1626;color:#55caff;font:10px monospace;letter-spacing:.1em;text-align:left;text-transform:uppercase}
+.admin-shortlist .sl-table td{padding:9px 10px;border-top:1px solid #ffffff10;color:#e2e8f0;vertical-align:top}
+.admin-shortlist .sl-table td small{display:block;margin-top:2px;color:#91a4b9;font-size:11px}
+.admin-shortlist .sl-table td small.sl-warn{color:#ffb27a}
+.admin-shortlist .sl-table tr.is-in td{background:#ff743210}
+.admin-shortlist .sl-table tr.is-cut td{border-bottom:2px dashed #ff7432}
+.admin-shortlist .sl-rank{color:#91a4b9;font-weight:700}
+.admin-shortlist .sl-score{font-size:16px;font-weight:800;color:#fff;white-space:nowrap}
+.admin-shortlist .sl-score em{display:block;color:#ff9a66;font-size:10px;font-style:normal;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.admin-shortlist .sl-recs span{display:block;color:#c9d6ea;font-size:12px}
+.admin-shortlist .sl-dec.is-selected{color:#7aebb0;font-weight:700}.admin-shortlist .sl-dec.is-rejected{color:#ff9c9c;font-weight:700}
+@media (max-width:900px){.admin-shortlist .sl-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}

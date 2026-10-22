@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Download, Eye, Mail, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
 import "./AdminPdfSubmissions.css";
 import { API_URL } from "../config/api";
@@ -43,7 +43,42 @@ function SheetDetails({ teamId, headers }) {
   </details>)}</div>;
 }
 
-function EvaluateModal({ team, headers, onClose, onSaved, openPdf }) {
+// The team's evaluation panel: each member's progress, and swapping a member (not one who already submitted).
+function PanelEditor({ team, evaluators, panelSize, headers, onSaved }) {
+  const current = team.panel || [];
+  const [picks, setPicks] = useState(() => Array.from({ length: panelSize }, (_, i) => current[i]?.id || ""));
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState("");
+  const locked = (id) => current.some((m) => m.id === id && m.status === "submitted");
+  const changed = picks.some((id, i) => id !== (current[i]?.id || ""));
+  const save = async () => {
+    setSaving(true); setNote("");
+    try {
+      const r = await axios.put(`${API_URL}/admin/pdf-submissions/${team._id}/panel`, { evaluatorIds: picks.filter(Boolean) }, { headers });
+      setNote(r.data.message); onSaved();
+    } catch (e) { setNote(e.response?.data?.message || "Unable to save the panel."); }
+    finally { setSaving(false); }
+  };
+  return <div className="pdf-panel">
+    <ul className="pdf-sheet-list">{picks.map((id, i) => {
+      const member = current.find((m) => m.id === id);
+      return <li key={i}>
+        <select value={id} disabled={saving || locked(id)} onChange={(e) => setPicks((p) => p.map((x, j) => (j === i ? e.target.value : x)))} aria-label={`Panel member ${i + 1}`}>
+          <option value="">— Not assigned —</option>
+          {evaluators.filter((ev) => ev.id === id || !picks.includes(ev.id)).map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
+          {id && !evaluators.some((ev) => ev.id === id) ? <option value={id}>{member?.name || "Disabled evaluator"}</option> : null}
+        </select>
+        <span>{member ? ({ submitted: "Submitted", draft: "Draft", "not-started": "Not started" })[member.status] : "—"}</span>
+        <b>{member?.total !== null && member?.total !== undefined ? `${member.total}/100` : "—"}</b>
+        <span>{locked(id) ? "locked (submitted)" : ""}</span>
+      </li>;
+    })}</ul>
+    {changed ? <button type="button" className="ghost" onClick={save} disabled={saving}>{saving ? "Saving..." : "Save panel"}</button> : null}
+    {note ? <p className="pdf-eval-note">{note}</p> : null}
+  </div>;
+}
+
+function EvaluateModal({ team, headers, onClose, onSaved, openPdf, evaluators, panelSize, spreadAlert, onPanelSaved }) {
   const [result, setResult] = useState(team.evaluation?.result || "Pending");
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
@@ -94,11 +129,13 @@ function EvaluateModal({ team, headers, onClose, onSaved, openPdf }) {
         </div>
 
         <section className="pdf-eval-scores">
-          <span className="edit-team-label">Evaluator scores · PPT Evaluation Sheet (out of 100)</span>
-          <div className="pdf-eval-total"><span>Average of {rubric.count} submitted sheet{rubric.count === 1 ? "" : "s"}{rubric.drafts ? ` (+${rubric.drafts} draft${rubric.drafts === 1 ? "" : "s"})` : ""}</span><b>{formatScore(rubric.average)}<em> / 100</em></b></div>
-          {rubric.sheets.length ? <ul className="pdf-sheet-list">{rubric.sheets.map((sheet) => <li key={sheet.email}>
-            <span>{sheet.evaluator}</span><span>{SHEET_STATUS[sheet.status]}</span><b>{sheet.total}/100</b><span>{sheet.recommendation || "—"}</span>{sheet.policyFlags.length ? <em>⚑ {sheet.policyFlags.join(", ")}</em> : null}
-          </li>)}</ul> : <p className="pdf-eval-note">No evaluator has scored this team yet. Evaluators score in the Evaluator Portal (see the Evaluators page).</p>}
+          <span className="edit-team-label">Final score · average of the {panelSize} panel sheets (out of 100)</span>
+          <div className="pdf-eval-total"><span>{rubric.complete ? `Final — all ${panelSize} evaluators submitted` : `Provisional — ${rubric.count} of ${panelSize} submitted${rubric.drafts ? ` (+${rubric.drafts} draft${rubric.drafts === 1 ? "" : "s"})` : ""}`}</span><b>{formatScore(rubric.average)}<em> / 100</em></b></div>
+          {rubric.spread !== null && rubric.spread > spreadAlert ? <p className="pdf-eval-note info">⚠ The panel disagrees: totals differ by {rubric.spread} marks. Review the sheets before deciding.</p> : null}
+          <span className="edit-team-label">Panel</span>
+          <PanelEditor team={team} evaluators={evaluators} panelSize={panelSize} headers={headers} onSaved={onPanelSaved} />
+          {rubric.sheets.some((sh) => sh.policyFlags.length) ? <p className="pdf-eval-note info">⚑ Policy flag raised: {[...new Set(rubric.sheets.flatMap((sh) => sh.policyFlags))].join(", ")}</p> : null}
+          {!rubric.sheets.length ? <p className="pdf-eval-note">No evaluator has scored this team yet.{team.panel?.length ? "" : " Assign panels on the Evaluators page."}</p> : null}
           {rubric.sheets.length ? <button type="button" className="ghost" onClick={() => setShowSheets((v) => !v)}>{showSheets ? "Hide full sheets" : "Show full sheets"}</button> : null}
           {showSheets ? <SheetDetails teamId={team._id} headers={headers} /> : null}
         </section>
@@ -129,6 +166,9 @@ function EvaluateModal({ team, headers, onClose, onSaved, openPdf }) {
 
 export default function AdminPdfSubmissions() {
   const [teams, setTeams] = useState([]);
+  const [evaluators, setEvaluators] = useState([]);
+  const [panelSize, setPanelSize] = useState(3);
+  const [spreadAlert, setSpreadAlert] = useState(20);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [filter, setFilter] = useState("All");
@@ -145,7 +185,7 @@ export default function AdminPdfSubmissions() {
   const load = useCallback(({ silent = false } = {}) => {
     if (!silent) { setLoading(true); setLoadError(""); }
     axios.get(`${API_URL}/admin/pdf-submissions`, { headers })
-      .then((response) => { setTeams(response.data.teams); })
+      .then((response) => { setTeams(response.data.teams); setEvaluators(response.data.evaluators || []); setPanelSize(response.data.panelSize || 3); setSpreadAlert(response.data.spreadAlert ?? 20); })
       .catch((error) => { if (error.response?.status === 401) logout(); else if (!silent) setLoadError(error.response?.data?.message || "Unable to load PDF submissions."); })
       .finally(() => { if (!silent) setLoading(false); });
   }, [headers, logout]);
@@ -252,7 +292,7 @@ export default function AdminPdfSubmissions() {
                 <button type="button" className="ghost" disabled={!hasPdf} onClick={() => openPdf(team, true)}><Download size={14} /> Download PDF</button>
               </div>
               <div className="pdf-card-score">
-                <div><span>Avg score</span><b>{formatScore(team.rubric?.average)}<small> /100 · {team.rubric?.count || 0} eval.</small></b></div>
+                <div><span>{team.rubric?.complete ? "Final score" : "Score so far"}</span><b>{formatScore(team.rubric?.average)}<small> /100 · {team.rubric?.count || 0}/{panelSize}{team.rubric?.complete ? " ✓" : ""}</small></b></div>
                 <div><span>Result</span><b className={`pdf-result-${(team.evaluation?.result || "Pending").toLowerCase().replace(/\s+/g, "-")}`}>{team.evaluation?.result || "Pending"}</b></div>
               </div>
               {team.selectionEmailSent ? <p className="pdf-card-email sent"><Mail size={13} /> Second Round Email Sent · {formatDate(team.selectionEmailSentAt)}</p>
@@ -266,6 +306,8 @@ export default function AdminPdfSubmissions() {
           })}</section>}
     {!loading && !loadError ? <AdminPagination page={paged.page} pages={paged.pages} total={paged.total} limit={paged.limit} onChange={paged.setPage} label="teams" /> : null}
 
-    {evaluating ? <EvaluateModal team={evaluating} headers={headers} openPdf={openPdf} onClose={() => setEvaluating(null)} onSaved={handleSaved} /> : null}
+    {evaluating ? <EvaluateModal team={evaluating} evaluators={evaluators} panelSize={panelSize} spreadAlert={spreadAlert}
+      key={(evaluating.panel || []).map((m) => m.id).join("-")}
+      onPanelSaved={() => axios.get(`${API_URL}/admin/pdf-submissions`, { headers }).then((r) => { setTeams(r.data.teams); setEvaluating(r.data.teams.find((t) => t._id === evaluating._id) || null); }).catch(() => {})} headers={headers} openPdf={openPdf} onClose={() => setEvaluating(null)} onSaved={handleSaved} /> : null}
   </main>;
 }

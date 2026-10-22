@@ -4,10 +4,11 @@ import Registration, { EVALUATION_RESULTS } from "../models/Registration.js";
 import { sendSelectionEmail } from "../services/emailService.js";
 import { deriveSubmissionStatus, openPdfStream } from "../services/submissionService.js";
 import { STUDY_FIELDS, teamStudyInfo } from "../services/teamProfile.js";
-import { refreshTeamRubricScore, rubricSummaries } from "../services/rubricScores.js";
+import { PANEL_SIZE, refreshTeamRubricScore, rubricSummaries, SPREAD_ALERT } from "../services/rubricScores.js";
+import Evaluator from "../models/Evaluator.js";
 
 const CRITERIA = ["criterion1", "criterion2", "criterion3", "criterion4"];
-const LIST_FIELDS = `teamId teamName leader college collegeName projectTheme pdfSubmission evaluation selectionEmailSent selectionEmailStatus selectionEmailSentAt createdAt ${STUDY_FIELDS}`;
+const LIST_FIELDS = `teamId teamName leader college collegeName projectTheme pdfSubmission evaluation selectionEmailSent selectionEmailStatus selectionEmailSentAt createdAt evaluationPanel ${STUDY_FIELDS}`;
 
 const getSettings = async () => (await EvaluationSettings.findOne()) || new EvaluationSettings();
 const settingsView = (settings) => ({ maxScorePerCriterion: settings.maxScorePerCriterion ?? null, criteriaLabels: settings.criteriaLabels });
@@ -24,6 +25,25 @@ const toAdminView = (registration) => {
   return view;
 };
 
+// Adds each team's evaluation panel (names + whether each member has submitted) and its score summary.
+export const withRubric = async (registrations) => {
+  const panels = new Map(registrations.map((r) => [String(r._id), (r.evaluationPanel || []).map(String)]));
+  const summaries = await rubricSummaries(registrations.map((r) => r._id), panels);
+  const ids = [...new Set([...panels.values()].flat())];
+  const names = new Map((await Evaluator.find({ _id: { $in: ids } }, "name email active").lean()).map((e) => [String(e._id), e]));
+  return registrations.map((r) => {
+    const summary = summaries.get(String(r._id));
+    const panel = panels.get(String(r._id)).map((id) => {
+      const e = names.get(id);
+      const sheet = summary.sheets.find((s) => s.evaluatorId === id);
+      return { id, name: e?.name || e?.email || "Removed evaluator", email: e?.email || "", active: e?.active !== false, status: sheet?.status || "not-started", total: sheet?.status === "submitted" ? sheet.total : null };
+    });
+    const view = toAdminView(r);
+    delete view.evaluationPanel;
+    return { ...view, panel, rubric: summary };
+  });
+};
+
 const findRegistration = async (id) => (mongoose.isValidObjectId(id) ? Registration.findById(id) : null);
 
 // All registered/imported teams and their submission/evaluation state.
@@ -32,9 +52,10 @@ export const listSubmissions = async (_request, response) => {
     Registration.find({}, LIST_FIELDS).sort({ "pdfSubmission.submittedAt": -1, createdAt: -1 }).lean(),
     getSettings(),
   ]);
-  // Evaluator Portal scores (PPT Evaluation Sheet, out of 100) for each team.
-  const summaries = await rubricSummaries(registrations.map((r) => r._id));
-  return response.json({ teams: registrations.map((r) => ({ ...toAdminView(r), rubric: summaries.get(String(r._id)) || { count: 0, drafts: 0, average: null, sheets: [] } })), settings: settingsView(settings) });
+  // Evaluator Portal scores (PPT Evaluation Sheet, out of 100): each team's panel and the average of its sheets.
+  const teams = await withRubric(registrations);
+  const evaluators = (await Evaluator.find({ active: { $ne: false } }, "name email").sort({ name: 1 }).lean()).map((e) => ({ id: String(e._id), name: e.name || e.email, email: e.email }));
+  return response.json({ teams, evaluators, panelSize: PANEL_SIZE, spreadAlert: SPREAD_ALERT, settings: settingsView(settings) });
 };
 
 // Streams the PDF only to authenticated admins (this router is behind requireAdmin).
@@ -95,8 +116,8 @@ export const saveEvaluation = async (request, response) => {
   const email = result === "Selected" ? await sendSelectionEmailOnce(registration._id) : { attempted: false, sent: false };
   const updated = await Registration.findById(registration._id);
   const emailMessage = !email.attempted ? "" : email.sent ? ` Second round email sent to ${updated.leader?.email}.` : " Selection saved, but email could not be sent.";
-  const summary = (await rubricSummaries([updated._id])).get(String(updated._id)) || { count: 0, drafts: 0, average: null, sheets: [] };
-  return response.json({ success: true, message: `Result saved.${emailMessage}`, email, registration: { ...toAdminView(updated.toObject()), rubric: summary } });
+  const [view] = await withRubric([updated.toObject()]);
+  return response.json({ success: true, message: `Result saved.${emailMessage}`, email, registration: view });
 };
 
 // Sends the Selected email at most once. An atomic claim (status "Sending") stops two parallel saves from both sending.
