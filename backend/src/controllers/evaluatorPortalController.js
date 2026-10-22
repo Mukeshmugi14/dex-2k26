@@ -64,7 +64,7 @@ export const requestEvaluatorCode = async (request, response) => {
   const locked = await lockedMinutes(keys);
   if (locked) return response.status(429).json(lockedReply(locked));
 
-  const reply = { success: true, challenge: signCodeChallenge(email), message: "If this email is registered as an evaluator, a one-time code has been sent to it. It expires in 10 minutes." };
+  const reply = { success: true, challenge: signCodeChallenge(email), message: "If this email is registered as an evaluator, a one-time code has been sent to it. It expires in 10 minutes. No email after a minute? Check Spam/Promotions, and make sure the organisers added this exact email as an evaluator." };
   const evaluator = await Evaluator.findOne({ email, active: { $ne: false } }).select("+otp").lean();
   if (!evaluator) { await recordFailure([`eval-ip:${clientIp(request)}`]); return response.json(reply); }
   const lastSent = evaluator.otp?.sentAt ? new Date(evaluator.otp.sentAt).getTime() : 0;
