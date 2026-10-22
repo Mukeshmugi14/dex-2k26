@@ -54,6 +54,8 @@ export default function PortalGateway() {
           </article> : null}
         </section>
 
+        <p className="portal-evaluator-link">Round 1 evaluator? <Link to="/evaluator/login">Evaluator sign-in</Link></p>
+
         <footer className="portal-gateway-footer">
           <div>Department of Computer Applications & Computer Science</div>
           <span>Sathyabama Institute of Science and Technology &bull; DEXATHON 2026</span>

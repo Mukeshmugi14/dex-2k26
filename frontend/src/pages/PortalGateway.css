@@ -214,3 +214,8 @@
   grid-template-columns: minmax(0, 520px);
   justify-content: center;
 }
+
+/* Small link for invited Round 1 evaluators */
+.portal-evaluator-link { margin: 22px 0 0; text-align: center; color: #9fb0c8; font-size: 13px; }
+.portal-evaluator-link a { color: #ffb27a; font-weight: 700; text-decoration: none; }
+.portal-evaluator-link a:hover { text-decoration: underline; }

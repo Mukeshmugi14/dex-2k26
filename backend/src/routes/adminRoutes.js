@@ -20,6 +20,7 @@ import {
   updateRegistration,
 } from "../controllers/adminController.js";
 import { createAdmin, deleteAdmin, listAdmins, updateAdmin } from "../controllers/adminUsersController.js";
+import { addEvaluator, getTeamEvaluationSheets, listEvaluators, resendEvaluatorInvite, resetEvaluatorPassword, updateEvaluator } from "../controllers/adminEvaluatorsController.js";
 import { getEvaluationSettings, listSubmissions, retrySelectionEmail, saveEvaluation, streamSubmissionPdf, updateEvaluationSettings } from "../controllers/evaluationController.js";
 import { bulkDeleteTeams, bulkUpdateTeams, deleteTeam } from "../controllers/teamManagementController.js";
 import { decideRound, listRoundSelection, retryRoundEmail } from "../controllers/roundSelectionController.js";
@@ -88,6 +89,12 @@ router.get("/pdf-submissions", requireSection("pdf"), listSubmissions);
 router.get("/pdf-submissions/:id/pdf", requireSection("pdf"), streamSubmissionPdf);
 router.put("/pdf-submissions/:id/evaluation", requireSection("pdf"), saveEvaluation);
 router.post("/pdf-submissions/:id/selection-email", requireSection("pdf"), retrySelectionEmail);
+router.get("/pdf-submissions/:id/evaluation-sheets", requireSection("pdf"), getTeamEvaluationSheets);
+router.get("/evaluators", requireSection("pdf"), listEvaluators);
+router.post("/evaluators", requireSection("pdf"), addEvaluator);
+router.put("/evaluators/:id", requireSection("pdf"), updateEvaluator);
+router.post("/evaluators/:id/reset-password", requireSection("pdf"), resetEvaluatorPassword);
+router.post("/evaluators/:id/invite", requireSection("pdf"), resendEvaluatorInvite);
 router.get("/evaluation-settings", requireSection("pdf"), getEvaluationSettings);
 router.put("/evaluation-settings", requireSection("pdf"), updateEvaluationSettings);
 

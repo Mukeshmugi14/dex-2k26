@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { connectDB } from "./config/db.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import evaluatorRoutes from "./routes/evaluatorRoutes.js";
 import registrationRoutes from "./routes/registrationRoutes.js";
 import submissionRoutes from "./routes/submissionRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
@@ -55,6 +56,7 @@ app.get("/api/health", (_req, res) =>
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/team", teamRoutes);
+app.use("/api/evaluator", evaluatorRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.use((error, request, response, _next) => {

@@ -99,3 +99,20 @@
 .pdf-card-email.sent{color:#7aebb0;font-weight:700}
 .pdf-card-email.failed{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border:1px solid #e05c5c55;border-radius:8px;background:#e05c5c14;color:#ffb0b0}
 .pdf-eval-note.info{color:#ffd0b8}
+
+/* Evaluator rubric scores in the review dialog */
+.pdf-review-modal{width:min(860px,100%)}
+.pdf-sheet-list{display:grid;gap:6px;margin:8px 0;padding:0;list-style:none}
+.pdf-sheet-list li{display:grid;grid-template-columns:minmax(0,1.4fr) auto auto minmax(0,1fr);gap:4px 12px;align-items:center;padding:8px 10px;border:1px solid #ffffff1a;border-radius:6px;font-size:13px}
+.pdf-sheet-list li em{grid-column:1/-1;color:#ffb27a;font-style:normal;font-size:12px}
+.pdf-sheets{display:grid;gap:8px;margin-top:10px}
+.pdf-sheet{padding:8px 10px;border:1px solid #ffffff1a;border-radius:6px;font-size:13px}
+.pdf-sheet summary{cursor:pointer}
+.pdf-sheet p{margin:6px 0;color:#c9d6ea;line-height:1.45}
+.pdf-sheet .pdf-sheet-flag{color:#ffb27a}
+.pdf-sheet .pdf-sheet-meta{color:#91a4b9;font-size:12px}
+.pdf-sheet table{width:100%;border-collapse:collapse;margin:6px 0;font-size:12px}
+.pdf-sheet th,.pdf-sheet td{padding:5px 6px;border-top:1px solid #ffffff14;text-align:left;vertical-align:top}
+.pdf-sheet th{color:#55caff;font:10px monospace;letter-spacing:.08em;text-transform:uppercase}
+.pdf-card-score b small{margin-left:4px;color:#91a4b9;font-size:11px;font-weight:400}
+@media (max-width:620px){.pdf-sheet-list li{grid-template-columns:1fr auto}}
