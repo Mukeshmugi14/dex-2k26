@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Download, Eye, Mail, Settings2, X } from "lucide-react";
+import { Download, Eye, Mail, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./AdminTeams.css";
@@ -12,55 +12,44 @@ import { AdminPagination, AdminSkeleton, usePagedList } from "../components/Admi
 
 const STATUSES = ["Pending", "Submitted", "Under Review", "Selected", "Not Selected"];
 const RESULTS = ["Pending", "Selected", "Not Selected"];
-const CRITERIA = ["criterion1", "criterion2", "criterion3", "criterion4"];
 const statusClass = (status) => `pdf-status pdf-status-${status.toLowerCase().replace(/\s+/g, "-")}`;
 const formatDate = (value) => (value ? new Date(value).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
 const formatScore = (value) => (Number.isFinite(value) ? String(Math.round(value * 100) / 100) : "--");
 
-function ScoringSettings({ settings, headers, onSaved, onClose }) {
-  const [max, setMax] = useState(settings.maxScorePerCriterion ?? "");
-  const [labels, setLabels] = useState(settings.criteriaLabels);
+const SHEET_STATUS = { submitted: "Submitted", draft: "Draft" };
+
+// Every evaluator's full PPT Evaluation Sheet for one team.
+function SheetDetails({ teamId, headers }) {
+  const [data, setData] = useState(null);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const save = async (event) => {
-    event.preventDefault();
-    const maxValue = Number(max);
-    if (!Number.isFinite(maxValue) || maxValue < 1 || maxValue > 1000) { setError("Enter a maximum score from 1 to 1000."); return; }
-    if (labels.some((label) => !label.trim())) { setError("Give each criterion a name."); return; }
-    setSaving(true);
-    setError("");
-    try {
-      const response = await axios.put(`${API_URL}/admin/evaluation-settings`, { maxScorePerCriterion: maxValue, criteriaLabels: labels.map((label) => label.trim()) }, { headers });
-      onSaved(response.data.settings, response.data.message);
-    } catch (requestError) {
-      setError(requestError.response?.data?.message || "Unable to save the scoring settings.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return <form className="pdf-settings" onSubmit={save} noValidate>
-    <div className="pdf-settings-head">
-      <div><b>Scoring settings</b><span>{settings.maxScorePerCriterion ? "Applies to every team's evaluation." : "Set the maximum score for each criterion before evaluating any PDF."}</span></div>
-      {onClose ? <button type="button" className="ghost" onClick={onClose} aria-label="Close scoring settings"><X size={16} /></button> : null}
-    </div>
-    <div className="pdf-settings-grid">
-      <label>Maximum score per criterion<input type="number" min="1" max="1000" step="1" inputMode="numeric" value={max} onChange={(event) => setMax(event.target.value)} placeholder="e.g. 25" /></label>
-      {labels.map((label, index) => <label key={index}>Criterion {index + 1} name<input value={label} maxLength={60} onChange={(event) => setLabels((current) => current.map((value, valueIndex) => (valueIndex === index ? event.target.value : value)))} /></label>)}
-    </div>
-    {error ? <p className="pdf-error" role="alert">{error}</p> : null}
-    <div className="pdf-settings-actions"><span>Total possible: <b>{Number(max) > 0 ? Number(max) * 4 : "--"}</b></span><button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Scoring Settings"}</button></div>
-  </form>;
+  useEffect(() => {
+    axios.get(`${API_URL}/admin/pdf-submissions/${teamId}/evaluation-sheets`, { headers })
+      .then((r) => setData(r.data)).catch((e) => setError(e.response?.data?.message || "Unable to load the sheets."));
+  }, [teamId, headers]);
+  if (error) return <p className="pdf-error">{error}</p>;
+  if (!data) return <p className="pdf-eval-note">Loading sheets…</p>;
+  if (!data.sheets.length) return <p className="pdf-eval-note">No evaluator has opened this team yet.</p>;
+  return <div className="pdf-sheets">{data.sheets.map((sheet) => <details key={sheet.email} className="pdf-sheet">
+    <summary><b>{sheet.evaluator}</b> · {SHEET_STATUS[sheet.status]} · <b>{sheet.total}</b>/100{sheet.recommendation ? ` · ${sheet.recommendation}` : ""}</summary>
+    {sheet.projectTitle || sheet.psCategory ? <p>{[sheet.projectTitle && `Project: ${sheet.projectTitle}`, sheet.psCategory && `PS: ${sheet.psCategory}`, sheet.panel && `Panel: ${sheet.panel}`].filter(Boolean).join(" · ")}</p> : null}
+    <p>Checks: {data.rubric.submissionChecks.map((c) => `${sheet.checks[c.id] ? "✓" : "✗"} ${c.label}`).join(" · ")}{sheet.checks.missingSlides ? ` · Missing: ${sheet.checks.missingSlides}` : ""}</p>
+    {sheet.policyFlags.length ? <p className="pdf-sheet-flag">Policy flag: {sheet.policyFlags.join(", ")}{sheet.policyNote ? ` — ${sheet.policyNote}` : ""}</p> : null}
+    <table><thead><tr><th>Criterion</th><th>Level</th><th>Marks</th><th>Comment</th></tr></thead><tbody>
+      {data.rubric.criteria.map((c) => { const level = sheet.levels[c.id]; return <tr key={c.id}><td>{c.id} {c.name}</td><td>{Number.isInteger(level) ? level : "–"}</td><td>{Number.isInteger(level) ? Math.round(((c.max * level) / 5) * 10) / 10 : "–"}/{c.max}</td><td>{sheet.comments[c.id] || ""}</td></tr>; })}
+    </tbody></table>
+    {sheet.strengths.some(Boolean) ? <p><b>Strengths:</b> {sheet.strengths.filter(Boolean).join(" · ")}</p> : null}
+    {sheet.improvements.some(Boolean) ? <p><b>Improve:</b> {sheet.improvements.filter(Boolean).join(" · ")}</p> : null}
+    <p className="pdf-sheet-meta">{sheet.coiDeclared ? "No conflict of interest declared" : "Declaration not given"} · {sheet.submittedAt ? `submitted ${formatDate(sheet.submittedAt)}` : `last saved ${formatDate(sheet.updatedAt)}`}</p>
+  </details>)}</div>;
 }
 
-function EvaluateModal({ team, settings, headers, onClose, onSaved, openPdf }) {
-  const [scores, setScores] = useState(() => CRITERIA.map((key) => (Number.isFinite(team.evaluation?.[key]) ? String(team.evaluation[key]) : "")));
+function EvaluateModal({ team, headers, onClose, onSaved, openPdf }) {
   const [result, setResult] = useState(team.evaluation?.result || "Pending");
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
-  const max = settings.maxScorePerCriterion;
+  const [showSheets, setShowSheets] = useState(false);
+  const rubric = team.rubric || { count: 0, drafts: 0, average: null, sheets: [] };
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -74,41 +63,27 @@ function EvaluateModal({ team, settings, headers, onClose, onSaved, openPdf }) {
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose, saving]);
 
-  const numbers = scores.map((value) => (value.trim() === "" ? NaN : Number(value)));
-  const allValid = numbers.every((value) => Number.isFinite(value) && value >= 0 && value <= max);
-  const total = allValid ? Math.round(numbers.reduce((sum, value) => sum + value, 0) * 100) / 100 : null;
   const willEmail = result === "Selected" && !team.selectionEmailSent;
-
-  const validate = () => {
-    const next = {};
-    numbers.forEach((value, index) => {
-      if (!Number.isFinite(value) || value < 0 || value > max) next[CRITERIA[index]] = `Enter a score from 0 to ${max}.`;
-      else if (Math.abs(Math.round(value * 100) - value * 100) > 1e-6) next[CRITERIA[index]] = "Use at most 2 decimal places.";
-    });
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
 
   const submit = async (event) => {
     event.preventDefault();
     if (saving) return;
-    if (!validate()) { setFormError("Please correct the highlighted fields."); return; }
     setSaving(true);
     setFormError("");
     try {
-      const response = await axios.put(`${API_URL}/admin/pdf-submissions/${team._id}/evaluation`, { scores: numbers, result }, { headers });
+      const response = await axios.put(`${API_URL}/admin/pdf-submissions/${team._id}/evaluation`, { result }, { headers });
       onSaved(response.data.registration, response.data.message);
     } catch (requestError) {
       setErrors(requestError.response?.data?.errors || {});
-      setFormError(requestError.response?.data?.message || "Unable to save the evaluation. Try again.");
+      setFormError(requestError.response?.data?.message || "Unable to save the result. Try again.");
       setSaving(false);
     }
   };
 
   return <div className="edit-team-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) onClose(); }}>
-    <form className="edit-team-modal" role="dialog" aria-modal="true" aria-labelledby="evaluate-title" onSubmit={submit} noValidate>
+    <form className="edit-team-modal pdf-review-modal" role="dialog" aria-modal="true" aria-labelledby="evaluate-title" onSubmit={submit} noValidate>
       <header>
-        <div><span>{team.teamId}</span><h2 id="evaluate-title">Evaluate {team.teamName}</h2></div>
+        <div><span>{team.teamId}</span><h2 id="evaluate-title">Review {team.teamName}</h2></div>
         <button type="button" className="edit-team-close" aria-label="Close" onClick={onClose} disabled={saving}><X size={18} /></button>
       </header>
 
@@ -119,15 +94,13 @@ function EvaluateModal({ team, settings, headers, onClose, onSaved, openPdf }) {
         </div>
 
         <section className="pdf-eval-scores">
-          <span className="edit-team-label">Evaluation</span>
-          {CRITERIA.map((key, index) => <label key={key} className={`pdf-eval-row ${errors[key] ? "has-error" : ""}`}>
-            <span>{settings.criteriaLabels[index]}</span>
-            <div><input type="number" inputMode="decimal" min="0" max={max} step="0.5" value={scores[index]} disabled={saving}
-              onChange={(event) => { const value = event.target.value; setScores((current) => current.map((score, scoreIndex) => (scoreIndex === index ? value : score))); setErrors((current) => ({ ...current, [key]: "" })); }} />
-              <em>/ {max}</em></div>
-            {errors[key] ? <small>{errors[key]}</small> : null}
-          </label>)}
-          <div className="pdf-eval-total"><span>Total Score</span><b>{total ?? "--"}<em> / {max * 4}</em></b></div>
+          <span className="edit-team-label">Evaluator scores · PPT Evaluation Sheet (out of 100)</span>
+          <div className="pdf-eval-total"><span>Average of {rubric.count} submitted sheet{rubric.count === 1 ? "" : "s"}{rubric.drafts ? ` (+${rubric.drafts} draft${rubric.drafts === 1 ? "" : "s"})` : ""}</span><b>{formatScore(rubric.average)}<em> / 100</em></b></div>
+          {rubric.sheets.length ? <ul className="pdf-sheet-list">{rubric.sheets.map((sheet) => <li key={sheet.email}>
+            <span>{sheet.evaluator}</span><span>{SHEET_STATUS[sheet.status]}</span><b>{sheet.total}/100</b><span>{sheet.recommendation || "—"}</span>{sheet.policyFlags.length ? <em>⚑ {sheet.policyFlags.join(", ")}</em> : null}
+          </li>)}</ul> : <p className="pdf-eval-note">No evaluator has scored this team yet. Evaluators score in the Evaluator Portal (see the Evaluators page).</p>}
+          {rubric.sheets.length ? <button type="button" className="ghost" onClick={() => setShowSheets((v) => !v)}>{showSheets ? "Hide full sheets" : "Show full sheets"}</button> : null}
+          {showSheets ? <SheetDetails teamId={team._id} headers={headers} /> : null}
         </section>
 
         <label className={`edit-team-field ${errors.result ? "has-error" : ""}`}>
@@ -137,6 +110,7 @@ function EvaluateModal({ team, settings, headers, onClose, onSaved, openPdf }) {
           </select>
           {errors.result ? <small>{errors.result}</small> : null}
         </label>
+        <p className="pdf-eval-note">Once a result other than Pending is saved, evaluators can no longer change their sheets for this team.</p>
 
         {team.selectionEmailSent ? <p className="pdf-eval-note"><Mail size={14} /> Second Round Email Sent on {formatDate(team.selectionEmailSentAt)}.</p>
           : willEmail ? <p className="pdf-eval-note info"><Mail size={14} /> Saving as Selected will send the Second Round email to {team.leader?.email}.</p> : null}
@@ -146,7 +120,7 @@ function EvaluateModal({ team, settings, headers, onClose, onSaved, openPdf }) {
         {formError ? <p className="edit-team-form-error" role="alert">{formError}</p> : null}
         <div>
           <button type="button" className="ghost" onClick={onClose} disabled={saving}>Cancel</button>
-          <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Evaluation"}</button>
+          <button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Result"}</button>
         </div>
       </footer>
     </form>
@@ -155,13 +129,11 @@ function EvaluateModal({ team, settings, headers, onClose, onSaved, openPdf }) {
 
 export default function AdminPdfSubmissions() {
   const [teams, setTeams] = useState([]);
-  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [evaluating, setEvaluating] = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
   const [message, setMessage] = useState("");
   const [retrying, setRetrying] = useState(null);
   const navigate = useNavigate();
@@ -173,14 +145,14 @@ export default function AdminPdfSubmissions() {
   const load = useCallback(({ silent = false } = {}) => {
     if (!silent) { setLoading(true); setLoadError(""); }
     axios.get(`${API_URL}/admin/pdf-submissions`, { headers })
-      .then((response) => { setTeams(response.data.teams); setSettings(response.data.settings); })
+      .then((response) => { setTeams(response.data.teams); })
       .catch((error) => { if (error.response?.status === 401) logout(); else if (!silent) setLoadError(error.response?.data?.message || "Unable to load PDF submissions."); })
       .finally(() => { if (!silent) setLoading(false); });
   }, [headers, logout]);
 
   useEffect(() => { load(); }, [load]);
   // Team Portal edits show up here without a reload. Paused while a dialog is open.
-  useAutoRefresh(load, { paused: Boolean(evaluating || showSettings) });
+  useAutoRefresh(load, { paused: Boolean(evaluating) });
 
   // PDFs are private: fetch them with the admin token, then open or download the in-memory copy.
   const openPdf = async (team, download) => {
@@ -236,21 +208,16 @@ export default function AdminPdfSubmissions() {
   const handleSaved = (registration, successMessage) => {
     setTeams((current) => current.map((team) => (team._id === registration._id ? registration : team)));
     setEvaluating(null);
-    setMessage(successMessage || "Evaluation saved successfully.");
+    setMessage(successMessage || "Result saved.");
   };
-
-  const scoringReady = Boolean(settings?.maxScorePerCriterion);
 
   return <main className="admin-teams admin-pdf">
     <header className="admin-teams-header">
-      <div><p>DEXATHON 2026 ADMIN</p><h1>PDF Submissions</h1><span>Review second-round PDFs, score them and publish results.</span></div>
+      <div><p>DEXATHON 2026 ADMIN</p><h1>PDF Submissions</h1><span>Round 1 PDFs, scored by evaluators on the PPT Evaluation Sheet. Review their scores and publish results.</span></div>
       <nav><AdminNav /></nav>
     </header>
 
     {message ? <p className="admin-teams-message" role="status">{message}<button type="button" aria-label="Dismiss" onClick={() => setMessage("")}><X size={14} /></button></p> : null}
-
-    {settings && (!scoringReady || showSettings) ? <ScoringSettings settings={settings} headers={headers} onClose={scoringReady ? () => setShowSettings(false) : null}
-      onSaved={(next, savedMessage) => { setSettings(next); setShowSettings(false); setMessage(savedMessage); }} /> : null}
 
     <section className="admin-teams-toolbar pdf-toolbar">
       <div className="pdf-filters" role="group" aria-label="Filter by status">
@@ -258,7 +225,6 @@ export default function AdminPdfSubmissions() {
       </div>
       <div className="pdf-toolbar-row">
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search team name / team head / email" aria-label="Search submissions" />
-        {scoringReady && !showSettings ? <button type="button" className="pdf-settings-toggle" onClick={() => setShowSettings(true)}><Settings2 size={15} /> Scoring: max {settings.maxScorePerCriterion} × 4</button> : null}
       </div>
     </section>
 
@@ -286,20 +252,20 @@ export default function AdminPdfSubmissions() {
                 <button type="button" className="ghost" disabled={!hasPdf} onClick={() => openPdf(team, true)}><Download size={14} /> Download PDF</button>
               </div>
               <div className="pdf-card-score">
-                <div><span>Score</span><b>{formatScore(team.evaluation?.totalScore)}</b></div>
+                <div><span>Avg score</span><b>{formatScore(team.rubric?.average)}<small> /100 · {team.rubric?.count || 0} eval.</small></b></div>
                 <div><span>Result</span><b className={`pdf-result-${(team.evaluation?.result || "Pending").toLowerCase().replace(/\s+/g, "-")}`}>{team.evaluation?.result || "Pending"}</b></div>
               </div>
               {team.selectionEmailSent ? <p className="pdf-card-email sent"><Mail size={13} /> Second Round Email Sent · {formatDate(team.selectionEmailSentAt)}</p>
                 : team.evaluation?.result === "Selected" && team.selectionEmailStatus === "Failed" ? <div className="pdf-card-email failed"><span>Selection saved, but email could not be sent.</span><button type="button" className="ghost" disabled={retrying === team._id} onClick={() => retryEmail(team)}>{retrying === team._id ? "Sending..." : "Retry Email"}</button></div> : null}
               <footer>
                 <span>{team.teamId}</span>
-                <button type="button" disabled={!hasPdf || !scoringReady} title={!hasPdf ? "No PDF submitted yet" : !scoringReady ? "Set the scoring settings first" : undefined}
-                  onClick={() => { setMessage(""); setEvaluating(team); }}>{team.evaluation?.evaluatedAt ? "Edit Evaluation" : "Evaluate"}</button>
+                <button type="button" disabled={!hasPdf} title={!hasPdf ? "No PDF submitted yet" : undefined}
+                  onClick={() => { setMessage(""); setEvaluating(team); }}>Review &amp; Result</button>
               </footer>
             </article>;
           })}</section>}
     {!loading && !loadError ? <AdminPagination page={paged.page} pages={paged.pages} total={paged.total} limit={paged.limit} onChange={paged.setPage} label="teams" /> : null}
 
-    {evaluating ? <EvaluateModal team={evaluating} settings={settings} headers={headers} openPdf={openPdf} onClose={() => setEvaluating(null)} onSaved={handleSaved} /> : null}
+    {evaluating ? <EvaluateModal team={evaluating} headers={headers} openPdf={openPdf} onClose={() => setEvaluating(null)} onSaved={handleSaved} /> : null}
   </main>;
 }

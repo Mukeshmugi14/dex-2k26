@@ -4,7 +4,9 @@ import { buildTeamConfirmationEmail, POSTER_CID, POSTER_IMAGE_PATH } from "../te
 import { buildSelectionEmail } from "../templates/resultEmail.js";
 import { buildRoundResultEmail } from "../templates/roundResultEmail.js";
 import { buildRoundUpdateEmail } from "../templates/roundUpdateEmail.js";
-import { getTeamLoginUrl } from "./submissionService.js";
+import { buildRound1ReminderEmail } from "../templates/round1ReminderEmail.js";
+import { getEvaluatorLoginUrl, getRound1Deadline, getTeamLoginUrl } from "./submissionService.js";
+import { escapeHtml } from "../templates/paymentConfirmationEmail.js";
 import { CONNECTION_ERRORS, lastSmtpProbe, probeSmtpPorts, sendWithSmtp, smtpConfigured, smtpUser, verifySmtp } from "./smtpTransport.js";
 
 // Team Login Portal credentials for ONE team, read from that team's own record:
@@ -80,6 +82,13 @@ export const sendSelectionEmail = async (registration) => {
 };
 
 // Round progress update. Returns true only when Gmail accepted it.
+// Round 1 deadline reminder (submitted / not-submitted versions). Returns the message ID when Gmail accepted it.
+export const previewRound1ReminderEmail = (registration) => ({ to: getRecipientEmail(registration), ...buildRound1ReminderEmail(registration, getRound1Deadline(), portalAccess(registration)) });
+export const sendRound1ReminderEmail = async (registration) => {
+  const { to, subject, html, text } = previewRound1ReminderEmail(registration);
+  return sendEmail({ type: "round1-reminder", to, subject, html, text });
+};
+
 export const sendRoundUpdateEmail = async (registration, rounds) => {
   const to = getRecipientEmail(registration);
   const { subject, html, text } = buildRoundUpdateEmail(registration, rounds, portalAccess(registration));
@@ -109,6 +118,46 @@ export const sendAdminOtpEmail = async (to, code, minutes, purpose = "login") =>
     subject: `DEXATHON 2026 admin ${setup ? "password setup" : "login"} code: ${code}`,
     html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#16171b"><h2 style="margin:0 0 8px">DEXATHON 2026 — ${title}</h2><p>Your verification code is:</p><p style="font-size:34px;font-weight:800;letter-spacing:10px;margin:8px 0 16px">${code}</p><p>It expires in ${minutes} minutes. Enter it on the admin login page to ${action}.</p><p style="color:#b42318"><b>${warning}</b></p></div>`,
     text: `DEXATHON 2026 — ${title}\n\nYour verification code is: ${code}\nIt expires in ${minutes} minutes. Enter it on the admin login page to ${action}.\n\n${warning}`,
+  });
+};
+
+// Evaluator Portal: one-time code for the first sign-in or a password reset.
+export const sendEvaluatorCodeEmail = async (to, code, minutes) => sendEmail({
+  type: "evaluator-code",
+  to,
+  subject: `DEXATHON 2026 evaluator code: ${code}`,
+  html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#16171b"><h2 style="margin:0 0 8px">DEXATHON 2026 — Evaluator Portal</h2><p>Your one-time code is:</p><p style="font-size:34px;font-weight:800;letter-spacing:10px;margin:8px 0 16px">${code}</p><p>It expires in ${minutes} minutes and works once. Enter it on the Evaluator Portal to set your password.</p><p style="color:#b42318"><b>Never share this code. If you didn't ask for it, ignore this email.</b></p></div>`,
+  text: `DEXATHON 2026 — Evaluator Portal
+
+Your one-time code is: ${code}
+It expires in ${minutes} minutes and works once. Enter it on the Evaluator Portal to set your password.
+
+Never share this code. If you didn't ask for it, ignore this email.`,
+});
+
+// Evaluator Portal invitation, sent when an admin adds an evaluator.
+export const sendEvaluatorInviteEmail = async (to, name) => {
+  const url = getEvaluatorLoginUrl();
+  const who = escapeHtml(name || "Evaluator");
+  return sendEmail({
+    type: "evaluator-invite",
+    to,
+    subject: "You're invited to evaluate DEXATHON 2026 Round 1 submissions",
+    html: `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:23px;color:#16171b"><h2 style="margin:0 0 8px">DEXATHON 2026 — Evaluator Portal</h2><p>Dear ${who},</p><p>You have been added as an evaluator for the <b>Round 1 PPT submissions</b> of DEXATHON 2026.</p><ol><li>Open the Evaluator Portal: <a href="${escapeHtml(url)}">${escapeHtml(url)}</a></li><li>Choose <b>First time / Forgot password</b> and enter this email address (${escapeHtml(to)}).</li><li>Enter the one-time code we email you and set your password.</li></ol><p>After that, sign in any time with this email and your password. Each submission is scored on the official PPT Evaluation Sheet (11 criteria, 100 marks).</p><p>Thank you,<br><b>DEXATHON 2026 Team</b></p></div>`,
+    text: `DEXATHON 2026 — Evaluator Portal
+
+Dear ${name || "Evaluator"},
+
+You have been added as an evaluator for the Round 1 PPT submissions of DEXATHON 2026.
+
+1. Open the Evaluator Portal: ${url}
+2. Choose "First time / Forgot password" and enter this email address (${to}).
+3. Enter the one-time code we email you and set your password.
+
+After that, sign in any time with this email and your password.
+
+Thank you,
+DEXATHON 2026 Team`,
   });
 };
 

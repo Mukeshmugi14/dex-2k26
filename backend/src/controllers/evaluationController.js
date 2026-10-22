@@ -4,6 +4,7 @@ import Registration, { EVALUATION_RESULTS } from "../models/Registration.js";
 import { sendSelectionEmail } from "../services/emailService.js";
 import { deriveSubmissionStatus, openPdfStream } from "../services/submissionService.js";
 import { STUDY_FIELDS, teamStudyInfo } from "../services/teamProfile.js";
+import { refreshTeamRubricScore, rubricSummaries } from "../services/rubricScores.js";
 
 const CRITERIA = ["criterion1", "criterion2", "criterion3", "criterion4"];
 const LIST_FIELDS = `teamId teamName leader college collegeName projectTheme pdfSubmission evaluation selectionEmailSent selectionEmailStatus selectionEmailSentAt createdAt ${STUDY_FIELDS}`;
@@ -31,7 +32,9 @@ export const listSubmissions = async (_request, response) => {
     Registration.find({}, LIST_FIELDS).sort({ "pdfSubmission.submittedAt": -1, createdAt: -1 }).lean(),
     getSettings(),
   ]);
-  return response.json({ teams: registrations.map(toAdminView), settings: settingsView(settings) });
+  // Evaluator Portal scores (PPT Evaluation Sheet, out of 100) for each team.
+  const summaries = await rubricSummaries(registrations.map((r) => r._id));
+  return response.json({ teams: registrations.map((r) => ({ ...toAdminView(r), rubric: summaries.get(String(r._id)) || { count: 0, drafts: 0, average: null, sheets: [] } })), settings: settingsView(settings) });
 };
 
 // Streams the PDF only to authenticated admins (this router is behind requireAdmin).
@@ -74,24 +77,14 @@ export const saveEvaluation = async (request, response) => {
   if (!registration) return response.status(404).json({ success: false, message: "Registration not found." });
   if (!registration.pdfSubmission?.fileId) return response.status(400).json({ success: false, message: "This team has not submitted a PDF yet." });
 
-  const settings = await getSettings();
-  const max = settings.maxScorePerCriterion;
-  if (!max) return response.status(400).json({ success: false, message: "Set the maximum score per criterion before evaluating." });
+  // Scores come from the evaluators' PPT Evaluation Sheets (Evaluator Portal); the admin decides the result.
+  const { result } = request.body;
+  if (!EVALUATION_RESULTS.includes(result)) return response.status(400).json({ success: false, message: "Please correct the highlighted fields.", errors: { result: "Choose a result." } });
 
-  const { scores, result } = request.body;
-  const errors = {};
-  const values = CRITERIA.map((key, index) => {
-    const raw = Array.isArray(scores) ? scores[index] : undefined;
-    const value = typeof raw === "number" ? raw : typeof raw === "string" && raw.trim() !== "" ? Number(raw) : NaN;
-    if (!Number.isFinite(value) || value < 0 || value > max) errors[key] = `Enter a score from 0 to ${max}.`;
-    else if (Math.abs(Math.round(value * 100) - value * 100) > 1e-6) errors[key] = "Use at most 2 decimal places.";
-    return value;
-  });
-  if (!EVALUATION_RESULTS.includes(result)) errors.result = "Choose a result.";
-  if (Object.keys(errors).length) return response.status(400).json({ success: false, message: "Please correct the highlighted fields.", errors });
-
-  CRITERIA.forEach((key, index) => { registration.evaluation[key] = values[index]; });
-  registration.evaluation.totalScore = Math.round(values.reduce((sum, value) => sum + value, 0) * 100) / 100;
+  await refreshTeamRubricScore(registration._id);
+  const fresh = await Registration.findById(registration._id, "evaluation").lean();
+  registration.evaluation.totalScore = fresh.evaluation?.totalScore;
+  registration.evaluation.evaluatorCount = fresh.evaluation?.evaluatorCount || 0;
   registration.evaluation.result = result;
   registration.evaluation.evaluatedAt = new Date();
   registration.evaluation.evaluatedBy = request.admin?.username || "admin";
@@ -102,7 +95,8 @@ export const saveEvaluation = async (request, response) => {
   const email = result === "Selected" ? await sendSelectionEmailOnce(registration._id) : { attempted: false, sent: false };
   const updated = await Registration.findById(registration._id);
   const emailMessage = !email.attempted ? "" : email.sent ? ` Second round email sent to ${updated.leader?.email}.` : " Selection saved, but email could not be sent.";
-  return response.json({ success: true, message: `Evaluation saved successfully.${emailMessage}`, email, registration: toAdminView(updated) });
+  const summary = (await rubricSummaries([updated._id])).get(String(updated._id)) || { count: 0, drafts: 0, average: null, sheets: [] };
+  return response.json({ success: true, message: `Result saved.${emailMessage}`, email, registration: { ...toAdminView(updated.toObject()), rubric: summary } });
 };
 
 // Sends the Selected email at most once. An atomic claim (status "Sending") stops two parallel saves from both sending.

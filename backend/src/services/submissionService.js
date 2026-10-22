@@ -67,6 +67,8 @@ export const getSiteUrl = () => {
 // Team Login Portal link used by the "LOGIN TO TEAM PORTAL" button and the "Login Portal" text in team emails.
 const TEAM_LOGIN_URL = "https://dexathon.vercel.app/team-login";
 export const getTeamLoginUrl = () => TEAM_LOGIN_URL;
+// The Evaluator Portal lives on the same deployed site as the Team Portal.
+export const getEvaluatorLoginUrl = () => (process.env.EVALUATOR_PORTAL_URL || `${new URL(TEAM_LOGIN_URL).origin}/evaluator/login`).trim();
 export const getTeamPortalPassword = () => process.env.TEAM_PORTAL_PASSWORD || "Dexathon@2026";
 
 export const buildSubmissionUrl = (token) => `${getSiteUrl()}/submit-document/${token}`;
@@ -101,7 +103,8 @@ export const deletePdf = async (fileId) => {
   }
 };
 
-export const openPdfStream = (fileId) => getBucket().openDownloadStream(new mongoose.Types.ObjectId(String(fileId)));
+// range: { start, end } (end exclusive) to read part of the file, e.g. for chunked downloads under a response size limit.
+export const openPdfStream = (fileId, range) => getBucket().openDownloadStream(new mongoose.Types.ObjectId(String(fileId)), range || undefined);
 
 // Keep only safe characters in file names used in headers and storage.
 export const safePdfFileName = (name) => {

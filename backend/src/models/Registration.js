@@ -55,6 +55,8 @@ const registrationSchema = new mongoose.Schema({
     criterion3: Number,
     criterion4: Number,
     totalScore: Number,
+    // Number of evaluators whose submitted PPT Evaluation Sheets make up totalScore (their average, out of 100).
+    evaluatorCount: Number,
     result: { type: String, enum: EVALUATION_RESULTS, default: "Pending" },
     evaluatedAt: Date,
     evaluatedBy: String,
@@ -85,6 +87,15 @@ const registrationSchema = new mongoose.Schema({
     sentSnapshot: String,
     sentAt: Date,
     attemptAt: Date,
+  },
+  // Round 1 deadline reminder, tracked so a re-run never emails a team twice.
+  round1Reminder: {
+    status: { type: String, enum: ["Not Sent", "Sending", "Sent", "Failed"], default: "Not Sent" },
+    sentAt: Date,
+    attemptAt: Date,
+    error: String,
+    messageId: String,
+    variant: String,
   },
   registrationEmail: {
     status: { type: String, enum: ["Not Sent", "Sending", "Sent", "Failed"], default: "Not Sent" },
