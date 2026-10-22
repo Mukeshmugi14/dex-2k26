@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import Admin from "../models/Admin.js";
-import Registration, { COUNTED } from "../models/Registration.js";
+import Registration, { COUNTED, PROJECT_THEMES } from "../models/Registration.js";
 import { adminProfile } from "../services/adminAccess.js";
 import {
   describeEmailError,
@@ -396,6 +396,12 @@ export const updateRegistration = async (request, response) => {
   }
   const nextCollege = request.body.college === undefined ? undefined : cleanText(request.body.college);
   if (nextCollege !== undefined && !nextCollege) errors.college = "College is required.";
+
+  const nextProjectTheme = request.body.projectTheme === undefined ? undefined : cleanText(request.body.projectTheme).toUpperCase();
+  if (nextProjectTheme !== undefined && nextProjectTheme !== "" && !PROJECT_THEMES.includes(nextProjectTheme)) {
+    errors.projectTheme = "Please select a valid project theme.";
+  }
+
   if (Object.keys(errors).length) return response.status(400).json({ success: false, message: "Please correct the highlighted fields.", errors });
 
   registration.teamName = nextTeamName;
@@ -406,6 +412,7 @@ export const updateRegistration = async (request, response) => {
     registration.members[index].name = cleanText(member.name);
   });
   if (nextCollege !== undefined) setCollege(registration, nextCollege);
+  if (nextProjectTheme !== undefined) registration.projectTheme = nextProjectTheme || undefined;
   await registration.save();
 
   return response.json({ success: true, message: "Team details updated successfully.", registration: toListItem(registration) });

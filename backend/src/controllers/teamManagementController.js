@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Registration from "../models/Registration.js";
+import Registration, { PROJECT_THEMES } from "../models/Registration.js";
 import { ALLOWED_ROUND_STATUSES, normalizeRounds, readRounds, ROUND_KEYS } from "../services/roundService.js";
 import { deletePdf } from "../services/submissionService.js";
 import { setCollege, toListItem } from "./adminController.js";
@@ -44,18 +44,21 @@ export const bulkUpdateTeams = async (request, response) => {
   if (!ids) return response.status(400).json({ success: false, message: `Select between 1 and ${MAX_BULK} teams.` });
 
   const college = request.body.college === undefined || request.body.college === "" ? undefined : cleanText(request.body.college);
+  const projectTheme = request.body.projectTheme === undefined || request.body.projectTheme === "" ? undefined : cleanText(request.body.projectTheme).toUpperCase();
   const round = request.body.round ? Number(request.body.round) : null;
   const status = request.body.status || null;
   const roundKey = round ? `round${round}` : null;
   if (college === "") return response.status(400).json({ success: false, message: "College cannot be blank." });
+  if (projectTheme !== undefined && !PROJECT_THEMES.includes(projectTheme)) return response.status(400).json({ success: false, message: "Invalid project theme." });
   if ((round && !status) || (!round && status)) return response.status(400).json({ success: false, message: "Choose both a round and a status, or neither." });
   if (round && (!ROUND_KEYS.includes(roundKey) || !ALLOWED_ROUND_STATUSES[roundKey].includes(status))) return response.status(400).json({ success: false, message: "That status is not allowed for this round." });
-  if (college === undefined && !round) return response.status(400).json({ success: false, message: "Choose at least one field to change." });
+  if (college === undefined && projectTheme === undefined && !round) return response.status(400).json({ success: false, message: "Choose at least one field to change." });
 
   const teams = await Registration.find({ _id: { $in: ids } });
   const roundChanged = [];
   for (const team of teams) {
     if (college !== undefined) setCollege(team, college);
+    if (projectTheme !== undefined) team.projectTheme = projectTheme;
     if (round) {
       const before = readRounds(team);
       const next = normalizeRounds({ ...before, [roundKey]: status });

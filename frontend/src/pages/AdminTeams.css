@@ -55,9 +55,9 @@
 .edit-team-modal .edit-team-close:hover{border-color:#55caff88;color:#fff}
 .edit-team-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
 .edit-team-field{display:grid;align-content:start;gap:7px;min-width:0}
-.edit-team-modal input{width:100%;height:42px;padding:0 12px;border:1px solid #55caff44;border-radius:6px;background:#07111f;color:#fff;font:15px Arial,sans-serif}
-.edit-team-modal input:focus{outline:2px solid #55caff88;outline-offset:1px}
-.edit-team-field.has-error input,.edit-team-member.has-error input{border-color:#ff8a8a}
+.edit-team-modal input,.edit-team-modal select{width:100%;height:42px;padding:0 12px;border:1px solid #55caff44;border-radius:6px;background:#07111f;color:#fff;font:15px Arial,sans-serif}
+.edit-team-modal input:focus,.edit-team-modal select:focus{outline:2px solid #55caff88;outline-offset:1px}
+.edit-team-field.has-error input,.edit-team-field.has-error select,.edit-team-member.has-error input{border-color:#ff8a8a}
 .edit-team-field small,.edit-team-member small,.edit-team-modal small.error{color:#ff9c9c;font-size:12px}
 .edit-team-members{display:grid;gap:10px}
 .edit-team-member{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;column-gap:10px;row-gap:4px}

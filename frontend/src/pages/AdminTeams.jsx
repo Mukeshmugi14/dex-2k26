@@ -11,6 +11,15 @@ import { AdminPagination, AdminSkeleton, useDebouncedValue } from "../components
 
 const PAGE_SIZE = 20;
 
+const PROJECT_THEMES = [
+  "OPEN INNOVATION",
+  "BLOCKCHAIN & CYBERSECURITY",
+  "HEALTHCARE",
+  "AI & MACHINE LEARNING",
+  "SUSTAINABILITY DEVELOPMENT",
+  "FINTECH & EDTECH",
+];
+
 const isEmail = (value) => /^\S+@\S+\.\S+$/.test(value);
 const pad = (index) => String(index + 1).padStart(2, "0");
 
@@ -20,6 +29,7 @@ const toForm = (team) => ({
   leaderEmail: team.leader?.email || "",
   leaderPhone: team.leader?.phone || "",
   college: team.college || team.collegeName || "",
+  projectTheme: team.projectTheme || "",
   members: team.members.map((member) => member.name || ""),
 });
 
@@ -30,6 +40,9 @@ const validate = (form) => {
   if (!isEmail(form.leaderEmail.trim())) errors.leaderEmail = "Enter a valid email address.";
   if (!form.leaderPhone.trim()) errors.leaderPhone = "Phone number is required.";
   if (!form.college.trim()) errors.college = "College is required.";
+  if (form.projectTheme && !PROJECT_THEMES.includes(form.projectTheme)) {
+    errors.projectTheme = "Please select a valid project theme.";
+  }
   form.members.forEach((name, index) => { if (!name.trim()) errors[`member-${index}`] = "Member name is required."; });
   return errors;
 };
@@ -77,6 +90,7 @@ function EditTeamModal({ team, headers, onClose, onSaved }) {
         teamName: form.teamName.trim(),
         leader: { name: form.leaderName.trim(), email: form.leaderEmail.trim(), phone: form.leaderPhone.trim() },
         college: form.college.trim(),
+        projectTheme: form.projectTheme,
         members,
       }, { headers });
       onSaved(response.data.registration, response.data.message);
@@ -97,10 +111,18 @@ function EditTeamModal({ team, headers, onClose, onSaved }) {
       <div className="edit-team-body">
         <div className="edit-team-grid">
           <Field label="Team Name" error={errors.teamName}><input ref={firstFieldRef} value={form.teamName} onChange={(event) => update("teamName", event.target.value)} /></Field>
+          <Field label="Project Theme" error={errors.projectTheme}>
+            <select value={form.projectTheme} onChange={(event) => update("projectTheme", event.target.value)}>
+              <option value="">Select Project Theme</option>
+              {PROJECT_THEMES.map((theme) => (
+                <option key={theme} value={theme}>{theme}</option>
+              ))}
+            </select>
+          </Field>
           <Field label="Team Head Name" error={errors.leaderName}><input value={form.leaderName} onChange={(event) => update("leaderName", event.target.value)} /></Field>
           <Field label="Team Head Email" error={errors.leaderEmail}><input type="email" value={form.leaderEmail} onChange={(event) => update("leaderEmail", event.target.value)} /></Field>
           <Field label="Team Head Phone" error={errors.leaderPhone}><input type="tel" value={form.leaderPhone} onChange={(event) => update("leaderPhone", event.target.value)} /></Field>
-          <div className="edit-team-span"><Field label="College" error={errors.college}><input value={form.college} onChange={(event) => update("college", event.target.value)} /></Field></div>
+          <Field label="College" error={errors.college}><input value={form.college} onChange={(event) => update("college", event.target.value)} /></Field>
         </div>
 
         <section className="edit-team-members">
@@ -168,6 +190,7 @@ function DeleteDialog({ teams, onCancel, onConfirm, busy, error }) {
 
 function BulkEditModal({ teams, colleges, headers, onClose, onSaved }) {
   const [college, setCollege] = useState("");
+  const [projectTheme, setProjectTheme] = useState("");
   const [round, setRound] = useState("");
   const [status, setStatus] = useState("");
   const [notify, setNotify] = useState(false);
@@ -177,7 +200,7 @@ function BulkEditModal({ teams, colleges, headers, onClose, onSaved }) {
 
   const apply = async (event) => {
     event.preventDefault();
-    if (!college.trim() && !round) { setError("Choose at least one field to change."); return; }
+    if (!college.trim() && !projectTheme && !round) { setError("Choose at least one field to change."); return; }
     if (round && !status) { setError("Choose a status for the selected round."); return; }
     setSaving(true);
     setError("");
@@ -185,6 +208,7 @@ function BulkEditModal({ teams, colleges, headers, onClose, onSaved }) {
       const response = await axios.post(`${API_URL}/admin/registrations/bulk-update`, {
         ids: teams.map((team) => team._id),
         ...(college.trim() ? { college: college.trim() } : {}),
+        ...(projectTheme ? { projectTheme } : {}),
         ...(round ? { round: Number(round), status, notify } : {}),
       }, { headers });
       onSaved(response.data.teams, response.data.message);
@@ -205,6 +229,12 @@ function BulkEditModal({ teams, colleges, headers, onClose, onSaved }) {
         <Field label="College (leave blank to keep each team's college)">
           <input list="tm-college-options" value={college} onChange={(event) => setCollege(event.target.value)} placeholder="Select or type a college" />
           <datalist id="tm-college-options">{colleges.map((name) => <option key={name} value={name} />)}</datalist>
+        </Field>
+        <Field label="Project Theme (leave blank to keep each team's theme)">
+          <select value={projectTheme} onChange={(event) => setProjectTheme(event.target.value)}>
+            <option value="">Don't change project theme</option>
+            {PROJECT_THEMES.map((theme) => <option key={theme} value={theme}>{theme}</option>)}
+          </select>
         </Field>
         <div className="edit-team-grid">
           <Field label="Round">
@@ -243,6 +273,7 @@ export default function AdminTeams() {
   const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState("");
   const [collegeFilter, setCollegeFilter] = useState("all");
+  const [themeFilter, setThemeFilter] = useState("all");
   const [selected, setSelected] = useState(() => new Set());
   const [bulkEditing, setBulkEditing] = useState(false);
   const [deleteTargets, setDeleteTargets] = useState(null);
@@ -257,7 +288,7 @@ export default function AdminTeams() {
   // One page of teams at a time, searched and filtered by the server (logos load lazily per card).
   const loadTeams = useCallback(({ silent = false } = {}) => {
     if (!silent) { setLoading(true); setLoadError(""); }
-    axios.get(`${API_URL}/admin/registrations`, { headers, params: { page, limit: PAGE_SIZE, search: debouncedSearch, college: collegeFilter } })
+    axios.get(`${API_URL}/admin/registrations`, { headers, params: { page, limit: PAGE_SIZE, search: debouncedSearch, college: collegeFilter, theme: themeFilter } })
       .then((response) => {
         if (!response.data.items.length && response.data.total && page > 1) { setPage(response.data.pages); return; }
         setTeams(response.data.items);
@@ -268,14 +299,14 @@ export default function AdminTeams() {
         if (!silent) setLoadError(error.response?.data?.message || "Unable to load teams.");
       })
       .finally(() => { if (!silent) setLoading(false); });
-  }, [headers, page, debouncedSearch, collegeFilter, logout]);
+  }, [headers, page, debouncedSearch, collegeFilter, themeFilter, logout]);
 
   useEffect(() => { loadTeams(); }, [loadTeams]);
   // Team Portal edits show up here without a reload; paused while an admin edit or delete dialog is open.
   useAutoRefresh(loadTeams, { paused: Boolean(editing || bulkEditing || deleteTargets) });
-  useEffect(() => { setPage(1); }, [debouncedSearch, collegeFilter]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, collegeFilter, themeFilter]);
   // Selection is limited to what is on screen: changing page or filters clears it, so nothing unseen is edited or deleted.
-  useEffect(() => { setSelected(new Set()); }, [page, debouncedSearch, collegeFilter]);
+  useEffect(() => { setSelected(new Set()); }, [page, debouncedSearch, collegeFilter, themeFilter]);
   useEffect(() => {
     axios.get(`${API_URL}/admin/colleges`, { headers }).then((response) => setColleges(response.data.colleges)).catch(() => {});
   }, [headers]);
@@ -366,13 +397,17 @@ export default function AdminTeams() {
           <option value="all">All colleges</option>
           {colleges.map((name) => <option key={name} value={name}>{name}</option>)}
         </select>
+        <select value={themeFilter} onChange={(event) => setThemeFilter(event.target.value)} aria-label="Filter by project theme">
+          <option value="all">All project themes</option>
+          {PROJECT_THEMES.map((theme) => <option key={theme} value={theme}>{theme}</option>)}
+        </select>
         <span>{paging.total} team{paging.total === 1 ? "" : "s"}</span>
       </div>
     </section>
 
     {loading && !teams.length ? <AdminSkeleton rows={4} variant="cards" />
       : loadError ? <div className="admin-teams-state error"><p>{loadError}</p><button type="button" onClick={loadTeams}>Retry</button></div>
-        : !visibleTeams.length ? <p className="admin-teams-state">{debouncedSearch || collegeFilter !== "all" ? "No teams match your search." : "No teams have registered yet."}</p>
+        : !visibleTeams.length ? <p className="admin-teams-state">{debouncedSearch || collegeFilter !== "all" || themeFilter !== "all" ? "No teams match your search." : "No teams have registered yet."}</p>
           : <section className="team-card-grid">{visibleTeams.map((team) => <article className={`team-card ${selected.has(team._id) ? "is-selected" : ""}`} key={team._id}>
             <label className="tm-card-check"><input type="checkbox" checked={selected.has(team._id)} onChange={() => toggleOne(team._id)} aria-label={`Select ${team.teamName}`} /><span>{selected.has(team._id) ? "Selected" : "Select"}</span></label>
             <dl>
