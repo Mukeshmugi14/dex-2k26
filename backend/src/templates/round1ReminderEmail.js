@@ -76,7 +76,7 @@ ${renderFooter(e.leaderEmail)}
     : `DEXATHON 2026\n\nROUND 1 DEADLINE REMINDER\n\nTeam Name: ${d.teamName}\nRound 1 Status: NOT SUBMITTED YET\n\nHi ${d.leaderName},\n\nThis is a reminder that Round 1 PPT submission closes on ${d.deadline}. Our records show your team has not submitted its Round 1 PDF yet.\n\n1. Log in to the Team Head Portal with the details below and download the official Round 1 PPT template.\n2. Prepare your presentation and save it as a PDF. Maximum 15 MB. PPT, PPTX and other formats are not accepted.\n3. Upload the PDF in the portal under Round 1 PDF Submission before the deadline.\n\nSubmission closes automatically at the deadline and late submissions cannot be accepted, so please don't wait until the last minute.\n\n${portalCredentialsText(portal)}\n\nAll the best,\nDEXATHON 2026 Team`;
 
   const subject = submitted
-    ? "DEXATHON 2026 — Round 1 PDF received (edits allowed until 23 Oct, 11 PM)"
-    : "Reminder: DEXATHON 2026 Round 1 PPT submission closes 23 Oct, 11 PM";
+    ? "DEXATHON 2026 — Round 1 PDF received (edits allowed until 23 Oct, 11:50 PM)"
+    : "Reminder: DEXATHON 2026 Round 1 PPT submission closes 23 Oct, 11:50 PM";
   return { subject, html, text };
 };
