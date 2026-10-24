@@ -19,9 +19,15 @@ export const MIN_EVALUATOR_PASSWORD = 10;
 // (which would sign every team out); otherwise a strong JWT_SECRET. Keys are derived per purpose, so evaluator,
 // admin and team tokens can never be swapped.
 const MIN_SECRET_LENGTH = 32;
+// Last resort when neither secret is set or strong enough: a key derived from the database connection string.
+// It's long, private and server-only, and anyone holding it already has the database, so it adds no exposure.
+const databaseDerivedSecret = () => {
+  const uri = String(process.env.MONGO_URI || process.env.MONGODB_URI || process.env.mongo_uri || process.env.mongodb_uri || "").trim();
+  return uri.length >= MIN_SECRET_LENGTH ? crypto.createHash("sha256").update(`dexathon-evaluator-key:${uri}:${process.env.JWT_SECRET || ""}`).digest("hex") : null;
+};
 const evaluatorSecret = () => {
   const own = String(process.env.EVALUATOR_JWT_SECRET || "").trim();
-  return own.length >= MIN_SECRET_LENGTH ? own : adminJwtSecret();
+  return own.length >= MIN_SECRET_LENGTH ? own : adminJwtSecret() || databaseDerivedSecret();
 };
 const baseSecret = () => {
   const value = evaluatorSecret();
