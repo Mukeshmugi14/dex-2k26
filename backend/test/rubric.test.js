@@ -26,16 +26,16 @@ describe("PPT Evaluation Sheet scoring", () => {
     assert.equal(totalFor({}), 0);
   });
 
-  test("a comment is required at level 0, 1 or 5, and at level 2 for C6 only", () => {
-    assert.ok(commentRequired("C1", 0) && commentRequired("C1", 1) && commentRequired("C1", 5));
-    assert.ok(!commentRequired("C1", 2) && !commentRequired("C1", 3) && !commentRequired("C1", 4));
-    assert.ok(commentRequired("C6", 2));
+  test("evidence comments are optional at every level", () => {
+    for (const level of [0, 1, 2, 3, 4, 5]) assert.ok(!commentRequired("C1", level) && !commentRequired("C6", level));
+    const levels = Object.fromEntries(CRITERIA.map((c) => [c.id, 5]));
+    assert.deepEqual(cleanSheet({ levels, recommendation: "Recommend", coiDeclared: true }, { submit: true }).errors, {});
   });
 
   test("a draft may be incomplete; submitting enforces every rule", () => {
     assert.deepEqual(cleanSheet({ levels: { C1: 3 } }).errors, {});
     const { errors } = cleanSheet({ levels: { C1: 5 } }, { submit: true });
-    assert.ok(errors["comment.C1"], "level 5 needs a comment");
+    assert.ok(!errors["comment.C1"], "no comment needed");
     assert.ok(errors["level.C2"], "every criterion needs a level");
     assert.ok(errors.recommendation && errors.coiDeclared);
   });

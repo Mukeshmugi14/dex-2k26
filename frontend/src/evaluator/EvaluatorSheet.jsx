@@ -6,7 +6,6 @@ import { API_URL } from "../config/api";
 import { clearEvaluatorSession, evaluatorHeaders } from "../config/evaluatorSession";
 
 const marksFor = (max, level) => Math.round(((max * level) / 5) * 10) / 10;
-const commentRequired = (id, level) => [0, 1, 5].includes(level) || (id === "C6" && level === 2);
 const formatSize = (bytes) => (bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 const formatDate = (value) => (value ? new Date(value).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }) : "");
 const emptySheet = () => ({ projectTitle: "", psCategory: "", panel: "", checks: { fileOpens: false, teamIdMatches: false, officialTemplate: false, allSlides: false, missingSlides: "" }, policyFlags: [], policyNote: "", levels: {}, comments: {}, strengths: ["", "", ""], improvements: ["", "", ""], recommendation: "", coiDeclared: false });
@@ -80,7 +79,6 @@ export default function EvaluatorSheet() {
   const locked = Boolean(team?.locked);
   const update = (patch) => { setForm((f) => ({ ...f, ...(typeof patch === "function" ? patch(f) : patch) })); setDirty(true); setMessage(null); };
   const setLevel = (cid, level) => { update((f) => ({ levels: { ...f.levels, [cid]: level } })); setErrors((e) => ({ ...e, [`level.${cid}`]: "" })); };
-  const setComment = (cid, text) => { update((f) => ({ comments: { ...f.comments, [cid]: text } })); setErrors((e) => ({ ...e, [`comment.${cid}`]: "" })); };
 
   const total = useMemo(() => (rubric ? Math.round(rubric.criteria.reduce((s, c) => s + (Number.isInteger(form.levels[c.id]) ? marksFor(c.max, form.levels[c.id]) : 0), 0) * 10) / 10 : 0), [rubric, form.levels]);
   const scored = rubric ? rubric.criteria.filter((c) => Number.isInteger(form.levels[c.id])).length : 0;
@@ -90,7 +88,6 @@ export default function EvaluatorSheet() {
     for (const c of rubric.criteria) {
       const level = form.levels[c.id];
       if (!Number.isInteger(level)) next[`level.${c.id}`] = "Choose a level.";
-      else if (commentRequired(c.id, level) && !String(form.comments[c.id] || "").trim()) next[`comment.${c.id}`] = `A comment is required at level ${level}.`;
     }
     if (!form.recommendation) next.recommendation = "Choose an overall recommendation.";
     if (!form.coiDeclared) next.coiDeclared = "Confirm the declaration.";
@@ -191,11 +188,10 @@ export default function EvaluatorSheet() {
         </fieldset>
 
         <fieldset className="eval-card eval-criteria" disabled={ro}><legend>C. Criterion scores</legend>
-          <p className="eval-hint">Choose one level per row. Marks = Max × Level ÷ 5. A comment is required at level 0, 1 or 5 (C6: also level 2).</p>
+          <p className="eval-hint">Choose one level per row. Marks = Max × Level ÷ 5.</p>
           {rubric.criteria.map((c) => {
             const level = form.levels[c.id];
-            const needComment = Number.isInteger(level) && commentRequired(c.id, level);
-            return <div key={c.id} className={`eval-criterion ${errors[`level.${c.id}`] || errors[`comment.${c.id}`] ? "has-error" : ""}`} data-field={`level.${c.id}`}>
+            return <div key={c.id} className={`eval-criterion ${errors[`level.${c.id}`] ? "has-error" : ""}`} data-field={`level.${c.id}`}>
               <div className="eval-criterion-head">
                 <span className="eval-cid">{c.id}</span>
                 <div><b>{c.name}</b><small>{c.check} · slides {c.slides}</small></div>
@@ -207,18 +203,11 @@ export default function EvaluatorSheet() {
               </div>
               {err(`level.${c.id}`)}
               <details className="eval-guide"><summary>What level 5 and level 3 look like</summary><p><b>Level 5:</b> {c.level5}</p><p><b>Level 3:</b> {c.level3}</p></details>
-              <label className="eval-input" data-field={`comment.${c.id}`}><span>Evidence comment {needComment ? <em className="eval-req">required</em> : <em>optional</em>}</span>
-                <textarea rows={2} value={form.comments[c.id] || ""} onChange={(e) => setComment(c.id, e.target.value)} maxLength={1000} placeholder="Slide no. + what was / was not found" /></label>
-              {err(`comment.${c.id}`)}
             </div>;
           })}
         </fieldset>
 
         <fieldset className="eval-card" disabled={ro}><legend>D. Judge summary</legend>
-          <div className="eval-two">
-            <div className="eval-input"><span>Major strengths (evidence-based, max 3)</span>{form.strengths.map((v, i) => <input key={i} value={v} placeholder={`${i + 1}.`} maxLength={400} onChange={(e) => update((f) => ({ strengths: f.strengths.map((x, j) => (j === i ? e.target.value : x)) }))} />)}</div>
-            <div className="eval-input"><span>Areas for improvement (max 3)</span>{form.improvements.map((v, i) => <input key={i} value={v} placeholder={`${i + 1}.`} maxLength={400} onChange={(e) => update((f) => ({ improvements: f.improvements.map((x, j) => (j === i ? e.target.value : x)) }))} />)}</div>
-          </div>
           <div className="eval-input" data-field="recommendation"><span>Overall recommendation (advisory; ranking uses the total score only)</span>
             <div className="eval-chips">{rubric.recommendations.map((r) => <label key={r} className={form.recommendation === r ? "is-on" : ""}><input type="radio" name="rec" checked={form.recommendation === r} onChange={() => { update({ recommendation: r }); setErrors((e) => ({ ...e, recommendation: "" })); }} /> {r}</label>)}</div>
             {err("recommendation")}</div>

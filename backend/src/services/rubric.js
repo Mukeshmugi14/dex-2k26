@@ -73,8 +73,8 @@ export const SCORING_RULES = [
 
 const round1 = (value) => Math.round(value * 10) / 10;
 export const marksFor = (criterion, level) => round1((criterion.max * level) / 5);
-// A comment is required at level 0, 1 or 5 (C6: also level 2).
-export const commentRequired = (criterionId, level) => [0, 1, 5].includes(level) || (criterionId === "C6" && level === 2);
+// Evidence comments are no longer collected on the online sheet (organisers' choice), so none is required.
+export const commentRequired = () => false;
 
 /** Total of the levels given so far (missing levels count 0). */
 export const totalFor = (levels = {}) => round1(CRITERIA.reduce((sum, c) => sum + (Number.isInteger(levels[c.id]) ? marksFor(c, levels[c.id]) : 0), 0));
@@ -83,7 +83,7 @@ const text = (value, max = 1000) => (typeof value === "string" ? value.trim().sl
 
 /**
  * Cleans an evaluator's sheet. With submit=true every rule of the paper sheet is enforced:
- * all 11 levels, required comments, a recommendation and the conflict-of-interest declaration.
+ * all 11 levels, a recommendation and the conflict-of-interest declaration.
  * Returns { value, errors } (errors keyed by field, empty when valid).
  */
 export const cleanSheet = (body = {}, { submit = false } = {}) => {
@@ -97,10 +97,7 @@ export const cleanSheet = (body = {}, { submit = false } = {}) => {
       else levels[c.id] = level;
     }
     comments[c.id] = text(body.comments?.[c.id], 1000);
-    if (submit) {
-      if (levels[c.id] === undefined) errors[`level.${c.id}`] ||= "Choose a level.";
-      else if (commentRequired(c.id, levels[c.id]) && !comments[c.id]) errors[`comment.${c.id}`] = `A comment is required at level ${levels[c.id]} (slide no. + what was / was not found).`;
-    }
+    if (submit && levels[c.id] === undefined) errors[`level.${c.id}`] ||= "Choose a level.";
   }
   const checks = Object.fromEntries(SUBMISSION_CHECKS.map((ch) => [ch.id, body.checks?.[ch.id] === true]));
   checks.missingSlides = text(body.checks?.missingSlides, 200);
