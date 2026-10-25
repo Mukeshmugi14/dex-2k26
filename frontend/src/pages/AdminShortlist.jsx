@@ -94,6 +94,24 @@ export default function AdminShortlist() {
         <div className={stats.flagged ? "is-warn" : ""}><span>Policy flags</span><b>{stats.flagged}</b></div>
       </section>
 
+      {data.evaluators?.length ? <section className="sl-progress" aria-label="Evaluator progress">
+        <h2>Evaluator progress</h2>
+        <div className="sl-progress-grid">{data.evaluators.map((e) => {
+          const pct = e.assigned ? Math.round((e.submitted / e.assigned) * 100) : 0;
+          return <article key={e.id} className={e.active ? "" : "is-off"}>
+            <header><b>{e.name}</b><span>{e.active ? `${pct}%` : "Disabled"}</span></header>
+            <i className="sl-bar" style={{ "--p": e.assigned ? e.submitted / e.assigned : 0 }} />
+            <dl>
+              <div><dt>Submitted</dt><dd>{e.submitted} / {e.assigned}</dd></div>
+              <div><dt>Left</dt><dd>{e.left}</dd></div>
+              <div><dt>Drafts</dt><dd>{e.drafts}</dd></div>
+              <div><dt>Avg given</dt><dd>{e.averageTotal ?? "–"}</dd></div>
+            </dl>
+            <small>{e.lastSubmittedAt ? `Last submitted ${new Date(e.lastSubmittedAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" })}` : "No sheet submitted yet"}{e.lastLoginAt ? ` · last sign-in ${new Date(e.lastLoginAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" })}` : " · never signed in"}</small>
+          </article>;
+        })}</div>
+      </section> : null}
+
       <section className="sl-controls">
         <div className="sl-mode" role="radiogroup" aria-label="Cut-off">
           <label className={mode === "top" ? "is-on" : ""}><input type="radio" checked={mode === "top"} onChange={() => setMode("top")} /> Top</label>

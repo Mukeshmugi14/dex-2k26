@@ -147,5 +147,24 @@ export const getShortlist = async (_request, response) => {
   }).sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || a.teamId.localeCompare(b.teamId));
   let rank = 0;
   rows.forEach((r, i) => { if (r.score !== null) r.rank = i > 0 && rows[i - 1].score === r.score ? rows[i - 1].rank : (rank = i + 1); });
-  return response.json({ panelSize: PANEL_SIZE, spreadAlert: SPREAD_ALERT, teams: rows });
+  // Each evaluator's progress on their assigned PPTs (only sheets for teams on their panel count).
+  const evaluators = await Evaluator.find({}, "name email active lastLoginAt").sort({ createdAt: 1 }).lean();
+  const onPanel = new Map(evaluators.map((e) => [String(e._id), new Set()]));
+  for (const [teamId, panel] of panels) for (const id of panel) onPanel.get(id)?.add(teamId);
+  const progress = evaluators.map((e) => {
+    const id = String(e._id);
+    const mine = [...summaries.entries()].flatMap(([teamId, s]) => (onPanel.get(id)?.has(teamId) ? s.sheets.filter((x) => x.evaluatorId === id) : []));
+    const submitted = mine.filter((x) => x.status === "submitted");
+    const assigned = onPanel.get(id)?.size || 0;
+    const totals = submitted.map((x) => x.total || 0);
+    const last = submitted.reduce((m, x) => (x.submittedAt && (!m || new Date(x.submittedAt) > m) ? new Date(x.submittedAt) : m), null);
+    return {
+      id, name: e.name || e.email, email: e.email, active: e.active !== false, lastLoginAt: e.lastLoginAt || null,
+      assigned, submitted: submitted.length, drafts: mine.filter((x) => x.status === "draft").length,
+      left: Math.max(0, assigned - submitted.length),
+      averageTotal: totals.length ? Math.round((totals.reduce((a, b) => a + b, 0) / totals.length) * 10) / 10 : null,
+      lastSubmittedAt: last,
+    };
+  }).filter((p) => p.assigned || p.submitted || p.active);
+  return response.json({ panelSize: PANEL_SIZE, spreadAlert: SPREAD_ALERT, teams: rows, evaluators: progress });
 };

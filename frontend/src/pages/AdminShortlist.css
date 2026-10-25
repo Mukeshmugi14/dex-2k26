@@ -29,3 +29,17 @@
 .admin-shortlist .sl-recs span{display:block;color:#c9d6ea;font-size:12px}
 .admin-shortlist .sl-dec.is-selected{color:#7aebb0;font-weight:700}.admin-shortlist .sl-dec.is-rejected{color:#ff9c9c;font-weight:700}
 @media (max-width:900px){.admin-shortlist .sl-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Evaluator progress */
+.admin-shortlist .sl-progress{margin-top:16px}
+.admin-shortlist .sl-progress h2{margin:0 0 8px;color:#fff;font-size:15px}
+.admin-shortlist .sl-progress-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.admin-shortlist .sl-progress article{display:grid;gap:8px;padding:12px 14px;border:1px solid #55caff26;border-radius:8px;background:#0b1626}
+.admin-shortlist .sl-progress article.is-off{opacity:.55}
+.admin-shortlist .sl-progress header{display:flex;justify-content:space-between;gap:8px;color:#fff}
+.admin-shortlist .sl-progress header span{color:#7aebb0;font-weight:800}
+.admin-shortlist .sl-bar{display:block;height:8px;border-radius:6px;background:linear-gradient(90deg,#7aebb0 calc(var(--p)*100%),#ffffff14 0)}
+.admin-shortlist .sl-progress dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0}
+.admin-shortlist .sl-progress dt{color:#91a4b9;font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.admin-shortlist .sl-progress dd{margin:2px 0 0;color:#fff;font-size:15px;font-weight:700}
+.admin-shortlist .sl-progress small{color:#91a4b9;font-size:11px}
