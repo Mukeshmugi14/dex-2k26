@@ -27,7 +27,7 @@ function Insights({ data, teams, panelSize, resultsAt }) {
       <div className="eval-stat is-main"><small>Your PPTs</small><b>{done}<em> / {total}</em></b><span>submitted</span><i style={{ "--p": total ? done / total : 0 }} /></div>
       <div className="eval-stat"><small>Left to score</small><b>{left}</b><span>{drafts ? `${drafts} draft${drafts === 1 ? "" : "s"} in progress` : "none in progress"}</span></div>
       <div className="eval-stat"><small>Your average</small><b>{data.averageTotal ?? "–"}<em>{data.averageTotal !== null ? " / 100" : ""}</em></b><span>{data.submitted ? `range ${data.lowest}–${data.highest}` : "after your first submission"}</span></div>
-      <div className="eval-stat"><small><Clock3 size={12} /> Round 1 results</small><b className="is-text">{fmtWhen(resultsAt)}</b><span>Each PPT is scored by {panelSize} evaluators; the final score is their average.</span></div>
+      <div className="eval-stat"><small><Clock3 size={12} /> Round 1 results</small><b className="is-text">{fmtWhen(resultsAt)}</b><span>Each PPT is scored by a panel of {panelSize} evaluators; the organisers combine the panel’s scores into the final score.</span></div>
     </div>
     {data.submitted ? <div className="eval-insight-grid">
       <div className="eval-card-lite">

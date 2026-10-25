@@ -13,5 +13,7 @@ export default mongoose.model("Evaluator", new mongoose.Schema({
   // One-time code for first login / password reset. Only a keyed hash is stored, never returned unless "+otp".
   otp: { type: { hash: String, expiresAt: Date, attempts: Number, sentAt: Date }, select: false },
   lastLoginAt: Date,
+  // How much this evaluator's sheets count in a PPT's final score (weighted average): 0 = not counted, 2 = double.
+  scoreWeight: { type: Number, default: 1, min: 0, max: 5 },
   createdBy: String,
 }, { timestamps: true }));

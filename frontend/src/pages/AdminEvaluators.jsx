@@ -89,6 +89,11 @@ export default function AdminEvaluators() {
               <div><dt>Password</dt><dd>{ev.passwordSet ? `Set ${formatDate(ev.passwordSetAt)}` : "Not set yet (first sign-in pending)"}</dd></div>
               <div><dt>Last sign-in</dt><dd>{formatDate(ev.lastLoginAt)}</dd></div>
               <div><dt>Assigned PPTs</dt><dd>{ev.assigned}</dd></div>
+              <div><dt>Score weight</dt><dd>
+                <select value={ev.scoreWeight} disabled={Boolean(busy)} aria-label={`Score weight for ${ev.name || ev.email}`} style={{ height: 30, width: "auto" }}
+                  onChange={(e) => { const w = Number(e.target.value); if (window.confirm(`Change how ${ev.name || ev.email}'s sheets count to ${w === 0 ? "not counted" : `×${w}`}? Every team's score will be recalculated.`)) act(`w-${ev.id}`, () => axios.put(`${API_URL}/admin/evaluators/${ev.id}`, { scoreWeight: w }, { headers })); }}>
+                  {[0, 1, 2, 3].map((w) => <option key={w} value={w}>{w === 0 ? "×0 (not counted)" : `×${w}${w === 2 ? " (double)" : ""}`}</option>)}
+                </select></dd></div>
               <div><dt>Sheets</dt><dd>{ev.submitted} submitted · {ev.drafts} draft{ev.drafts === 1 ? "" : "s"}{ev.assigned ? ` · ${Math.max(0, ev.assigned - ev.submitted)} left` : ""}</dd></div>
             </dl>
             <footer>

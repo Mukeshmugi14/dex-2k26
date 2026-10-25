@@ -13,7 +13,7 @@ import useAutoRefresh from "../config/useAutoRefresh";
 const DECISION = { PENDING: "Pending", SELECTED: "Selected", REJECTED: "Not selected" };
 const csvCell = (value) => { const s = String(value ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 
-// Round 1 shortlist: teams ranked by final score (average of their 3 evaluators' sheets, out of 100).
+// Round 1 shortlist: teams ranked by final score (weighted average of their panel's sheets, out of 100).
 // This page previews a cut-off; the decisions and result emails stay on the Round Selection page.
 export default function AdminShortlist() {
   const [data, setData] = useState(null);
@@ -77,7 +77,7 @@ export default function AdminShortlist() {
 
   return <main className="admin-teams admin-shortlist">
     <header className="admin-teams-header">
-      <div><p>DEXATHON 2026 ADMIN</p><h1>Round 1 Shortlist</h1><span>Ranked by final score: the average of each PPT's {data?.panelSize || 3} evaluator sheets (out of 100). Make the decisions on <Link to="/devleader/round-selection" style={{ color: "#55caff" }}>Round Selection</Link>.</span></div>
+      <div><p>DEXATHON 2026 ADMIN</p><h1>Round 1 Shortlist</h1><span>Ranked by final score: the weighted average of each PPT's panel sheets (out of 100; weights are set on the Evaluators page). Make the decisions on <Link to="/devleader/round-selection" style={{ color: "#55caff" }}>Round Selection</Link>.</span></div>
       <nav><AdminNav /></nav>
     </header>
     {message ? <p className="admin-teams-message" role="status">{message}<button type="button" aria-label="Dismiss" onClick={() => setMessage("")}><X size={14} /></button></p> : null}
@@ -99,7 +99,7 @@ export default function AdminShortlist() {
         <div className="sl-progress-grid">{data.evaluators.map((e) => {
           const pct = e.assigned ? Math.round((e.submitted / e.assigned) * 100) : 0;
           return <article key={e.id} className={e.active ? "" : "is-off"}>
-            <header><b>{e.name}</b><span>{e.active ? `${pct}%` : "Disabled"}</span></header>
+            <header><b>{e.name} <small className="sl-weight">{e.scoreWeight === 0 ? "not counted" : `counts ×${e.scoreWeight}`}</small></b><span>{e.active ? `${pct}%` : "Disabled"}</span></header>
             <i className="sl-bar" style={{ "--p": e.assigned ? e.submitted / e.assigned : 0 }} />
             <dl>
               <div><dt>Submitted</dt><dd>{e.submitted} / {e.assigned}</dd></div>

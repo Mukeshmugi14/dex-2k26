@@ -169,7 +169,7 @@ export default function EvaluatorSheet() {
               {team.members.map((m, i) => <tr key={`${m.name}-${i}`}><td>{i + (team.teamHead ? 2 : 1)}</td><td>{m.name}</td><td>{m.college || "—"}</td><td>{m.year || "—"}</td><td>{m.department || "—"}</td></tr>)}
             </tbody>
           </table>
-          <p className="eval-panel-note">Scored by a panel of {team.panelSize} evaluators · {team.panelSubmitted} of {team.panelSize} have submitted. The final score is the average of the {team.panelSize} sheets.</p>
+          <p className="eval-panel-note">Scored by a panel of {team.panelSize} evaluators · {team.panelSubmitted} of {team.panelSize} have submitted. The organisers combine the panel’s scores into the final score.</p>
         </section>
 
         <fieldset className="eval-card" disabled={ro}><legend>A. Project details</legend>

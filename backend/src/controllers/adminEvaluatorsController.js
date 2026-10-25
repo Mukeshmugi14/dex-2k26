@@ -6,7 +6,7 @@ import { getEvaluatorLoginUrl } from "../services/submissionService.js";
 import { rubricView } from "../services/rubric.js";
 import Registration from "../models/Registration.js";
 import { assignPanels, panelLoads, setTeamPanel } from "../services/evaluationPanels.js";
-import { PANEL_SIZE, rubricSummaries, SPREAD_ALERT } from "../services/rubricScores.js";
+import { PANEL_SIZE, refreshAllRubricScores, rubricSummaries, SPREAD_ALERT } from "../services/rubricScores.js";
 import { createCollegeLookup } from "../services/collegeRegistry.js";
 
 // Admin → Evaluators: who may sign in to the Evaluator Portal. Admins never see or set evaluator passwords;
@@ -17,6 +17,7 @@ const view = (e, counts) => ({
   passwordSet: Boolean(e.passwordSetAt), passwordSetAt: e.passwordSetAt || null, lastLoginAt: e.lastLoginAt || null, createdAt: e.createdAt,
   submitted: counts.get(`${e._id}:submitted`) || 0, drafts: counts.get(`${e._id}:draft`) || 0,
   assigned: counts.get(`${e._id}:assigned`) || 0,
+  scoreWeight: Number.isFinite(e.scoreWeight) ? e.scoreWeight : 1,
 });
 
 export const listEvaluators = async (_request, response) => {
@@ -59,12 +60,24 @@ export const updateEvaluator = async (request, response) => {
   const evaluator = await findEvaluator(request.params.id);
   if (!evaluator) return response.status(404).json({ message: "Evaluator not found." });
   if (typeof request.body?.name === "string" && request.body.name.trim()) evaluator.name = request.body.name.trim().slice(0, 80);
+  // Weight of this evaluator's sheets in the final score (0 = not counted, 1 = normal, 2 = double).
+  let weightChanged = false;
+  if (request.body?.scoreWeight !== undefined) {
+    const weight = Number(request.body.scoreWeight);
+    if (!Number.isInteger(weight) || weight < 0 || weight > 5) return response.status(400).json({ message: "Weight must be a whole number from 0 to 5." });
+    weightChanged = weight !== (evaluator.scoreWeight ?? 1);
+    evaluator.scoreWeight = weight;
+  }
   if (typeof request.body?.active === "boolean" && request.body.active !== evaluator.active) {
     evaluator.active = request.body.active;
     evaluator.sessionVersion = (evaluator.sessionVersion || 0) + 1;
   }
   await evaluator.save();
-  console.log(`EVALUATOR_UPDATED ${evaluator.email} active=${evaluator.active} by ${request.admin?.username || "?"}`);
+  console.log(`EVALUATOR_UPDATED ${evaluator.email} active=${evaluator.active} weight=${evaluator.scoreWeight ?? 1} by ${request.admin?.username || "?"}`);
+  if (weightChanged) {
+    const n = await refreshAllRubricScores();
+    return response.json({ message: `${evaluator.name || evaluator.email}'s sheets now count ×${evaluator.scoreWeight}. Recalculated ${n} team score${n === 1 ? "" : "s"}.` });
+  }
   // A disabled evaluator's unfinished teams go to the others, so every PPT still gets its full panel.
   let note = "";
   if (!evaluator.active && (await Registration.exists({ evaluationPanel: evaluator._id })) && (await Evaluator.countDocuments({ active: { $ne: false } })) >= PANEL_SIZE) {
@@ -131,15 +144,15 @@ export const getShortlist = async (_request, response) => {
   const lookup = await createCollegeLookup();
   const rows = teams.map((t) => {
     const s = summaries.get(String(t._id));
-    const counted = s.sheets.filter((x) => x.status === "submitted" && x.onPanel);
+    const counted = s.sheets.filter((x) => x.status === "submitted" && x.onPanel && x.weight > 0);
     const recs = counted.reduce((m, x) => (x.recommendation ? { ...m, [x.recommendation]: (m[x.recommendation] || 0) + 1 } : m), {});
     const college = lookup.forTeam(t);
     return {
       id: String(t._id), teamId: t.teamId, teamName: t.teamName, teamHead: t.leader?.name || "",
       college: college.collegeId ? college.name : (t.college || t.collegeName || ""), theme: t.projectTheme || "",
-      score: s.average, count: s.count, panel: panels.get(String(t._id)).length, panelSize: PANEL_SIZE, complete: s.complete,
+      score: s.average, count: s.count, panel: panels.get(String(t._id)).length, panelSize: s.panelSize, complete: s.complete,
       spread: s.spread, disagreement: s.spread !== null && s.spread > SPREAD_ALERT,
-      scores: counted.map((x) => x.total), recommendations: recs,
+      scores: counted.map((x) => (x.weight === 1 ? x.total : `${x.total}×${x.weight}`)), recommendations: recs,
       policyFlags: [...new Set(counted.flatMap((x) => x.policyFlags))],
       round1: t.roundResults?.round1?.status || "PENDING",
       notCounted: Boolean(t.excludeFromCount),
@@ -148,7 +161,7 @@ export const getShortlist = async (_request, response) => {
   let rank = 0;
   rows.forEach((r, i) => { if (r.score !== null) r.rank = i > 0 && rows[i - 1].score === r.score ? rows[i - 1].rank : (rank = i + 1); });
   // Each evaluator's progress on their assigned PPTs (only sheets for teams on their panel count).
-  const evaluators = await Evaluator.find({}, "name email active lastLoginAt").sort({ createdAt: 1 }).lean();
+  const evaluators = await Evaluator.find({}, "name email active lastLoginAt scoreWeight").sort({ createdAt: 1 }).lean();
   const onPanel = new Map(evaluators.map((e) => [String(e._id), new Set()]));
   for (const [teamId, panel] of panels) for (const id of panel) onPanel.get(id)?.add(teamId);
   const progress = evaluators.map((e) => {
@@ -163,6 +176,7 @@ export const getShortlist = async (_request, response) => {
       assigned, submitted: submitted.length, drafts: mine.filter((x) => x.status === "draft").length,
       left: Math.max(0, assigned - submitted.length),
       averageTotal: totals.length ? Math.round((totals.reduce((a, b) => a + b, 0) / totals.length) * 10) / 10 : null,
+      scoreWeight: Number.isFinite(e.scoreWeight) ? e.scoreWeight : 1,
       lastSubmittedAt: last,
     };
   }).filter((p) => p.assigned || p.submitted || p.active);

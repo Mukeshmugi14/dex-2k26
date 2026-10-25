@@ -45,13 +45,24 @@ describe("final score", () => {
   const sheet = (evaluator, total, status = "submitted") => ({ evaluator, total, status });
   test("final = average of the 3 panel sheets", () => {
     const s = scoreFromSheets([sheet("e0", 80), sheet("e1", 70), sheet("e2", 60)], ["e0", "e1", "e2"]);
-    assert.deepEqual(s, { average: 70, count: 3, complete: true, spread: 20 });
+    assert.deepEqual(s, { average: 70, count: 3, needed: 3, complete: true, spread: 20 });
   });
   test("with 2 of 3 submitted the score is provisional", () => {
     const s = scoreFromSheets([sheet("e0", 80), sheet("e1", 71), sheet("e2", 50, "draft")], ["e0", "e1", "e2"]);
     assert.equal(s.average, 75.5);
     assert.equal(s.complete, false);
   });
+  test("weights: an evaluator can count double, another not at all", () => {
+    const weights = new Map([["m", 2], ["r", 0], ["s", 1]]);
+    const s = scoreFromSheets([sheet("m", 40), sheet("r", 90), sheet("s", 70)], ["m", "r", "s"], weights);
+    assert.equal(s.average, 50, "(2×40 + 70) / 3");
+    assert.equal(s.count, 2);
+    assert.equal(s.complete, true, "final once every counted evaluator has submitted");
+    const partial = scoreFromSheets([sheet("r", 90), sheet("s", 70)], ["m", "r", "s"], weights);
+    assert.equal(partial.average, 70);
+    assert.equal(partial.complete, false, "still waiting for the double-weight evaluator");
+  });
+
   test("sheets from evaluators not on the panel don't count", () => {
     const s = scoreFromSheets([sheet("e0", 80), sheet("old", 10)], ["e0", "e1", "e2"]);
     assert.equal(s.average, 80);

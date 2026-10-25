@@ -129,8 +129,8 @@ function EvaluateModal({ team, headers, onClose, onSaved, openPdf, evaluators, p
         </div>
 
         <section className="pdf-eval-scores">
-          <span className="edit-team-label">Final score · average of the {panelSize} panel sheets (out of 100)</span>
-          <div className="pdf-eval-total"><span>{rubric.complete ? `Final — all ${panelSize} evaluators submitted` : `Provisional — ${rubric.count} of ${panelSize} submitted${rubric.drafts ? ` (+${rubric.drafts} draft${rubric.drafts === 1 ? "" : "s"})` : ""}`}</span><b>{formatScore(rubric.average)}<em> / 100</em></b></div>
+          <span className="edit-team-label">Final score · weighted average of the panel sheets (out of 100)</span>
+          <div className="pdf-eval-total"><span>{rubric.complete ? `Final — all ${rubric.panelSize || panelSize} counted evaluators submitted` : `Provisional — ${rubric.count} of ${rubric.panelSize || panelSize} counted sheets submitted${rubric.drafts ? ` (+${rubric.drafts} draft${rubric.drafts === 1 ? "" : "s"})` : ""}`}</span><b>{formatScore(rubric.average)}<em> / 100</em></b></div>
           {rubric.spread !== null && rubric.spread > spreadAlert ? <p className="pdf-eval-note info">⚠ The panel disagrees: totals differ by {rubric.spread} marks. Review the sheets before deciding.</p> : null}
           <span className="edit-team-label">Panel</span>
           <PanelEditor team={team} evaluators={evaluators} panelSize={panelSize} headers={headers} onSaved={onPanelSaved} />
@@ -292,7 +292,7 @@ export default function AdminPdfSubmissions() {
                 <button type="button" className="ghost" disabled={!hasPdf} onClick={() => openPdf(team, true)}><Download size={14} /> Download PDF</button>
               </div>
               <div className="pdf-card-score">
-                <div><span>{team.rubric?.complete ? "Final score" : "Score so far"}</span><b>{formatScore(team.rubric?.average)}<small> /100 · {team.rubric?.count || 0}/{panelSize}{team.rubric?.complete ? " ✓" : ""}</small></b></div>
+                <div><span>{team.rubric?.complete ? "Final score" : "Score so far"}</span><b>{formatScore(team.rubric?.average)}<small> /100 · {team.rubric?.count || 0}/{team.rubric?.panelSize || panelSize}{team.rubric?.complete ? " ✓" : ""}</small></b></div>
                 <div><span>Result</span><b className={`pdf-result-${(team.evaluation?.result || "Pending").toLowerCase().replace(/\s+/g, "-")}`}>{team.evaluation?.result || "Pending"}</b></div>
               </div>
               {team.selectionEmailSent ? <p className="pdf-card-email sent"><Mail size={13} /> Second Round Email Sent · {formatDate(team.selectionEmailSentAt)}</p>
