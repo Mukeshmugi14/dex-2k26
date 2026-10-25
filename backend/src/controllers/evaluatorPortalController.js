@@ -171,7 +171,7 @@ export const listEvaluatorTeams = async (request, response) => {
   return response.json({
     success: true,
     panelSize: PANEL_SIZE,
-    resultsAt: "2026-10-25T19:00:00+05:30",
+    resultsAt: process.env.ROUND1_RESULTS_DATE || "2026-10-26T23:00:00+05:30",
     teams: teams.map((t) => {
       const e = mineByTeam.get(String(t._id));
       const college = lookup.forTeam(t);
