@@ -5,7 +5,8 @@ import Evaluator from "../models/Evaluator.js";
 
 // Every Round 1 PPT is scored by a panel of PANEL_SIZE evaluators. The team's final score (out of 100) is the
 // weighted average of the panel's submitted sheets (each evaluator's scoreWeight: 0 = not counted, 2 = double),
-// and it counts as final once every panel member with a weight above 0 has submitted.
+// and it counts as final once every panel member with the highest weight has submitted (with equal weights: everyone;
+// with a ×2 lead evaluator: as soon as the lead has scored, using whoever else has scored too).
 export const PANEL_SIZE = Math.max(1, Number.parseInt(process.env.EVALUATORS_PER_PPT, 10) || 3);
 // Panels whose highest and lowest totals differ by more than this are flagged for the organisers to review.
 export const SPREAD_ALERT = 20;
@@ -23,9 +24,12 @@ const countedSheets = (sheets, panel, weights) => {
 
 export const scoreFromSheets = (sheets, panel, weights = new Map()) => {
   const counted = countedSheets(sheets, panel, weights);
-  // Final once every weighted panel member has submitted (a panel without members needs PANEL_SIZE sheets).
+  // Final once every panel member with the highest weight has submitted (a panel without members needs PANEL_SIZE sheets).
   const weighted = (panel || []).map(String).filter((id) => weightOf(weights, id) > 0);
+  const top = Math.max(0, ...weighted.map((id) => weightOf(weights, id)));
+  const leads = weighted.filter((id) => weightOf(weights, id) === top);
   const needed = (panel || []).length ? weighted.length : PANEL_SIZE;
+  const submittedIds = new Set(counted.map((s) => String(s.evaluator)));
   if (!counted.length) return { average: null, count: 0, needed, complete: false, spread: null };
   const totals = counted.map((s) => s.total || 0);
   const weightSum = counted.reduce((a, s) => a + weightOf(weights, s.evaluator), 0);
@@ -33,7 +37,7 @@ export const scoreFromSheets = (sheets, panel, weights = new Map()) => {
     average: round1(counted.reduce((a, s) => a + (s.total || 0) * weightOf(weights, s.evaluator), 0) / weightSum),
     count: counted.length,
     needed,
-    complete: needed > 0 && counted.length >= needed,
+    complete: (panel || []).length ? leads.length > 0 && leads.every((id) => submittedIds.has(id)) : counted.length >= needed,
     spread: round1(Math.max(...totals) - Math.min(...totals)),
   };
 };

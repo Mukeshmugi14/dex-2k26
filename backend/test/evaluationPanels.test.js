@@ -61,6 +61,9 @@ describe("final score", () => {
     const partial = scoreFromSheets([sheet("r", 90), sheet("s", 70)], ["m", "r", "s"], weights);
     assert.equal(partial.average, 70);
     assert.equal(partial.complete, false, "still waiting for the double-weight evaluator");
+    const leadOnly = scoreFromSheets([sheet("m", 64), sheet("r", 90)], ["m", "r", "s"], weights);
+    assert.equal(leadOnly.average, 64, "only the lead scored: the lead's score is the final score");
+    assert.equal(leadOnly.complete, true);
   });
 
   test("sheets from evaluators not on the panel don't count", () => {
