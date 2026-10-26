@@ -37,3 +37,6 @@ backend/backups/
 
 # Team data exports (contain participant personal data)
 team-data-export/
+
+# Shortlist / score exports (contain participant personal data)
+exports/
