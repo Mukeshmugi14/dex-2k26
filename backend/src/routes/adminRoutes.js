@@ -27,7 +27,7 @@ import { decideRound, listRoundSelection, retryRoundEmail } from "../controllers
 import { listRounds, resendRoundEmail, updateRounds } from "../controllers/roundsController.js";
 import { requireAdmin, requireSection } from "../middleware/authMiddleware.js";
 import { localAdminOnly } from "../middleware/localAdminOnly.js";
-import { getAnalytics } from "../controllers/analyticsController.js";
+import { getAnalytics, getShortlistAnalytics } from "../controllers/analyticsController.js";
 import { listPrototypes } from "../controllers/prototypesController.js";
 import { addCollegeAlias, createCollege, deleteCollegeAlias, getCollegeAudit, getCollegeRegistry, getCollegeReview, mergeCollege, reprocessColleges, resolveRegistrationCollege, updateCollege, updateCollegeAlias } from "../controllers/collegesController.js";
 
@@ -49,6 +49,7 @@ router.get("/me", getMe);
 // Dashboard & registration overview (General Admin, Team Admin)
 router.get("/dashboard", requireSection("dashboard"), getDashboard);
 router.get("/analytics", requireSection("dashboard"), getAnalytics);
+router.get("/analytics/shortlist", requireSection("dashboard"), getShortlistAnalytics);
 router.get("/prototypes", requireSection("pdf"), listPrototypes);
 // College registry (entity resolution of submitted college names)
 router.get("/colleges/registry", requireSection("teams"), getCollegeRegistry);

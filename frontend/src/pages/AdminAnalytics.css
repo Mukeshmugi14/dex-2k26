@@ -131,3 +131,23 @@
 .admin-analytics .viz-cross em strong { color: var(--viz-muted); font-weight: 600; }
 .admin-analytics .viz-cross em.needs-review { border-style: dashed; color: var(--viz-muted); }
 @media (max-width: 640px) { .admin-analytics .viz-hours .viz-size b { display: none; } }
+
+/* Shortlist analysis */
+.admin-analytics .viz-shortlist { margin: 18px 0 10px; padding: 16px; border: 1px solid #ff5a1f55; border-radius: 12px; background: linear-gradient(180deg, #ff5a1f12, transparent 140px); }
+.admin-analytics .viz-shortlist-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.admin-analytics .viz-shortlist-head h2 { margin: 0; color: var(--viz-text); font-size: 18px; }
+.admin-analytics .viz-shortlist-head p { margin: 4px 0 0; color: var(--viz-muted); font-size: 12px; }
+.admin-analytics .viz-shortlist-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.admin-analytics .viz-shortlist-pick button { padding: 7px 12px; border: 1px solid #ffffff2a; border-radius: 999px; background: transparent; color: var(--viz-text); font: 600 13px Arial, sans-serif; cursor: pointer; }
+.admin-analytics .viz-shortlist-pick button.is-on { border-color: #ff5a1f; background: #ff5a1f; color: #fff; }
+.admin-analytics .viz-shortlist-pick form { display: flex; gap: 4px; }
+.admin-analytics .viz-shortlist-pick input { width: 72px; height: 32px; padding: 0 8px; border: 1px solid #ffffff2a; border-radius: 8px; background: #07111f; color: #fff; font: 13px Arial, sans-serif; }
+.admin-analytics .viz-section-title { margin: 22px 0 4px; color: var(--viz-text); font-size: 16px; }
+.admin-analytics .viz-pairs { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.admin-analytics .viz-pairs li { display: grid; grid-template-columns: minmax(70px, 120px) 1fr auto; align-items: center; gap: 10px; font-size: 12px; }
+.admin-analytics .viz-pair-bars { display: grid; gap: 3px; }
+.admin-analytics .viz-pair-bars .viz-bar-track { height: 8px; }
+.admin-analytics .viz-pairs i.is-a { background: #ff5a1f; } .admin-analytics .viz-pairs i.is-b { background: #5b6b80; }
+.admin-analytics .viz-pairs .viz-bar-value small { color: var(--viz-muted); font-weight: 400; }
+.admin-analytics .viz-pairs-key { color: var(--viz-muted); font-size: 11px; }
+.admin-analytics .viz-pairs-key i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: 2px; vertical-align: -1px; }

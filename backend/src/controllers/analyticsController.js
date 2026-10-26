@@ -244,3 +244,75 @@ export const getAnalytics = async (_request, response) => {
     security,
   });
 };
+
+// Admin → Analytics → Shortlist analysis: the top N teams by final Round 1 score (the same order as the Shortlist
+// page) compared with every scored team: who they are, where they come from, and which criteria set them apart.
+export const getShortlistAnalytics = async (request, response) => {
+  const { default: RubricEvaluation } = await import("../models/RubricEvaluation.js");
+  const { evaluatorWeights } = await import("../services/rubricScores.js");
+  const { CRITERIA } = await import("../services/rubric.js");
+  const scored = (await Registration.find({ "pdfSubmission.fileId": { $ne: null }, "evaluation.totalScore": { $ne: null } }).lean())
+    .sort((a, b) => b.evaluation.totalScore - a.evaluation.totalScore || String(a.teamId).localeCompare(String(b.teamId)));
+  const n = Math.min(Math.max(Number.parseInt(request.query.top, 10) || 160, 1), scored.length || 1);
+  const top = scored.slice(0, n);
+  const rest = scored.slice(n);
+  const inTop = new Set(top.map((t) => String(t._id)));
+
+  const lookup = await createCollegeLookup();
+  await lookup.prepare(memberCollegeNames(scored));
+  const collegeOf = (t) => lookup.forTeam(t).name || "Not given";
+  const scores = (list) => list.map((t) => t.evaluation.totalScore);
+  const stats = (values) => {
+    if (!values.length) return { count: 0, min: null, max: null, average: null, median: null };
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return { count: values.length, min: sorted[0], max: sorted.at(-1), average: Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10, median: sorted.length % 2 ? sorted[mid] : Math.round(((sorted[mid - 1] + sorted[mid]) / 2) * 10) / 10 };
+  };
+  // A group's shortlisted count and selection rate (shortlisted ÷ scored teams in that group).
+  const rates = (keyOf, limit = 10) => {
+    const all = countBy(scored, keyOf);
+    const picked = new Map(countBy(top, keyOf).map((r) => [r.label, r.count]));
+    return all.map((r) => ({ label: r.label, count: picked.get(r.label) || 0, of: r.count, rate: Math.round(((picked.get(r.label) || 0) / r.count) * 100) }))
+      .filter((r) => r.count).sort((a, b) => b.count - a.count || b.rate - a.rate).slice(0, limit);
+  };
+  const bucket = (s) => `${Math.min(90, Math.floor(s / 10) * 10)}–${Math.min(100, Math.floor(s / 10) * 10 + 10)}`;
+  const buckets = Array.from({ length: 10 }, (_, i) => `${i * 10}–${i * 10 + 10}`);
+  const people = top.flatMap((t) => peopleOf(t).map((p) => ({ ...p, team: t })));
+
+  // Criterion levels from the counted sheets (weight above 0): top N vs the rest.
+  const weights = await evaluatorWeights();
+  const sheets = (await RubricEvaluation.find({ registration: { $in: scored.map((t) => t._id) }, status: "submitted" }, "registration evaluator levels").lean())
+    .filter((s) => (weights.has(String(s.evaluator)) ? weights.get(String(s.evaluator)) : 1) > 0);
+  const levelOf = (s, id) => { const v = s.levels instanceof Map ? s.levels.get(id) : s.levels?.[id]; return Number.isInteger(v) ? v : null; };
+  const avg = (values) => (values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100 : null);
+  const criteria = CRITERIA.map((c) => {
+    const pick = (inside) => sheets.filter((s) => inTop.has(String(s.registration)) === inside).map((s) => levelOf(s, c.id)).filter((v) => v !== null);
+    const t = avg(pick(true)), r = avg(pick(false));
+    return { id: c.id, name: c.name, max: c.max, top: t, rest: r, gap: t !== null && r !== null ? Math.round((t - r) * 100) / 100 : null };
+  });
+
+  return response.json({
+    generatedAt: new Date(),
+    top: n,
+    scoredTeams: scored.length,
+    cutoff: top.at(-1)?.evaluation.totalScore ?? null,
+    nextScore: rest[0]?.evaluation.totalScore ?? null,
+    scores: { top: stats(scores(top)), rest: stats(scores(rest)), all: stats(scores(scored)) },
+    distribution: buckets.map((label) => ({ label, top: top.filter((t) => bucket(t.evaluation.totalScore) === label).length, rest: rest.filter((t) => bucket(t.evaluation.totalScore) === label).length })),
+    colleges: rates(collegeOf, 12),
+    collegeCount: new Set(top.map(collegeOf)).size,
+    themes: rates((t) => t.projectTheme || "Not selected", 10),
+    hostSplit: [
+      { label: "Sathyabama (host)", count: top.filter((t) => t.collegeId === HOST_COLLEGE_ID).length, of: scored.filter((t) => t.collegeId === HOST_COLLEGE_ID).length },
+      { label: "Other colleges", count: top.filter((t) => t.collegeId !== HOST_COLLEGE_ID).length, of: scored.filter((t) => t.collegeId !== HOST_COLLEGE_ID).length },
+    ].map((r) => ({ ...r, rate: r.of ? Math.round((r.count / r.of) * 100) : 0 })),
+    crossCollege: { top: top.filter((t) => teamCollegeMix(t, lookup).crossCollege).length, all: scored.filter((t) => teamCollegeMix(t, lookup).crossCollege).length },
+    people: people.length,
+    years: countBy(people, (p) => yearOf(p.year || p.team.year) || "Not given"),
+    departments: topWithOther(countBy(people, (p) => departmentOf(p.department || p.team.department) || "Not given"), 8, "departments"),
+    sizes: countBy(top, (t) => peopleOf(t).length).sort((a, b) => a.label - b.label),
+    referral: countBy(top, (t) => referralCategory(t.referralSource?.raw)),
+    criteria,
+    roundDecisions: countBy(top, (t) => ({ SELECTED: "Selected", REJECTED: "Not selected" }[t.roundResults?.round1?.status] || "Pending")),
+  });
+};

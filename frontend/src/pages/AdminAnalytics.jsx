@@ -168,6 +168,99 @@ function HealthList({ items }) {
   </ul>;
 }
 
+// Two bars per row (shortlisted vs the rest), each value printed so colour never carries the number.
+function PairBars({ rows, max, tip, labels = ["Shortlisted", "Others"], unit = "" }) {
+  const top = Math.max(1, max ?? Math.max(...rows.flatMap((r) => [r.a ?? 0, r.b ?? 0])));
+  return <ul className="viz-pairs">
+    <li className="viz-pairs-key" aria-hidden="true"><span /><span><i className="is-a" /> {labels[0]}</span><span><i className="is-b" /> {labels[1]}</span></li>
+    {rows.map((r) => <li key={r.label} onMouseMove={(e) => tip.show(e, [r.title || r.label, `${labels[0]}: ${r.a ?? "–"}${unit}`, `${labels[1]}: ${r.b ?? "–"}${unit}`])} onMouseLeave={tip.hide}>
+      <span className="viz-bar-label" title={r.title || r.label}>{r.label}</span>
+      <span className="viz-pair-bars">
+        <span className="viz-bar-track"><i className="is-a" style={{ width: `${((r.a ?? 0) / top) * 100}%` }} /></span>
+        <span className="viz-bar-track"><i className="is-b" style={{ width: `${((r.b ?? 0) / top) * 100}%` }} /></span>
+      </span>
+      <b className="viz-bar-value">{r.a ?? "–"}<small> · {r.b ?? "–"}</small></b>
+    </li>)}
+  </ul>;
+}
+
+// Shortlist analysis: the top N teams by final Round 1 score compared with every scored team.
+function ShortlistAnalysis({ headers, tip, onUnauthorized }) {
+  const [top, setTop] = useState(160);
+  const [draft, setDraft] = useState("160");
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let alive = true;
+    axios.get(`${API_URL}/admin/analytics/shortlist`, { headers, params: { top } })
+      .then((r) => { if (alive) { setData(r.data); setError(""); } })
+      .catch((e) => { if (e.response?.status === 401) onUnauthorized(); else if (alive) setError(e.response?.data?.message || "Unable to load the shortlist analysis."); });
+    return () => { alive = false; };
+  }, [top, headers, onUnauthorized]);
+  const apply = (n) => { const v = Math.max(1, Number.parseInt(n, 10) || 160); setTop(v); setDraft(String(v)); };
+  const rateItems = (rows) => rows.map((r) => ({ label: `${r.label} · ${r.count}/${r.of} (${r.rate}%)`, count: r.count }));
+
+  return <section className="viz-shortlist" aria-label="Shortlist analysis">
+    <header className="viz-shortlist-head">
+      <div><h2>Shortlist analysis</h2><p>Top {data?.top ?? top} teams by final Round 1 score (the Shortlist order), compared with all {data?.scoredTeams ?? "…"} scored teams.</p></div>
+      <div className="viz-shortlist-pick" role="group" aria-label="How many teams">
+        {[60, 160].map((n) => <button key={n} type="button" className={top === n ? "is-on" : ""} onClick={() => apply(n)}>Top {n}</button>)}
+        <form onSubmit={(e) => { e.preventDefault(); apply(draft); }}><input type="number" min="1" value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="Number of teams" /><button type="submit">Show</button></form>
+      </div>
+    </header>
+    {error ? <p className="admin-error">{error}</p> : null}
+    {!data && !error ? <p className="viz-empty">Loading shortlist analysis…</p> : null}
+    {data ? <>
+      <div className="viz-tiles">
+        <div className="viz-tile"><small>Shortlisted</small><b>{data.top}</b><span>of {data.scoredTeams} scored PPTs ({pct(data.top, data.scoredTeams)}%)</span></div>
+        <div className="viz-tile"><small>Cut-off score</small><b>{data.cutoff ?? "–"}</b><span>{data.nextScore !== null ? `next team below: ${data.nextScore}` : "no team below"}</span></div>
+        <div className="viz-tile"><small>Average · median</small><b>{data.scores.top.average ?? "–"}</b><span>median {data.scores.top.median ?? "–"} · rest average {data.scores.rest.average ?? "–"}</span></div>
+        <div className="viz-tile"><small>Score range</small><b>{data.scores.top.min ?? "–"}–{data.scores.top.max ?? "–"}</b><span>out of 100</span></div>
+        <div className="viz-tile"><small>Colleges represented</small><b>{data.collegeCount}</b><span>{data.colleges[0] ? `most: ${data.colleges[0].label} (${data.colleges[0].count})` : ""}</span></div>
+        <div className="viz-tile"><small>From Sathyabama</small><b>{data.hostSplit[0].count}</b><span>{data.hostSplit[0].rate}% of Sathyabama's {data.hostSplit[0].of} scored teams</span></div>
+        <div className="viz-tile"><small>Cross-college teams</small><b>{data.crossCollege.top}</b><span>of {data.crossCollege.all} cross-college teams overall</span></div>
+        <div className="viz-tile"><small>Participants</small><b>{data.people}</b><span>{data.top ? `${(data.people / data.top).toFixed(1)} per team` : ""}</span></div>
+      </div>
+      <div className="viz-grid">
+        <ChartCard title="Score distribution" subtitle="Teams per 10-mark band: shortlisted vs the rest"
+          table={{ columns: ["Score band", "Shortlisted", "Others"], rows: data.distribution.map((d) => [d.label, d.top, d.rest]) }}>
+          <PairBars rows={[...data.distribution].reverse().filter((d) => d.top || d.rest).map((d) => ({ label: d.label, a: d.top, b: d.rest }))} tip={tip} />
+        </ChartCard>
+        <ChartCard title="What sets them apart" subtitle="Average level (0–5) per criterion on the counted sheets: shortlisted vs the rest"
+          table={{ columns: ["Criterion", "Shortlisted", "Others", "Gap"], rows: data.criteria.map((c) => [`${c.id} ${c.name}`, c.top ?? "–", c.rest ?? "–", c.gap ?? "–"]) }}>
+          <PairBars rows={data.criteria.map((c) => ({ label: c.id, title: c.name, a: c.top, b: c.rest }))} max={5} tip={tip} />
+        </ChartCard>
+        <ChartCard title="Colleges" subtitle="Shortlisted teams · shortlisted / scored (selection rate)"
+          table={{ columns: ["College", "Shortlisted", "Scored", "Rate"], rows: data.colleges.map((r) => [r.label, r.count, r.of, `${r.rate}%`]) }}>
+          <BarList items={rateItems(data.colleges)} tip={tip} showPercent={false} />
+        </ChartCard>
+        <ChartCard title="Themes" subtitle="Shortlisted teams per theme · selection rate"
+          table={{ columns: ["Theme", "Shortlisted", "Scored", "Rate"], rows: data.themes.map((r) => [r.label, r.count, r.of, `${r.rate}%`]) }}>
+          <BarList items={rateItems(data.themes)} tip={tip} showPercent={false} />
+        </ChartCard>
+        <ChartCard title="Sathyabama vs other colleges" table={{ columns: ["", "Shortlisted", "Scored", "Rate"], rows: data.hostSplit.map((r) => [r.label, r.count, r.of, `${r.rate}%`]) }}>
+          <BarList items={rateItems(data.hostSplit)} tip={tip} showPercent={false} />
+        </ChartCard>
+        <ChartCard title="How they heard about DEXATHON" table={{ columns: ["Channel", "Teams"], rows: data.referral.map((r) => [r.label, r.count]) }}>
+          <BarList items={data.referral} total={data.top} tip={tip} />
+        </ChartCard>
+        <ChartCard title="Year of study" subtitle="Participants in the shortlisted teams" table={{ columns: ["Year", "Participants"], rows: data.years.map((r) => [r.label, r.count]) }}>
+          <BarList items={data.years} tip={tip} unit="people" showPercent={false} />
+        </ChartCard>
+        <ChartCard title="Departments" subtitle="Participants in the shortlisted teams" table={{ columns: ["Department", "Participants"], rows: data.departments.map((r) => [r.label, r.count]) }}>
+          <BarList items={data.departments} tip={tip} unit="people" showPercent={false} />
+        </ChartCard>
+        <ChartCard title="Team size" subtitle="Shortlisted teams by number of people" table={{ columns: ["People", "Teams"], rows: data.sizes.map((r) => [r.label, r.count]) }}>
+          <SizeColumns data={data.sizes} tip={tip} />
+        </ChartCard>
+        <ChartCard title="Round 1 decisions so far" subtitle="For the shortlisted teams (decide on Round Selection)" table={{ columns: ["Decision", "Teams"], rows: data.roundDecisions.map((r) => [r.label, r.count]) }}>
+          <BarList items={data.roundDecisions} total={data.top} tip={tip} />
+        </ChartCard>
+      </div>
+    </> : null}
+  </section>;
+}
+
 export default function AdminAnalytics() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -176,6 +269,7 @@ export default function AdminAnalytics() {
   const token = getAdminToken();
   const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
   const tip = useTooltip();
+  const signOut = useCallback(() => { clearAdminSession(); navigate("/devleader/login"); }, [navigate]);
 
   const load = useCallback(({ silent = false } = {}) => {
     if (!silent) setRefreshing(true);
@@ -222,6 +316,9 @@ export default function AdminAnalytics() {
         {tiles.map(([label, value, note]) => <div key={label} className="viz-tile"><small>{label}</small><b>{value}</b><span>{note}</span></div>)}
       </section>
 
+      <ShortlistAnalysis headers={headers} tip={tip} onUnauthorized={signOut} />
+
+      <h2 className="viz-section-title">All registrations</h2>
       <div className="viz-grid">
         <ChartCard wide title="Registrations per day" subtitle={`${t.teams} teams since ${data.registrations[0] ? fmtDay(data.registrations[0].label) : "-"}`}
           table={{ columns: ["Day", "Registered", "Running total"], rows: data.registrations.map((d) => [fmtDay(d.label), d.count, d.total]) }}>
