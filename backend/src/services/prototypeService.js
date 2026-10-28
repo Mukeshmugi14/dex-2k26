@@ -2,21 +2,21 @@
 // SOFTWARE teams submit a website / application link; HARDWARE teams submit a YouTube demo video link.
 export const PROTOTYPE_CATEGORIES = ["SOFTWARE", "HARDWARE"];
 
-// Same deadline as the published schedule ("28 OCT 2026 · 11 PM"); override with ROUND2_DEADLINE if it moves.
-const DEFAULT_DEADLINE = "2026-10-28T23:00:00+05:30";
+// Same deadline as the published schedule ("28 OCT 2026 · 11:59 PM"); override with ROUND2_DEADLINE if it moves.
+const DEFAULT_DEADLINE = "2026-10-28T23:59:59.999+05:30";
 export const getRound2Deadline = () => {
   const configured = new Date(process.env.ROUND2_DEADLINE || DEFAULT_DEADLINE);
   return Number.isNaN(configured.getTime()) ? new Date(DEFAULT_DEADLINE) : configured;
 };
 
-// Teams may edit or delete a submitted prototype until it closes, 28 Oct 2026, 11 PM IST; after that it is locked.
+// Teams may edit or delete a submitted prototype until it closes, 28 Oct 2026, 11:59 PM IST; after that it is locked.
 // Override with ROUND2_EDIT_DEADLINE (ISO date with offset) if it moves.
-const DEFAULT_EDIT_DEADLINE = "2026-10-28T23:00:00+05:30";
+const DEFAULT_EDIT_DEADLINE = "2026-10-28T23:59:59.999+05:30";
 export const getRound2EditDeadline = () => {
   const configured = new Date(process.env.ROUND2_EDIT_DEADLINE || DEFAULT_EDIT_DEADLINE);
   return Number.isNaN(configured.getTime()) ? new Date(DEFAULT_EDIT_DEADLINE) : configured;
 };
-export const ROUND2_EDIT_CLOSED_MESSAGE = "The Round 2 submission editing deadline (28 October 2026, 11:00 PM IST) has passed. Your submission can no longer be edited or deleted.";
+export const ROUND2_EDIT_CLOSED_MESSAGE = "The Round 2 submission editing deadline (28 October 2026, 11:59 PM IST) has passed. Your submission can no longer be edited or deleted.";
 
 const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "www.youtu.be"]);
 const isYouTubeVideo = (url) => {

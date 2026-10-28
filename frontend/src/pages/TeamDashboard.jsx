@@ -85,7 +85,7 @@ const KEY_DATES = [
   { stage: "OPEN", date: "5 OCT 2026", when: "Monday", event: "Registration Opens", tone: "blue" },
   { stage: "DEADLINE", date: "24 OCT 2026", when: "Saturday · 12:25 AM", event: "Round 1 PPT Submission Closes", tone: "orange" },
   { stage: "RESULTS", date: "26 OCT 2026", when: "Monday · 11 PM", event: "Round 1 Results Announced", tone: "blue" },
-  { stage: "DEADLINE", date: "28 OCT 2026", when: "Wednesday · 11 PM", event: "Round 2 Prototype Closes", tone: "orange" },
+  { stage: "DEADLINE", date: "28 OCT 2026", when: "Wednesday · 11:59 PM", event: "Round 2 Prototype Closes", tone: "orange" },
   { stage: "RESULTS", date: "2 NOV 2026", when: "Monday · 7 PM", event: "Round 2 Results Announced", tone: "blue" },
   { stage: "FINALE", date: "4–5 NOV 2026", when: "Wed – Thu", event: "Final 24-Hour On-Campus Hackathon", tone: "cyan" },
 ];
