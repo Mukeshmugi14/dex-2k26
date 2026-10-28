@@ -311,3 +311,9 @@
 .team-portal .team-form-grid select:focus{outline:0;border-color:var(--tp-blue);box-shadow:0 0 0 4px #1f6fff1f}
 .team-portal .team-form-grid select[aria-invalid="true"]{border-color:#d92d20}
 .team-portal .team-form-grid .team-field-hint{color:#9a3412;font-size:12px;font-style:normal;line-height:1.4}
+
+/* Login page notice (current deadline) */
+.team-portal .team-login-notice{display:flex;align-items:flex-start;gap:9px;margin:20px 30px 0;padding:11px 13px;border:1px solid #ffd2b8;border-left:4px solid var(--tp-orange);border-radius:9px;background:#fff6f0;color:var(--tp-ink);font-size:13px;line-height:1.45}
+.team-portal .team-login-notice svg{flex-shrink:0;margin-top:1px;color:var(--tp-orange)}
+.team-portal .team-login-notice b{color:#c2410c}
+@media (max-width:560px){.team-portal .team-login-notice{margin:16px 20px 0}}

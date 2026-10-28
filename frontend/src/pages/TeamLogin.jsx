@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, Rocket } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import "./TeamPortal.css";
@@ -55,6 +55,10 @@ export default function TeamLogin() {
           <h1>Team Login Portal</h1>
           <p>Sign in using your Team Head email and Team ID</p>
         </header>
+        <div className="team-login-notice" role="note">
+          <Rocket size={16} aria-hidden="true" />
+          <span><b>Round 2 prototype submission</b> is open for the teams selected in Round 1 until <b>29 Oct 2026, 11:59 PM IST</b>.</span>
+        </div>
         <form onSubmit={submit} noValidate>
           <label className="team-field">
             <span>Team Head Email</span>
