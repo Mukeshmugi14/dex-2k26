@@ -2,8 +2,8 @@
 // SOFTWARE teams submit a website / application link; HARDWARE teams submit a YouTube demo video link.
 export const PROTOTYPE_CATEGORIES = ["SOFTWARE", "HARDWARE"];
 
-// Published close: 28 October 2026, 11:59 PM IST. Env overrides may only move this later, never earlier.
-const DEFAULT_DEADLINE = "2026-10-28T23:59:59.999+05:30";
+// Published close: 29 October 2026, 11:59 PM IST. Env overrides may only move this later, never earlier.
+const DEFAULT_DEADLINE = "2026-10-29T23:59:59.999+05:30";
 const parseDeadline = (value, fallback) => {
   const parsed = new Date(value || fallback);
   const floor = new Date(fallback);
@@ -14,7 +14,7 @@ export const getRound2Deadline = () => parseDeadline(process.env.ROUND2_DEADLINE
 
 // Teams may edit or delete a submitted prototype until the same close time; after that it is locked.
 export const getRound2EditDeadline = () => parseDeadline(process.env.ROUND2_EDIT_DEADLINE || process.env.ROUND2_DEADLINE, DEFAULT_DEADLINE);
-export const ROUND2_EDIT_CLOSED_MESSAGE = "The Round 2 submission editing deadline (28 October 2026, 11:59 PM IST) has passed. Your submission can no longer be edited or deleted.";
+export const ROUND2_EDIT_CLOSED_MESSAGE = "The Round 2 submission editing deadline (29 October 2026, 11:59 PM IST) has passed. Your submission can no longer be edited or deleted.";
 
 const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "www.youtu.be"]);
 const isYouTubeVideo = (url) => {
@@ -42,7 +42,7 @@ export const validatePrototypeUrl = (category, raw) => {
   return { url: url.toString() };
 };
 
-// Round 2 prototype window stays open for every registered team until 28 Oct 2026, 11:59 PM IST.
+// Round 2 prototype window stays open for every registered team until 29 Oct 2026, 11:59 PM IST.
 export const prototypeView = (registration, _rounds) => {
   const submission = registration.prototypeSubmission || {};
   const deadline = getRound2Deadline();

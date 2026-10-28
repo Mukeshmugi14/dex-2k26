@@ -24,7 +24,7 @@ const PROTOTYPE_TYPES = {
   SOFTWARE: { label: "Software", title: "SOFTWARE PROTOTYPE", hint: "Website / application link", field: "Website / Prototype URL", placeholder: "https://your-project-url.com", button: "SUBMIT PROTOTYPE →", view: "Open Prototype", help: "Submit your working software prototype as a website / application link.", icon: Monitor },
   HARDWARE: { label: "Hardware", title: "HARDWARE PROTOTYPE VIDEO", hint: "YouTube demo video", field: "YouTube Video Link", placeholder: "https://youtube.com/...", button: "SUBMIT PROTOTYPE VIDEO →", view: "Watch Video", help: "Create and publish a demonstration video of your hardware prototype on YouTube, then submit the video link.", icon: Cpu },
 };
-const ROUND2_CLOSE = "2026-10-28T23:59:59.999+05:30";
+const ROUND2_CLOSE = "2026-10-29T23:59:59.999+05:30";
 const round2CloseAt = (value) => {
   const parsed = new Date(value || ROUND2_CLOSE);
   const floor = new Date(ROUND2_CLOSE);
@@ -91,7 +91,7 @@ const KEY_DATES = [
   { stage: "OPEN", date: "5 OCT 2026", when: "Monday", event: "Registration Opens", tone: "blue" },
   { stage: "DEADLINE", date: "24 OCT 2026", when: "Saturday · 12:25 AM", event: "Round 1 PPT Submission Closes", tone: "orange" },
   { stage: "RESULTS", date: "26 OCT 2026", when: "Monday · 11 PM", event: "Round 1 Results Announced", tone: "blue" },
-  { stage: "DEADLINE", date: "28 OCT 2026", when: "Wednesday · 11:59 PM", event: "Round 2 Prototype Closes", tone: "orange" },
+  { stage: "DEADLINE", date: "29 OCT 2026", when: "Thursday · 11:59 PM", event: "Round 2 Prototype Closes", tone: "orange" },
   { stage: "RESULTS", date: "2 NOV 2026", when: "Monday · 7 PM", event: "Round 2 Results Announced", tone: "blue" },
   { stage: "FINALE", date: "4–5 NOV 2026", when: "Wed – Thu", event: "Final 24-Hour On-Campus Hackathon", tone: "cyan" },
 ];
