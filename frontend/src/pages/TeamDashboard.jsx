@@ -24,6 +24,12 @@ const PROTOTYPE_TYPES = {
   SOFTWARE: { label: "Software", title: "SOFTWARE PROTOTYPE", hint: "Website / application link", field: "Website / Prototype URL", placeholder: "https://your-project-url.com", button: "SUBMIT PROTOTYPE →", view: "Open Prototype", help: "Submit your working software prototype as a website / application link.", icon: Monitor },
   HARDWARE: { label: "Hardware", title: "HARDWARE PROTOTYPE VIDEO", hint: "YouTube demo video", field: "YouTube Video Link", placeholder: "https://youtube.com/...", button: "SUBMIT PROTOTYPE VIDEO →", view: "Watch Video", help: "Create and publish a demonstration video of your hardware prototype on YouTube, then submit the video link.", icon: Cpu },
 };
+const ROUND2_CLOSE = "2026-10-28T23:59:59.999+05:30";
+const round2CloseAt = (value) => {
+  const parsed = new Date(value || ROUND2_CLOSE);
+  const floor = new Date(ROUND2_CLOSE);
+  return Number.isNaN(parsed.getTime()) || parsed.getTime() < floor.getTime() ? floor : parsed;
+};
 const formatDeadline = (value) => (value ? new Date(value).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }) : "");
 const formatSize = (bytes) => (bytes >= MB / 10 ? `${(bytes / MB).toFixed(2)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 // A real PDF starts with "%PDF-"; this catches renamed files before uploading.
@@ -341,7 +347,11 @@ export default function TeamDashboard() {
   </label>;
   const prototypeInfo = prototype?.category ? PROTOTYPE_TYPES[prototype.category] : null;
   const chosenType = PROTOTYPE_TYPES[prototypeType] || null;
-  const prototypeStatus = !prototype ? null : prototype.submitted ? <span className="team-pill ok">✓ Submitted</span> : prototype.open ? <span className="team-pill open">● Submission Open</span> : <span className="team-pill closed">✕ Not Submitted</span>;
+  const prototypeDeadline = round2CloseAt(prototype?.deadline);
+  const prototypeEditDeadline = round2CloseAt(prototype?.editDeadline);
+  const prototypeOpen = Date.now() <= prototypeDeadline.getTime();
+  const prototypeEditable = Boolean(prototype?.submitted) && Date.now() <= prototypeEditDeadline.getTime();
+  const prototypeStatus = prototype?.submitted ? <span className="team-pill ok">✓ Submitted</span> : prototypeOpen ? <span className="team-pill open">● Submission Open</span> : <span className="team-pill closed">✕ Not Submitted</span>;
   // Prototype type choice + link form, shared by a new submission and an edit.
   const prototypeForm = <>
     <div className="team-r2-choice" role="radiogroup" aria-label="Prototype type">
@@ -533,13 +543,12 @@ export default function TeamDashboard() {
         <section className="team-card team-area-round2" aria-labelledby="team-round2-title">
           <span className="team-stage-badge is-round2">STAGE 2 · ROUND 2</span>
           <h2 id="team-round2-title"><Rocket size={17} /> Round 2 — Prototype Submission</h2>
-          {!prototype ? <p className="team-muted">Round 2 prototype submission will be available soon.</p>
-            : prototype.submitted && prototypeEditing && prototype.editable ? <>
-              <p className="team-r2-intro">Edit your prototype submission. Changes allowed until <b>{formatDeadline(prototype.editDeadline)}</b>.</p>
+          {prototype?.submitted && prototypeEditing && prototypeEditable ? <>
+              <p className="team-r2-intro">Edit your prototype submission. Changes allowed until <b>{formatDeadline(prototypeEditDeadline)}</b>.</p>
               {prototypeForm}
               {prototypeError ? <p className="team-inline-error team-pdf-error" role="alert">{prototypeError}</p> : null}
             </>
-            : prototype.submitted ? <>
+            : prototype?.submitted ? <>
               {prototypeJustSubmitted ? <p className="team-pdf-success" role="status">✓ Round 2 Prototype Submitted Successfully</p> : null}
               {prototypeNotice ? <p className="team-pdf-success" role="status">{prototypeNotice}</p> : null}
               <div className="team-r2-heading"><b>ROUND 2 — PROTOTYPE SUBMISSION</b><strong>{prototypeInfo?.title}</strong></div>
@@ -547,21 +556,21 @@ export default function TeamDashboard() {
               <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
               <div className="team-upload-actions">
                 <a className="team-action team-r2-action" href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink size={16} /> {prototypeInfo?.view || "Open Link"}</a>
-                <button type="button" className="team-action team-action-secondary" onClick={startPrototypeEdit} disabled={!prototype.editable || prototypeDeleting}><Pencil size={16} /> Edit</button>
-                <button type="button" className="team-action team-action-danger" onClick={deleteSubmittedPrototype} disabled={!prototype.editable || prototypeDeleting}><Trash2 size={16} /> {prototypeDeleting ? "Deleting…" : "Delete"}</button>
+                <button type="button" className="team-action team-action-secondary" onClick={startPrototypeEdit} disabled={!prototypeEditable || prototypeDeleting}><Pencil size={16} /> Edit</button>
+                <button type="button" className="team-action team-action-danger" onClick={deleteSubmittedPrototype} disabled={!prototypeEditable || prototypeDeleting}><Trash2 size={16} /> {prototypeDeleting ? "Deleting…" : "Delete"}</button>
               </div>
-              {prototype.editable
-                ? <small className="team-edit-note">You can edit or delete this submission until {formatDeadline(prototype.editDeadline)}.</small>
-                : <p className="team-edit-closed" role="note">The Round 2 submission editing deadline ({formatDeadline(prototype.editDeadline)}) has passed. Your submission can no longer be edited or deleted.</p>}
+              {prototypeEditable
+                ? <small className="team-edit-note">You can edit or delete this submission until {formatDeadline(prototypeEditDeadline)}.</small>
+                : <p className="team-edit-closed" role="note">The Round 2 submission editing deadline ({formatDeadline(prototypeEditDeadline)}) has passed. Your submission can no longer be edited or deleted.</p>}
               {prototypeError ? <p className="team-inline-error team-pdf-error" role="alert">{prototypeError}</p> : null}
             </>
-            : !prototype.open ? <>
+            : !prototypeOpen ? <>
               <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
-              <p className="team-muted">{prototype.eligible ? `Round 2 prototype submission closed on ${formatDeadline(prototype.deadline)}.` : "Round 2 submission is not available for your team."}</p>
+              <p className="team-muted">Round 2 prototype submission closed on {formatDeadline(prototypeDeadline)}.</p>
             </>
             : <>
               {prototypeNotice ? <p className="team-pdf-success" role="status">{prototypeNotice}</p> : null}
-              <p className="team-r2-intro">Choose your prototype type. Submission closes on <b>{formatDeadline(prototype.deadline)}</b>.</p>
+              <p className="team-r2-intro">Choose your prototype type. Submission closes on <b>{formatDeadline(prototypeDeadline)}</b>.</p>
               {prototypeForm}
               <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
               {prototypeError ? <p className="team-inline-error team-pdf-error" role="alert">{prototypeError}</p> : null}

@@ -2,20 +2,18 @@
 // SOFTWARE teams submit a website / application link; HARDWARE teams submit a YouTube demo video link.
 export const PROTOTYPE_CATEGORIES = ["SOFTWARE", "HARDWARE"];
 
-// Same deadline as the published schedule ("28 OCT 2026 · 11:59 PM"); override with ROUND2_DEADLINE if it moves.
+// Published close: 28 October 2026, 11:59 PM IST. Env overrides may only move this later, never earlier.
 const DEFAULT_DEADLINE = "2026-10-28T23:59:59.999+05:30";
-export const getRound2Deadline = () => {
-  const configured = new Date(process.env.ROUND2_DEADLINE || DEFAULT_DEADLINE);
-  return Number.isNaN(configured.getTime()) ? new Date(DEFAULT_DEADLINE) : configured;
+const parseDeadline = (value, fallback) => {
+  const parsed = new Date(value || fallback);
+  const floor = new Date(fallback);
+  if (Number.isNaN(parsed.getTime())) return floor;
+  return parsed.getTime() < floor.getTime() ? floor : parsed;
 };
+export const getRound2Deadline = () => parseDeadline(process.env.ROUND2_DEADLINE, DEFAULT_DEADLINE);
 
-// Teams may edit or delete a submitted prototype until it closes, 28 Oct 2026, 11:59 PM IST; after that it is locked.
-// Override with ROUND2_EDIT_DEADLINE (ISO date with offset) if it moves.
-const DEFAULT_EDIT_DEADLINE = "2026-10-28T23:59:59.999+05:30";
-export const getRound2EditDeadline = () => {
-  const configured = new Date(process.env.ROUND2_EDIT_DEADLINE || DEFAULT_EDIT_DEADLINE);
-  return Number.isNaN(configured.getTime()) ? new Date(DEFAULT_EDIT_DEADLINE) : configured;
-};
+// Teams may edit or delete a submitted prototype until the same close time; after that it is locked.
+export const getRound2EditDeadline = () => parseDeadline(process.env.ROUND2_EDIT_DEADLINE || process.env.ROUND2_DEADLINE, DEFAULT_DEADLINE);
 export const ROUND2_EDIT_CLOSED_MESSAGE = "The Round 2 submission editing deadline (28 October 2026, 11:59 PM IST) has passed. Your submission can no longer be edited or deleted.";
 
 const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "www.youtu.be"]);
@@ -44,16 +42,16 @@ export const validatePrototypeUrl = (category, raw) => {
   return { url: url.toString() };
 };
 
-// What the Team Head Portal shows for Round 2. Teams stopped in Round 1 cannot submit.
-export const prototypeView = (registration, rounds) => {
+// Round 2 prototype window stays open for every registered team until 28 Oct 2026, 11:59 PM IST.
+export const prototypeView = (registration, _rounds) => {
   const submission = registration.prototypeSubmission || {};
   const deadline = getRound2Deadline();
-  const eligible = rounds.round1 !== "NOT_SELECTED";
-  const open = eligible && Date.now() <= deadline.getTime();
+  const eligible = true;
+  const open = Date.now() <= deadline.getTime();
   const submitted = Boolean(submission.url);
   const editDeadline = getRound2EditDeadline();
   return {
-    editable: submitted && eligible && Date.now() <= editDeadline.getTime(),
+    editable: submitted && Date.now() <= editDeadline.getTime(),
     editDeadline,
     submitted,
     category: submission.category || null,

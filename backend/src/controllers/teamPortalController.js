@@ -163,7 +163,6 @@ export const submitPrototype = async (request, response) => {
   if (!team) return response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." });
   const view = prototypeView(team, readRounds(team));
   if (view.submitted) return response.status(409).json({ success: false, alreadySubmitted: true, message: "Your team has already submitted its Round 2 prototype." });
-  if (!view.eligible) return response.status(403).json({ success: false, message: "Round 2 submission is not available for your team." });
   if (!view.open) return response.status(403).json({ success: false, message: "Round 2 prototype submission has closed." });
 
   const category = typeof request.body.category === "string" ? request.body.category.trim().toUpperCase() : "";
@@ -189,7 +188,6 @@ const loadEditablePrototype = async (request, response) => {
   if (!team) { response.status(401).json({ success: false, message: "Please log in to the Team Head Portal." }); return null; }
   const view = prototypeView(team, readRounds(team));
   if (!view.submitted) { response.status(404).json({ success: false, message: "Your team has not submitted a Round 2 prototype yet." }); return null; }
-  if (!view.eligible) { response.status(403).json({ success: false, message: "Round 2 submission is not available for your team." }); return null; }
   if (Date.now() > getRound2EditDeadline().getTime()) { response.status(403).json({ success: false, editClosed: true, message: ROUND2_EDIT_CLOSED_MESSAGE }); return null; }
   return team;
 };

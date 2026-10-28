@@ -45,7 +45,7 @@ export const listPrototypes = async (_request, response) => {
       theme: team.projectTheme || "",
       ...teamStudyInfo(team),
       round1: team.rounds?.round1 || "PENDING",
-      eligible: team.rounds?.round1 !== "NOT_SELECTED",
+      eligible: true,
       submitted: Boolean(url),
       category: url ? submission.category || null : null,
       url,
