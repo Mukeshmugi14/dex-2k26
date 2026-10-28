@@ -349,9 +349,11 @@ export default function TeamDashboard() {
   const chosenType = PROTOTYPE_TYPES[prototypeType] || null;
   const prototypeDeadline = round2CloseAt(prototype?.deadline);
   const prototypeEditDeadline = round2CloseAt(prototype?.editDeadline);
-  const prototypeOpen = Date.now() <= prototypeDeadline.getTime();
-  const prototypeEditable = Boolean(prototype?.submitted) && Date.now() <= prototypeEditDeadline.getTime();
-  const prototypeStatus = prototype?.submitted ? <span className="team-pill ok">✓ Submitted</span> : prototypeOpen ? <span className="team-pill open">● Submission Open</span> : <span className="team-pill closed">✕ Not Submitted</span>;
+  // Round 2 is only for teams selected in Round 1 (the server decides; it sends eligible).
+  const prototypeEligible = prototype?.eligible !== false;
+  const prototypeOpen = prototypeEligible && Date.now() <= prototypeDeadline.getTime();
+  const prototypeEditable = prototypeEligible && Boolean(prototype?.submitted) && Date.now() <= prototypeEditDeadline.getTime();
+  const prototypeStatus = !prototypeEligible ? <span className="team-pill closed">✕ Not in Round 2</span> : prototype?.submitted ? <span className="team-pill ok">✓ Submitted</span> : prototypeOpen ? <span className="team-pill open">● Submission Open</span> : <span className="team-pill closed">✕ Not Submitted</span>;
   // Prototype type choice + link form, shared by a new submission and an edit.
   const prototypeForm = <>
     <div className="team-r2-choice" role="radiogroup" aria-label="Prototype type">
@@ -543,7 +545,11 @@ export default function TeamDashboard() {
         <section className="team-card team-area-round2" aria-labelledby="team-round2-title">
           <span className="team-stage-badge is-round2">STAGE 2 · ROUND 2</span>
           <h2 id="team-round2-title"><Rocket size={17} /> Round 2 — Prototype Submission</h2>
-          {prototype?.submitted && prototypeEditing && prototypeEditable ? <>
+          {!prototypeEligible ? <>
+              <div className="team-pdf-status"><span>Round 2 Prototype Status</span>{prototypeStatus}</div>
+              <p className="team-muted">Round 2 prototype submission is only for the teams selected in Round 1.</p>
+            </>
+            : prototype?.submitted && prototypeEditing && prototypeEditable ? <>
               <p className="team-r2-intro">Edit your prototype submission. Changes allowed until <b>{formatDeadline(prototypeEditDeadline)}</b>.</p>
               {prototypeForm}
               {prototypeError ? <p className="team-inline-error team-pdf-error" role="alert">{prototypeError}</p> : null}

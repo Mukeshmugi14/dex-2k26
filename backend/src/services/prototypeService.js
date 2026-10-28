@@ -42,16 +42,20 @@ export const validatePrototypeUrl = (category, raw) => {
   return { url: url.toString() };
 };
 
-// Round 2 prototype window stays open for every registered team until 29 Oct 2026, 11:59 PM IST.
+// Round 2 is only for the teams selected in Round 1 (the top 160 shortlist): Round 1 decision SELECTED.
+export const isRound2Eligible = (registration) => registration?.roundResults?.round1?.status === "SELECTED" || registration?.rounds?.round1 === "SELECTED";
+export const ROUND2_NOT_ELIGIBLE_MESSAGE = "Round 2 prototype submission is only for the teams selected in Round 1.";
+
+// Round 2 prototype window: selected teams only, until 29 Oct 2026, 11:59 PM IST.
 export const prototypeView = (registration, _rounds) => {
   const submission = registration.prototypeSubmission || {};
   const deadline = getRound2Deadline();
-  const eligible = true;
-  const open = Date.now() <= deadline.getTime();
+  const eligible = isRound2Eligible(registration);
+  const open = eligible && Date.now() <= deadline.getTime();
   const submitted = Boolean(submission.url);
   const editDeadline = getRound2EditDeadline();
   return {
-    editable: submitted && Date.now() <= editDeadline.getTime(),
+    editable: eligible && submitted && Date.now() <= editDeadline.getTime(),
     editDeadline,
     submitted,
     category: submission.category || null,
