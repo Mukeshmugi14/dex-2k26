@@ -65,6 +65,8 @@ const registrationSchema = new mongoose.Schema({
     evaluatedAt: Date,
     evaluatedBy: String,
   },
+  // Round 2 prototype score: weighted average of the panel's Round 2 sheets (out of 100), like Round 1.
+  round2Evaluation: { totalScore: Number, evaluatorCount: Number, scoreComplete: Boolean, scoreSpread: Number, evaluatedAt: Date },
   // Round 1 PPT evaluation panel: the evaluators assigned to score this team (normally 3).
   evaluationPanel: [{ type: mongoose.Schema.Types.ObjectId, ref: "Evaluator" }],
   evaluationPanelAt: Date,

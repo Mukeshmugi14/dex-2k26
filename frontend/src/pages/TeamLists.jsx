@@ -1000,10 +1000,10 @@ export default function TeamLists() {
                   <dd style={{ overflowWrap: "anywhere" }}>
                     {/^https?:\/\//i.test(selectedTeam.prototypeSubmission?.url || "") ? (
                       <>
-                        <b>{selectedTeam.prototypeSubmission.category === "HARDWARE" ? "Hardware · YouTube video" : "Software · Website / app"}</b>
+                        <b>{selectedTeam.prototypeSubmission.category === "HARDWARE" ? "Hardware prototype" : "Software prototype"}</b>
                         {" — "}
                         <a href={selectedTeam.prototypeSubmission.url} target="_blank" rel="noopener noreferrer" style={{ color: "#55caff" }}>
-                          {selectedTeam.prototypeSubmission.category === "HARDWARE" ? "Watch on YouTube" : "Open website"}
+                          Open prototype link
                         </a>
                         <span style={{ display: "block", color: "#8ba0b6", fontSize: 12 }}>{selectedTeam.prototypeSubmission.url}</span>
                       </>

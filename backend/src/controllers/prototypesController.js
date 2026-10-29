@@ -1,5 +1,6 @@
 import Registration from "../models/Registration.js";
 import { getRound2Deadline, getRound2EditDeadline, isRound2Eligible } from "../services/prototypeService.js";
+import { round2Summaries } from "../services/round2Scores.js";
 import { STUDY_FIELDS, teamStudyInfo } from "../services/teamProfile.js";
 
 // Admin → Prototypes: every team's Round 2 submission (category + link) for review.
@@ -29,12 +30,14 @@ const youTubeId = (value) => {
 };
 
 export const listPrototypes = async (_request, response) => {
-  const teams = await Registration.find({}, `teamId teamName leader.name leader.email college collegeName projectTheme rounds.round1 roundResults.round1.status prototypeSubmission excludeFromCount ${STUDY_FIELDS}`).lean();
+  const teams = await Registration.find({}, `teamId teamName leader.name leader.email college collegeName projectTheme rounds.round1 roundResults.round1.status prototypeSubmission excludeFromCount evaluationPanel ${STUDY_FIELDS}`).lean();
   const notCounted = new Set(teams.filter((t) => t.excludeFromCount).map((t) => String(t._id)));
+  // Round 2 prototype scores from the Evaluator Portal (weighted average of each team's panel, out of 100).
+  const r2 = await round2Summaries(teams.filter((t) => t.prototypeSubmission?.url));
   const rows = teams.map((team) => {
     const submission = team.prototypeSubmission || {};
     const url = safeUrl(submission.url);
-    const videoId = submission.category === "HARDWARE" && url ? youTubeId(url) : null;
+    const videoId = url ? youTubeId(url) : null;
     return {
       id: String(team._id),
       teamId: team.teamId || "",
@@ -46,6 +49,7 @@ export const listPrototypes = async (_request, response) => {
       ...teamStudyInfo(team),
       round1: team.rounds?.round1 || "PENDING",
       eligible: isRound2Eligible(team),
+      round2: r2.get(String(team._id)) ? { score: r2.get(String(team._id)).average, count: r2.get(String(team._id)).count, complete: r2.get(String(team._id)).complete, spread: r2.get(String(team._id)).spread, sheets: r2.get(String(team._id)).sheets } : null,
       submitted: Boolean(url),
       category: url ? submission.category || null : null,
       url,

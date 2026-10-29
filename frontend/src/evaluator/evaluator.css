@@ -187,3 +187,15 @@
 .eval-panel-note { margin: 0; color: var(--ev-muted); font-size: 12px; }
 @media (max-width: 560px) { .eval-members thead { display: none; } .eval-members tr { display: grid; padding: 6px 0; border-bottom: 1px solid var(--ev-line); } .eval-members td { padding: 1px 4px; border: 0; } }
 .eval-card-title { display: flex; align-items: center; gap: 7px; margin: 0; font-family: "Barlow Condensed", Arial, sans-serif; font-size: 19px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+
+/* Round switch in the top bar */
+.eval-rounds { display: flex; gap: 4px; padding: 3px; border: 1px solid #ffffff26; border-radius: 999px; }
+.eval-rounds a { padding: 6px 12px; border-radius: 999px; color: #c9d6ea; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.eval-rounds a.is-on { background: var(--ev-orange); color: #fff; }
+@media (max-width: 720px) { .eval-topbar { flex-wrap: wrap; } .eval-rounds { order: 3; width: 100%; justify-content: center; } }
+
+/* Round 2 */
+.eval-badge.tone-type { background: #eef4ff; color: #1d4ed8; }
+.eval-badge.tone-type.is-hardware { background: #fff1e6; color: #b45309; }
+.eval-frame-note { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 8px 12px; border-top: 1px solid var(--ev-line); color: var(--ev-muted); font-size: 12px; }
+.eval-pdf:has(.eval-frame-note) { grid-template-rows: auto 1fr auto; }

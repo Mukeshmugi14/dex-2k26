@@ -12,9 +12,10 @@ import AdminNav from "../components/AdminNav";
 const SERVER_DOWN = "Can't reach the backend server. Start it in a terminal with: npm --prefix backend run dev — then try again.";
 const fmtTime = (value) => (value ? new Date(value).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }) : "");
 const CATEGORY = {
-  SOFTWARE: { label: "Software", note: "Website / app link", Icon: Monitor, action: "Open website" },
-  HARDWARE: { label: "Hardware", note: "YouTube demo video", Icon: Cpu, action: "Watch on YouTube" },
+  SOFTWARE: { label: "Software", note: "Prototype link", Icon: Monitor },
+  HARDWARE: { label: "Hardware", note: "Prototype link", Icon: Cpu },
 };
+const linkAction = (url, videoId) => (videoId || /youtu\.?be/i.test(url || "") ? "Watch on YouTube" : /(drive|docs)\.google\.com/i.test(url || "") ? "Open in Google Drive" : "Open link");
 const FILTERS = [["all", "All teams"], ["submitted", "Submitted"], ["SOFTWARE", "Software"], ["HARDWARE", "Hardware"], ["pending", "Not submitted"]];
 
 // Admin → Prototypes: each team's Round 2 submission, its category and a button to open it.
@@ -93,9 +94,18 @@ export default function AdminPrototypes() {
             {t.submitted ? <>
               <p className="proto-link"><span>{cat?.note}:</span> <a href={t.url} target="_blank" rel="noopener noreferrer">{t.url}</a></p>
               <div className="proto-actions">
-                <a className="proto-open" href={t.url} target="_blank" rel="noopener noreferrer">{t.category === "HARDWARE" ? <PlayCircle size={15} /> : <ExternalLink size={15} />} {cat?.action || "Open link"}</a>
+                <a className="proto-open" href={t.url} target="_blank" rel="noopener noreferrer">{t.videoId ? <PlayCircle size={15} /> : <ExternalLink size={15} />} {linkAction(t.url, t.videoId)}</a>
                 <small>Submitted {fmtTime(t.submittedAt)} · {t.host}</small>
               </div>
+              {t.eligible ? <div className="proto-score">
+                <span className={`proto-score-total ${t.round2?.score == null ? "is-none" : t.round2.complete ? "is-final" : "is-partial"}`}>
+                  Round 2 score: <b>{t.round2?.score ?? "—"}</b>{t.round2?.score != null ? " / 100" : ""}
+                  <em>{t.round2?.score == null ? "not scored yet" : t.round2.complete ? "final" : "waiting for lead evaluator"}{t.round2?.spread ? ` · spread ${t.round2.spread}` : ""}</em>
+                </span>
+                {(t.round2?.sheets || []).map((s) => <span key={s.evaluator} className={`proto-score-sheet is-${s.status}`} title={[s.recommendation, ...s.flags].filter(Boolean).join(" · ")}>
+                  {s.evaluator} (×{s.weight}): {s.status === "submitted" ? s.total : "draft"}{s.flags.length ? " ⚑" : ""}
+                </span>)}
+              </div> : null}
             </> : null}
           </div>
         </li>;

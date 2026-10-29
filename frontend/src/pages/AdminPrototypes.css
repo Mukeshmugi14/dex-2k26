@@ -44,3 +44,13 @@
   .admin-prototypes .proto-card { flex-direction: column; }
   .admin-prototypes .proto-thumb { width: 100%; }
 }
+
+/* Round 2 evaluation scores */
+.admin-prototypes .proto-score { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #ffffff1f; font-size: 12px; }
+.admin-prototypes .proto-score-total { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px; margin-right: 6px; color: #c9d6ea; }
+.admin-prototypes .proto-score-total b { font-size: 16px; color: #fff; }
+.admin-prototypes .proto-score-total em { font-style: normal; color: #8fa3bf; }
+.admin-prototypes .proto-score-total.is-final b { color: #6ee7a8; }
+.admin-prototypes .proto-score-total.is-partial b { color: #fcd27b; }
+.admin-prototypes .proto-score-sheet { padding: 2px 8px; border-radius: 999px; background: #ffffff12; color: #c9d6ea; }
+.admin-prototypes .proto-score-sheet.is-draft { opacity: .65; font-style: italic; }

@@ -21,8 +21,8 @@ const INVALID_PDF_MESSAGE = "Invalid file format. Please upload your Round 1 sub
 const FILE_TOO_LARGE_MESSAGE = "File size exceeds the 15 MB limit. Please upload a PDF file under 15 MB.";
 // Round 2: what each prototype category submits.
 const PROTOTYPE_TYPES = {
-  SOFTWARE: { label: "Software", title: "SOFTWARE PROTOTYPE", hint: "Website / application link", field: "Website / Prototype URL", placeholder: "https://your-project-url.com", button: "SUBMIT PROTOTYPE →", view: "Open Prototype", help: "Submit your working software prototype as a website / application link.", icon: Monitor },
-  HARDWARE: { label: "Hardware", title: "HARDWARE PROTOTYPE VIDEO", hint: "YouTube demo video", field: "YouTube Video Link", placeholder: "https://youtube.com/...", button: "SUBMIT PROTOTYPE VIDEO →", view: "Watch Video", help: "Create and publish a demonstration video of your hardware prototype on YouTube, then submit the video link.", icon: Cpu },
+  SOFTWARE: { label: "Software", title: "SOFTWARE PROTOTYPE", hint: "Website, Google Drive or YouTube link", field: "Prototype Link (Website / Google Drive / YouTube)", placeholder: "https://… (website, drive.google.com or youtube.com link)", button: "SUBMIT PROTOTYPE →", view: "Open Prototype", help: "Submit your working software prototype as a link: a live website / app, a Google Drive file or folder, or a YouTube demo video. Make sure the link is public (Drive: “Anyone with the link”).", icon: Monitor },
+  HARDWARE: { label: "Hardware", title: "HARDWARE PROTOTYPE", hint: "YouTube, Google Drive or website link", field: "Prototype Link (YouTube / Google Drive / Website)", placeholder: "https://… (youtube.com, drive.google.com or website link)", button: "SUBMIT PROTOTYPE →", view: "Open Prototype", help: "Submit a demo of your hardware prototype as a link: a YouTube video, a Google Drive video / folder, or a website. Make sure the link is public (Drive: “Anyone with the link”).", icon: Cpu },
 };
 const ROUND2_CLOSE = "2026-10-29T23:59:59.999+05:30";
 const round2CloseAt = (value) => {
