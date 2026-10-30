@@ -24,7 +24,7 @@ const PROTOTYPE_TYPES = {
   SOFTWARE: { label: "Software", title: "SOFTWARE PROTOTYPE", hint: "Website, Google Drive or YouTube link", field: "Prototype Link (Website / Google Drive / YouTube)", placeholder: "https://… (website, drive.google.com or youtube.com link)", button: "SUBMIT PROTOTYPE →", view: "Open Prototype", help: "Submit your working software prototype as a link: a live website / app, a Google Drive file or folder, or a YouTube demo video. Make sure the link is public (Drive: “Anyone with the link”).", icon: Monitor },
   HARDWARE: { label: "Hardware", title: "HARDWARE PROTOTYPE", hint: "YouTube, Google Drive or website link", field: "Prototype Link (YouTube / Google Drive / Website)", placeholder: "https://… (youtube.com, drive.google.com or website link)", button: "SUBMIT PROTOTYPE →", view: "Open Prototype", help: "Submit a demo of your hardware prototype as a link: a YouTube video, a Google Drive video / folder, or a website. Make sure the link is public (Drive: “Anyone with the link”).", icon: Cpu },
 };
-const ROUND2_CLOSE = "2026-10-29T23:59:59.999+05:30";
+const ROUND2_CLOSE = "2026-10-30T23:59:59.999+05:30";
 const round2CloseAt = (value) => {
   const parsed = new Date(value || ROUND2_CLOSE);
   const floor = new Date(ROUND2_CLOSE);
@@ -91,7 +91,7 @@ const KEY_DATES = [
   { stage: "OPEN", date: "5 OCT 2026", when: "Monday", event: "Registration Opens", tone: "blue" },
   { stage: "DEADLINE", date: "24 OCT 2026", when: "Saturday · 12:25 AM", event: "Round 1 PPT Submission Closes", tone: "orange" },
   { stage: "RESULTS", date: "26 OCT 2026", when: "Monday · 11 PM", event: "Round 1 Results Announced", tone: "blue" },
-  { stage: "DEADLINE", date: "29 OCT 2026", when: "Thursday · 11:59 PM", event: "Round 2 Prototype Closes", tone: "orange" },
+  { stage: "DEADLINE", date: "30 OCT 2026", when: "Friday · 11:59 PM", event: "Round 2 Prototype Closes", tone: "orange" },
   { stage: "RESULTS", date: "2 NOV 2026", when: "Monday · 7 PM", event: "Round 2 Results Announced", tone: "blue" },
   { stage: "FINALE", date: "4–5 NOV 2026", when: "Wed – Thu", event: "Final 24-Hour On-Campus Hackathon", tone: "cyan" },
 ];

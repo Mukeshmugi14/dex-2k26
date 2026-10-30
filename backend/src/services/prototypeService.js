@@ -2,8 +2,8 @@
 // Both SOFTWARE and HARDWARE teams may submit any public link: a website / app, a Google Drive file or folder, or a YouTube video.
 export const PROTOTYPE_CATEGORIES = ["SOFTWARE", "HARDWARE"];
 
-// Published close: 29 October 2026, 11:59 PM IST. Env overrides may only move this later, never earlier.
-const DEFAULT_DEADLINE = "2026-10-29T23:59:59.999+05:30";
+// Published close: 30 October 2026, 11:59 PM IST. Env overrides may only move this later, never earlier.
+const DEFAULT_DEADLINE = "2026-10-30T23:59:59.999+05:30";
 const parseDeadline = (value, fallback) => {
   const parsed = new Date(value || fallback);
   const floor = new Date(fallback);
@@ -14,7 +14,7 @@ export const getRound2Deadline = () => parseDeadline(process.env.ROUND2_DEADLINE
 
 // Teams may edit or delete a submitted prototype until the same close time; after that it is locked.
 export const getRound2EditDeadline = () => parseDeadline(process.env.ROUND2_EDIT_DEADLINE || process.env.ROUND2_DEADLINE, DEFAULT_DEADLINE);
-export const ROUND2_EDIT_CLOSED_MESSAGE = "The Round 2 submission editing deadline (29 October 2026, 11:59 PM IST) has passed. Your submission can no longer be edited or deleted.";
+export const ROUND2_EDIT_CLOSED_MESSAGE = "The Round 2 submission editing deadline (30 October 2026, 11:59 PM IST) has passed. Your submission can no longer be edited or deleted.";
 
 // Returns { url } with a normalized link, or { error } with a message for the Team Head.
 export const validatePrototypeUrl = (_category, raw) => {
@@ -35,7 +35,7 @@ export const validatePrototypeUrl = (_category, raw) => {
 export const isRound2Eligible = (registration) => registration?.roundResults?.round1?.status === "SELECTED" || registration?.rounds?.round1 === "SELECTED";
 export const ROUND2_NOT_ELIGIBLE_MESSAGE = "Round 2 prototype submission is only for the teams selected in Round 1.";
 
-// Round 2 prototype window: selected teams only, until 29 Oct 2026, 11:59 PM IST.
+// Round 2 prototype window: selected teams only, until 30 Oct 2026, 11:59 PM IST.
 export const prototypeView = (registration, _rounds) => {
   const submission = registration.prototypeSubmission || {};
   const deadline = getRound2Deadline();

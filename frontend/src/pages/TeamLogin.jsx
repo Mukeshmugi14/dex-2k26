@@ -57,7 +57,7 @@ export default function TeamLogin() {
         </header>
         <div className="team-login-notice" role="note">
           <Rocket size={16} aria-hidden="true" />
-          <span><b>Round 2 prototype submission</b> is open for the teams selected in Round 1 until <b>29 Oct 2026, 11:59 PM IST</b>.</span>
+          <span><b>Round 2 prototype submission</b> is open for the teams selected in Round 1 until <b>30 Oct 2026, 11:59 PM IST</b>.</span>
         </div>
         <form onSubmit={submit} noValidate>
           <label className="team-field">
