@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import mongoose from "mongoose";
-import Evaluator from "../models/Evaluator.js";
+import Evaluator, { evaluatorRounds } from "../models/Evaluator.js";
 import Registration from "../models/Registration.js";
 import RubricEvaluation from "../models/RubricEvaluation.js";
 import { sendEvaluatorCodeEmail } from "../services/emailService.js";
@@ -22,24 +22,27 @@ const cleanEmail = (value) => String(value || "").trim().toLowerCase();
 // Lockout keys are prefixed so evaluator failures never lock admin logins (and vice versa).
 const keysFor = (request, email) => [`eval-ip:${clientIp(request)}`, ...(email ? [`eval-acct:${email}`] : [])];
 const lockedReply = (minutes) => ({ success: false, locked: true, message: `Too many failed attempts. Evaluator sign-in is locked for ${minutes} minute${minutes === 1 ? "" : "s"}. Try again later.` });
-const BAD_LOGIN = { success: false, message: "Incorrect email or password." };
+const BAD_LOGIN = { success: false, message: "Incorrect email / access ID or password." };
+const isAccessId = (value) => /^[a-z0-9._-]{3,40}$/.test(value);
 // A bcrypt hash of a random value, so unknown emails take as long as wrong passwords (made once, on first use).
 let dummyHash = null;
 const getDummyHash = async () => (dummyHash ||= await bcrypt.hash(crypto.randomBytes(16).toString("hex"), 12));
-const sessionReply = (evaluator) => ({ success: true, token: signEvaluatorSession(evaluator), evaluator: { email: evaluator.email, name: evaluator.name || "" } });
+const sessionReply = (evaluator) => ({ success: true, token: signEvaluatorSession(evaluator), evaluator: { email: evaluator.email, username: evaluator.username || "", name: evaluator.name || "", rounds: evaluatorRounds(evaluator) } });
 
 // --- Sign in -------------------------------------------------------------------------------------------------
 
 export const evaluatorLogin = async (request, response) => {
   if (!evaluatorSecretConfigured()) return response.status(503).json({ success: false, message: EVAL_SECRET_MESSAGE });
-  const email = cleanEmail(request.body?.email);
+  // The sign-in box takes an email or an access ID.
+  const email = cleanEmail(request.body?.email ?? request.body?.login);
   const password = typeof request.body?.password === "string" ? request.body.password : "";
   const keys = keysFor(request, email);
   const locked = await lockedMinutes(keys);
   if (locked) return response.status(429).json(lockedReply(locked));
-  if (!isEmail(email) || !password) return response.status(400).json({ success: false, message: "Enter your email and password." });
+  const byEmail = isEmail(email);
+  if ((!byEmail && !isAccessId(email)) || !password) return response.status(400).json({ success: false, message: "Enter your email / access ID and password." });
 
-  const evaluator = await Evaluator.findOne({ email }).select("+passwordHash").lean();
+  const evaluator = await Evaluator.findOne(byEmail ? { email } : { username: email }).select("+passwordHash").lean();
   const ok = await bcrypt.compare(password, evaluator?.passwordHash || (await getDummyHash()));
   if (!evaluator || evaluator.active === false || !evaluator.passwordHash || !ok) {
     const nowLocked = await recordFailure(keys);
@@ -123,7 +126,7 @@ export const setEvaluatorPassword = async (request, response) => {
 
 // --- Portal ----------------------------------------------------------------------------------------------------
 
-export const getEvaluatorMe = async (request, response) => response.json({ success: true, evaluator: { email: request.evaluator.email, name: request.evaluator.name } });
+export const getEvaluatorMe = async (request, response) => response.json({ success: true, evaluator: { email: request.evaluator.email, username: request.evaluator.username, name: request.evaluator.name, rounds: request.evaluator.rounds } });
 export const getEvaluatorRubric = async (_request, response) => response.json({ success: true, rubric: rubricView() });
 
 const isLocked = (team) => team?.evaluation?.result && team.evaluation.result !== "Pending";

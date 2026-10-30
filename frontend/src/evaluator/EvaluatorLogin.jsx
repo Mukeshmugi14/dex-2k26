@@ -1,5 +1,5 @@
 import axios from "axios";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import "../pages/TeamPortal.css";
@@ -9,7 +9,7 @@ import { getEvaluatorToken, setEvaluatorSession } from "../config/evaluatorSessi
 
 const clean = (value) => value.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
 
-// Sign in with email + password. First time / forgot password: a one-time code is emailed, then a new password is set.
+// Sign in with email (or access ID) + password. First time / forgot password: a one-time code is emailed, then a new password is set.
 export default function EvaluatorLogin() {
   const [mode, setMode] = useState("login"); // login | request | verify
   const [email, setEmail] = useState("");
@@ -28,12 +28,16 @@ export default function EvaluatorLogin() {
   if (getEvaluatorToken()) return <Navigate to="/evaluator" replace />;
 
   const fail = (requestError, fallback) => setError(requestError.response?.data?.errors?.password || requestError.response?.data?.message || fallback);
-  const signedIn = (data) => { setEvaluatorSession(data.token, data.evaluator); navigate("/evaluator", { replace: true }); };
+  const signedIn = (data) => {
+    setEvaluatorSession(data.token, data.evaluator);
+    const rounds = data.evaluator?.rounds || ["ROUND1"];
+    navigate(rounds.includes("ROUND1") ? "/evaluator" : "/evaluator/round2", { replace: true });
+  };
 
   const login = async (event) => {
     event.preventDefault();
     if (busy) return;
-    if (!clean(email) || !password) { setError("Enter your email and password."); return; }
+    if (!clean(email) || !password) { setError("Enter your email / access ID and password."); return; }
     setBusy(true); setError("");
     try {
       signedIn((await axios.post(`${API_URL}/evaluator/auth/login`, { email: clean(email), password })).data);
@@ -74,6 +78,7 @@ export default function EvaluatorLogin() {
 
   const field = (label, Icon, input, extra = null) => <label className="team-field"><span>{label}</span><div className="team-input"><Icon size={17} />{input}{extra}</div></label>;
   const eye = <button type="button" className="team-eye" aria-label={show ? "Hide password" : "Show password"} onClick={() => setShow((v) => !v)}>{show ? <EyeOff size={17} /> : <Eye size={17} />}</button>;
+  const loginInput = field("Email or Access ID", UserRound, <input type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="Your email or access ID" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} />);
   const emailInput = field("Evaluator Email", Mail, <input type="email" autoComplete="username" placeholder="Your evaluator email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} disabled={mode === "verify"} />);
 
   return (
@@ -83,13 +88,13 @@ export default function EvaluatorLogin() {
         <header>
           <span className="team-brand">DE<b>X</b>ATHON <em>2026</em></span>
           <h1>Evaluator Portal</h1>
-          <p>{mode === "login" ? "Sign in to evaluate Round 1 PPT submissions" : mode === "request" ? "First time or forgot password? Get a one-time code" : "Enter the code and choose your password"}</p>
+          <p>{mode === "login" ? "Sign in to evaluate Round 1 PPTs and Round 2 prototypes" : mode === "request" ? "First time or forgot password? Get a one-time code" : "Enter the code and choose your password"}</p>
         </header>
         {params.get("expired") && mode === "login" ? <p className="eval-login-note">You were signed out after a period of inactivity.</p> : null}
         {notice && mode !== "login" ? <p className="eval-login-note">{notice}</p> : null}
 
         {mode === "login" ? <form onSubmit={login} noValidate>
-          {emailInput}
+          {loginInput}
           {field("Password", LockKeyhole, <input type={show ? "text" : "password"} autoComplete="current-password" placeholder="Your password" value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} />, eye)}
           {error ? <p className="team-login-error" role="alert">{error}</p> : null}
           <button type="submit" className="team-login-submit" disabled={busy}>{busy ? "Signing in..." : <>Sign in <ArrowRight size={17} /></>}</button>

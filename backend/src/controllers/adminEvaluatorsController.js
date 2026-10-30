@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Evaluator from "../models/Evaluator.js";
+import Evaluator, { ROUND1_EVALUATORS } from "../models/Evaluator.js";
 import RubricEvaluation from "../models/RubricEvaluation.js";
 import { sendEvaluatorInviteEmail } from "../services/emailService.js";
 import { getEvaluatorLoginUrl } from "../services/submissionService.js";
@@ -80,7 +80,7 @@ export const updateEvaluator = async (request, response) => {
   }
   // A disabled evaluator's unfinished teams go to the others, so every PPT still gets its full panel.
   let note = "";
-  if (!evaluator.active && (await Registration.exists({ evaluationPanel: evaluator._id })) && (await Evaluator.countDocuments({ active: { $ne: false } })) >= PANEL_SIZE) {
+  if (!evaluator.active && (await Registration.exists({ evaluationPanel: evaluator._id })) && (await Evaluator.countDocuments({ active: { $ne: false }, ...ROUND1_EVALUATORS })) >= PANEL_SIZE) {
     const summary = await assignPanels();
     note = summary.updated ? ` Their unfinished PPTs were reassigned (${summary.fullPanels} of ${summary.teams} panels full).` : "";
   }
@@ -120,7 +120,7 @@ export const getTeamEvaluationSheets = async (request, response) => {
 // Gives every team with a PDF a panel of 3 evaluators (fills gaps only; existing members keep their teams).
 export const assignEvaluatorPanels = async (request, response) => {
   // Each PPT needs PANEL_SIZE different evaluators, so don't hand out partial panels.
-  const active = await Evaluator.countDocuments({ active: { $ne: false } });
+  const active = await Evaluator.countDocuments({ active: { $ne: false }, ...ROUND1_EVALUATORS });
   if (active < PANEL_SIZE) return response.status(400).json({ message: `Add at least ${PANEL_SIZE} active evaluators first: each PPT needs ${PANEL_SIZE} different evaluators (you have ${active}).` });
   const summary = await assignPanels();
   console.log(`EVALUATOR_PANELS_ASSIGNED by ${request.admin?.username || "?"} ${JSON.stringify(summary)}`);
@@ -161,7 +161,7 @@ export const getShortlist = async (_request, response) => {
   let rank = 0;
   rows.forEach((r, i) => { if (r.score !== null) r.rank = i > 0 && rows[i - 1].score === r.score ? rows[i - 1].rank : (rank = i + 1); });
   // Each evaluator's progress on their assigned PPTs (only sheets for teams on their panel count).
-  const evaluators = await Evaluator.find({}, "name email active lastLoginAt scoreWeight").sort({ createdAt: 1 }).lean();
+  const evaluators = await Evaluator.find(ROUND1_EVALUATORS, "name email active lastLoginAt scoreWeight").sort({ createdAt: 1 }).lean();
   const onPanel = new Map(evaluators.map((e) => [String(e._id), new Set()]));
   for (const [teamId, panel] of panels) for (const id of panel) onPanel.get(id)?.add(teamId);
   const progress = evaluators.map((e) => {

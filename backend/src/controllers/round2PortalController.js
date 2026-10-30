@@ -4,14 +4,13 @@ import Round2Evaluation from "../models/Round2Evaluation.js";
 import { createCollegeLookup } from "../services/collegeRegistry.js";
 import { isRound2Eligible } from "../services/prototypeService.js";
 import { cleanRound2Sheet, ROUND2_RUBRIC_VERSION, round2RubricView } from "../services/round2Rubric.js";
-import { refreshTeamRound2Score } from "../services/round2Scores.js";
+import { refreshTeamRound2Score, round2Panel } from "../services/round2Scores.js";
 import { memberCollegeNames, teamCollegeMix } from "../services/teamColleges.js";
 import { teamStudyInfo } from "../services/teamProfile.js";
 
-// Evaluator Portal → Round 2: prototypes of the teams selected in Round 1, scored by each team's own panel.
-const onPanel = (team, evaluatorId) => (team?.evaluationPanel || []).some((id) => String(id) === String(evaluatorId));
+// Evaluator Portal → Round 2: prototypes of the teams selected in Round 1, scored by every Round 2 evaluator.
+const SELECTED = { $or: [{ "roundResults.round1.status": "SELECTED" }, { "rounds.round1": "SELECTED" }] };
 const isLocked = (team) => ["SELECTED", "REJECTED"].includes(team?.roundResults?.round2?.status);
-const NOT_ASSIGNED = { success: false, notAssigned: true, message: "This team isn't assigned to you." };
 const FIELDS = "teamId teamName college collegeName collegeId collegeNameRaw projectTheme year department leader.name members.name members.college members.year members.department prototypeSubmission roundResults rounds evaluationPanel evaluation.totalScore";
 
 // YouTube video id from any common YouTube link, for the embedded player.
@@ -51,11 +50,12 @@ const scoreable = (team) => isRound2Eligible(team) && Boolean(prototypeOf(team).
 
 export const getRound2Rubric = async (_request, response) => response.json({ success: true, rubric: round2RubricView() });
 
-// This evaluator's Round 2 list: selected teams on their panel that have submitted a prototype.
+// The Round 2 list: every selected team that has submitted a prototype.
 export const listRound2Teams = async (request, response) => {
   const me = request.evaluator.id;
-  const teams = (await Registration.find({ evaluationPanel: me, "prototypeSubmission.url": { $nin: [null, ""] } }, FIELDS).sort({ teamId: 1 }).lean()).filter(scoreable);
+  const teams = (await Registration.find({ ...SELECTED, "prototypeSubmission.url": { $nin: [null, ""] } }, FIELDS).sort({ teamId: 1 }).lean()).filter(scoreable);
   const ids = teams.map((t) => t._id);
+  const panel = (await round2Panel()).map(String);
   const [mine, done] = await Promise.all([
     Round2Evaluation.find({ evaluator: me, registration: { $in: ids } }, "registration status total updatedAt").lean(),
     Round2Evaluation.aggregate([{ $match: { registration: { $in: ids }, status: "submitted" } }, { $group: { _id: "$registration", evaluators: { $addToSet: "$evaluator" } } }]),
@@ -63,14 +63,13 @@ export const listRound2Teams = async (request, response) => {
   const mineBy = new Map(mine.map((e) => [String(e.registration), e]));
   const doneBy = new Map(done.map((d) => [String(d._id), d.evaluators.map(String)]));
   const lookup = await createCollegeLookup();
-  const waiting = await Registration.countDocuments({ evaluationPanel: me, $or: [{ "roundResults.round1.status": "SELECTED" }, { "rounds.round1": "SELECTED" }], "prototypeSubmission.url": { $in: [null, ""] } });
+  const waiting = await Registration.countDocuments({ ...SELECTED, "prototypeSubmission.url": { $in: [null, ""] } });
   return response.json({
     success: true,
     notSubmittedYet: waiting,
     teams: teams.map((t) => {
       const e = mineBy.get(String(t._id));
       const c = lookup.forTeam(t);
-      const panel = (t.evaluationPanel || []).map(String);
       return {
         id: String(t._id), teamId: t.teamId, teamName: t.teamName, college: c.collegeId ? c.name : (t.college || t.collegeName || ""), theme: t.projectTheme || "",
         category: t.prototypeSubmission.category, submittedAt: t.prototypeSubmission.submittedAt || null, round1Score: t.evaluation?.totalScore ?? null,
@@ -87,10 +86,10 @@ const sheetView = (s) => (s ? { status: s.status, total: s.total, updatedAt: s.u
 export const getRound2Sheet = async (request, response) => {
   const team = await findTeam(request.params.id);
   if (!team || !scoreable(team)) return response.status(404).json({ success: false, message: "This team has no Round 2 prototype to score." });
-  if (!onPanel(team, request.evaluator.id)) return response.status(403).json(NOT_ASSIGNED);
+  const panel = await round2Panel();
   const [sheet, panelDone] = await Promise.all([
     Round2Evaluation.findOne({ registration: team._id, evaluator: request.evaluator.id }).lean(),
-    Round2Evaluation.countDocuments({ registration: team._id, status: "submitted", evaluator: { $in: team.evaluationPanel || [] } }),
+    Round2Evaluation.countDocuments({ registration: team._id, status: "submitted", evaluator: { $in: panel } }),
   ]);
   const lookup = await createCollegeLookup();
   await lookup.prepare(memberCollegeNames([team]));
@@ -106,7 +105,7 @@ export const getRound2Sheet = async (request, response) => {
       colleges: mix.crossCollege ? mix.colleges.map((x) => ({ name: x.collegeId ? x.name : x.name.replace(/^Needs review: /, ""), people: x.people })) : [],
       round1Score: team.evaluation?.totalScore ?? null,
       prototype: prototypeOf(team),
-      panelSize: (team.evaluationPanel || []).length, panelSubmitted: panelDone,
+      panelSize: panel.length, panelSubmitted: panelDone,
       locked: isLocked(team),
     },
     sheet: sheetView(sheet),
@@ -116,7 +115,6 @@ export const getRound2Sheet = async (request, response) => {
 export const saveRound2Sheet = async (request, response) => {
   const team = await findTeam(request.params.id);
   if (!team || !scoreable(team)) return response.status(404).json({ success: false, message: "This team has no Round 2 prototype to score." });
-  if (!onPanel(team, request.evaluator.id)) return response.status(403).json(NOT_ASSIGNED);
   if (isLocked(team)) return response.status(403).json({ success: false, locked: true, message: "The organisers have already decided this team's Round 2 result, so its evaluation can no longer be changed." });
   const category = team.prototypeSubmission.category;
   const submit = request.body?.submit === true;

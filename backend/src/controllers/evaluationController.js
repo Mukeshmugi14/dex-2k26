@@ -5,7 +5,7 @@ import { sendSelectionEmail } from "../services/emailService.js";
 import { deriveSubmissionStatus, openPdfStream } from "../services/submissionService.js";
 import { STUDY_FIELDS, teamStudyInfo } from "../services/teamProfile.js";
 import { PANEL_SIZE, refreshTeamRubricScore, rubricSummaries, SPREAD_ALERT } from "../services/rubricScores.js";
-import Evaluator from "../models/Evaluator.js";
+import Evaluator, { ROUND1_EVALUATORS } from "../models/Evaluator.js";
 
 const CRITERIA = ["criterion1", "criterion2", "criterion3", "criterion4"];
 const LIST_FIELDS = `teamId teamName leader college collegeName projectTheme pdfSubmission evaluation selectionEmailSent selectionEmailStatus selectionEmailSentAt createdAt evaluationPanel ${STUDY_FIELDS}`;
@@ -54,7 +54,7 @@ export const listSubmissions = async (_request, response) => {
   ]);
   // Evaluator Portal scores (PPT Evaluation Sheet, out of 100): each team's panel and the average of its sheets.
   const teams = await withRubric(registrations);
-  const evaluators = (await Evaluator.find({ active: { $ne: false } }, "name email").sort({ name: 1 }).lean()).map((e) => ({ id: String(e._id), name: e.name || e.email, email: e.email }));
+  const evaluators = (await Evaluator.find({ active: { $ne: false }, ...ROUND1_EVALUATORS }, "name email").sort({ name: 1 }).lean()).map((e) => ({ id: String(e._id), name: e.name || e.email, email: e.email }));
   return response.json({ teams, evaluators, panelSize: PANEL_SIZE, spreadAlert: SPREAD_ALERT, settings: settingsView(settings) });
 };
 

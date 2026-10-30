@@ -46,7 +46,7 @@ export default function Round2Home() {
     <section className="eval-intro">
       <div>
         <h1>Round 2 · Prototypes</h1>
-        <p>Prototypes of the teams selected in Round 1, assigned to you. Teams submit a website, Google Drive or YouTube link. YouTube videos and Drive files play right inside the sheet. Software and hardware each have their own 4 criteria (100 marks).</p>
+        <p>Prototypes of the teams selected in Round 1. Every Round 2 evaluator scores every prototype; the final score is the average of all of you. Teams submit a website, Google Drive or YouTube link. YouTube videos and Drive files play right inside the sheet. Software and hardware each have their own 4 criteria (100 marks).</p>
       </div>
       <button type="button" className="eval-ghost" onClick={load}><RefreshCw size={15} /> Refresh</button>
     </section>

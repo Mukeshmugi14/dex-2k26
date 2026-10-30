@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import Evaluator from "../models/Evaluator.js";
+import Evaluator, { ROUND1_EVALUATORS } from "../models/Evaluator.js";
 import Registration from "../models/Registration.js";
 import RubricEvaluation from "../models/RubricEvaluation.js";
 import { PANEL_SIZE, refreshTeamRubricScore } from "./rubricScores.js";
@@ -50,7 +50,7 @@ const submittedMap = async (teamIds) => {
 /** Assigns/fills every team's panel. Returns a summary for the admin. */
 export const assignPanels = async () => {
   const [evaluators, teams] = await Promise.all([
-    Evaluator.find({ active: { $ne: false } }, "_id").sort({ createdAt: 1 }).lean(),
+    Evaluator.find({ active: { $ne: false }, ...ROUND1_EVALUATORS }, "_id").sort({ createdAt: 1 }).lean(),
     Registration.find(TEAMS_WITH_PDF, "_id teamId evaluationPanel").sort({ teamId: 1 }).lean(),
   ]);
   const changed = planPanels(teams, evaluators.map((e) => e._id), await submittedMap(teams.map((t) => t._id)));
@@ -75,7 +75,7 @@ export const setTeamPanel = async (teamId, evaluatorIds) => {
   if (ids.length > PANEL_SIZE) return { error: `A panel has at most ${PANEL_SIZE} evaluators.` };
   const team = await Registration.findOne({ _id: teamId, ...TEAMS_WITH_PDF }, "evaluationPanel").lean();
   if (!team) return { error: "Team not found or no PDF submitted.", status: 404 };
-  const valid = await Evaluator.countDocuments({ _id: { $in: ids }, active: { $ne: false } });
+  const valid = await Evaluator.countDocuments({ _id: { $in: ids }, active: { $ne: false }, ...ROUND1_EVALUATORS });
   if (valid !== ids.length) return { error: "Choose active evaluators only." };
   const done = (await submittedMap([team._id])).get(String(team._id)) || new Set();
   const dropped = [...done].filter((id) => !ids.includes(id));
